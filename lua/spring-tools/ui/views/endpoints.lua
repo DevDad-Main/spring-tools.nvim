@@ -34,23 +34,52 @@ function M:load_items()
     if a.method ~= b.method then return (order[a.method] or 99) < (order[b.method] or 99) end
     return a.path < b.path
   end)
-  M.items = {}
+
+  local grouped = {}
   for _, ep in ipairs(endpoints_mod.endpoints) do
-    table.insert(M.items, { type = "endpoint", endpoint = ep })
+    grouped[ep.method] = grouped[ep.method] or {}
+    table.insert(grouped[ep.method], ep)
+  end
+
+  M.items = {}
+  for _, method in ipairs({ "GET", "POST", "PUT", "DELETE", "PATCH" }) do
+    local eps = grouped[method]
+    if eps and #eps > 0 then
+      table.insert(M.items, { type = "header", label = method .. "  (" .. #eps .. ")" })
+      for _, ep in ipairs(eps) do
+        table.insert(M.items, { type = "endpoint", endpoint = ep })
+      end
+    end
   end
 end
 
 function M:render_item(item, selected)
+  if item.type == "header" then
+    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    return { { "  \u{25b8} " .. item.label, hl } }
+  end
   local ep = item.endpoint
   local method_hl = method_colors[ep.method] or nil
   local hl = selected and "SpringToolsSelected" or method_hl
-  local method = ep.method .. string.rep(" ", 6 - #ep.method)
-  return { { method .. ep.path, hl } }
+  return { { "      " .. ep.path, hl } }
 end
 
 function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
+  if item.type == "header" then
+    local next = idx + 1
+    while next <= #M.items do
+      if M.items[next].type == "endpoint" then
+        sidebar.selected = next
+        sidebar.refresh()
+        M:on_activate(next)
+        return
+      end
+      next = next + 1
+    end
+    return
+  end
   local ep = item.endpoint
   local actions = {
     { label = "Jump to definition", fn = function()
