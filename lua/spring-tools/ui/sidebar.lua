@@ -107,6 +107,15 @@ function M.close()
 end
 
 function M.refresh()
+  local view = M.get_view()
+  if view and view.load_items then view:load_items() end
+  M.items = (view and view.items) or {}
+  if M.selected > #M.items then M.selected = #M.items end
+  if M.selected < 1 then M.selected = #M.items > 0 and 1 or 0 end
+  M.render()
+end
+
+function M.render()
   if not buf_is_valid() then return end
   local view = M.get_view()
   if not view then return end
@@ -123,12 +132,6 @@ function M.refresh()
   for _, l in ipairs(header) do
     table.insert(lines, M.render_line(l))
   end
-
-  view:load_items()
-
-  M.items = view.items or {}
-  if M.selected > #M.items then M.selected = #M.items end
-  if M.selected < 1 then M.selected = #M.items > 0 and 1 or 0 end
 
   for idx, item in ipairs(M.items) do
     local is_sel = idx == M.selected
@@ -319,14 +322,14 @@ end
 function M.move_down()
   if M.selected < #M.items then
     M.selected = M.selected + 1
-    M.refresh()
+    M.render()
   end
 end
 
 function M.move_up()
   if M.selected > 1 then
     M.selected = M.selected - 1
-    M.refresh()
+    M.render()
   end
 end
 
