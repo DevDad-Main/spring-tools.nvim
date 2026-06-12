@@ -1,0 +1,200 @@
+local config = require("spring-tools.config")
+
+local M = {}
+
+M.cache = {
+  data = nil,
+  dirty = false,
+}
+
+function M.get_cache_path()
+  return config.options.cache_dir .. "/spring-tools.json"
+end
+
+function M.load_cache()
+  local path = M.get_cache_path()
+  local ok, result = pcall(function()
+    local f = io.open(path, "r")
+    if not f then return nil end
+    local content = f:read("*a")
+    f:close()
+    return vim.json.decode(content)
+  end)
+  if ok and result then
+    M.cache.data = result
+  else
+    M.cache.data = {}
+  end
+  return M.cache.data
+end
+
+function M.save_cache()
+  if not M.cache.dirty then return end
+  local path = M.get_cache_path()
+  local ok, _ = pcall(function()
+    local f = io.open(path, "w")
+    if not f then return end
+    f:write(vim.json.encode(M.cache.data))
+    f:close()
+  end)
+  if ok then
+    M.cache.dirty = false
+  end
+end
+
+function M.invalidate_cache()
+  M.cache.data = {}
+  M.cache.dirty = true
+  M.save_cache()
+end
+
+function M.mark_dirty()
+  M.cache.dirty = true
+end
+
+function M.notify(msg, level)
+  level = level or vim.log.levels.INFO
+  vim.schedule(function()
+    vim.notify("[spring-tools] " .. msg, level)
+  end)
+end
+
+function M.is_maven_project(dir)
+  local pom = dir .. "/pom.xml"
+  return vim.fn.filereadable(pom) == 1
+end
+
+function M.is_gradle_project(dir)
+  local gradle = dir .. "/build.gradle"
+  local gradle_kts = dir .. "/build.gradle.kts"
+  return vim.fn.filereadable(gradle) == 1 or vim.fn.filereadable(gradle_kts) == 1
+end
+
+function M.find_project_root(start_path)
+  start_path = start_path or vim.fn.getcwd()
+  local dir = vim.fn.resolve(start_path)
+  local max_depth = 20
+  local depth = 0
+  while dir ~= "/" and depth < max_depth do
+    if M.is_maven_project(dir) or M.is_gradle_project(dir) then
+      return dir
+    end
+    dir = vim.fn.fnamemodify(dir, ":h")
+    depth = depth + 1
+  end
+  return nil
+end
+
+function M.find_build_files(project_root)
+  local files = {}
+  for _, f in ipairs({ "pom.xml", "build.gradle", "build.gradle.kts" }) do
+    local path = project_root .. "/" .. f
+    if vim.fn.filereadable(path) == 1 then
+      table.insert(files, path)
+    end
+  end
+  return files
+end
+
+function M.build_type(project_root)
+  if M.is_maven_project(project_root) then return "maven" end
+  if M.is_gradle_project(project_root) then return "gradle" end
+  return nil
+end
+
+function M.find_java_files(dir)
+  local args = { "find", dir, "-name", "*.java", "-type", "f" }
+  local handle = io.popen(table.concat(args, " "))
+  if not handle then return {} end
+  local result = handle:read("*a")
+  handle:close()
+  local files = {}
+  for f in vim.gsplit(result, "\n", { plain = true, trimempty = true }) do
+    table.insert(files, f)
+  end
+  return files
+end
+
+function M.file_modified_since(path, timestamp)
+  local mtime = vim.fn.getftime(path)
+  return mtime > timestamp
+end
+
+function M.hex_encode(s)
+  return s:gsub(".", function(c)
+    return string.format("%%%02X", string.byte(c))
+  end)
+end
+
+function M.escape_shell_arg(arg)
+  return "'" .. arg:gsub("'", "'\\''") .. "'"
+end
+
+function M.job_start(cmd, opts)
+  opts = opts or {}
+  local job_id = vim.fn.jobstart(cmd, {
+    on_stdout = opts.on_stdout,
+    on_stderr = opts.on_stderr,
+    on_exit = opts.on_exit,
+    stdout_buffered = opts.stdout_buffered ~= false,
+    stderr_buffered = opts.stderr_buffered ~= false,
+  })
+  return job_id
+end
+
+function M.has_telescope()
+  local ok, _ = pcall(require, "telescope")
+  return ok
+end
+
+function M.pick(items, opts, callback)
+  opts = opts or {}
+  if M.has_telescope() and config.options.telescope.enable then
+    local actions = require("telescope.actions")
+    local action_state = require("telescope.actions.state")
+    local pickers = require("telescope.pickers")
+    local finders = require("telescope.finders")
+    local conf = require("telescope.config").values
+
+    pickers.new(opts, {
+      prompt_title = opts.prompt_title or "Select",
+      finder = finders.new_table({
+        results = items,
+        entry_maker = opts.entry_maker or function(item)
+          return { value = item, display = tostring(item), ordinal = tostring(item) }
+        end,
+      }),
+      sorter = conf.generic_sorter(opts),
+      attach_mappings = function(prompt_bufnr, map)
+        actions.select_default:replace(function()
+          local selection = action_state.get_selected_entry()
+          actions.close(prompt_bufnr)
+          if selection and callback then
+            callback(selection.value)
+          end
+        end)
+        return true
+      end,
+    }):find()
+  else
+    local choices = vim.tbl_map(function(item)
+      return tostring(item)
+    end, items)
+    vim.ui.select(choices, opts, function(choice)
+      if choice then
+        local idx = nil
+        for i, c in ipairs(choices) do
+          if c == choice then
+            idx = i
+            break
+          end
+        end
+        if idx and items[idx] then
+          callback(items[idx])
+        end
+      end
+    end)
+  end
+end
+
+return M
