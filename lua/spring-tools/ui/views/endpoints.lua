@@ -59,9 +59,14 @@ function M:render_item(item, selected)
     return { { "  \u{25b8} " .. item.label, hl } }
   end
   local ep = item.endpoint
+  if selected then
+    return { { "      " .. ep.method .. "  " .. ep.path, "SpringToolsSelected" } }
+  end
   local method_hl = method_colors[ep.method] or nil
-  local hl = selected and "SpringToolsSelected" or method_hl
-  return { { "      " .. ep.path, hl } }
+  return { segments = {
+    { "       " .. ep.method .. "  ", method_hl },
+    { ep.path, nil },
+  } }
 end
 
 function M:on_activate(idx)
