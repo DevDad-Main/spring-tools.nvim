@@ -76,7 +76,11 @@ function M.build_index(dir)
           local cat = category_map[annotation]
 
           if annotation == "Bean" then
-            local method_match = line:match("public%s+%w+%s+(%w+)%s*%(")
+            local method_match
+            for j = i, math.min(i + 3, #lines) do
+              method_match = lines[j]:match("public%s+%w+%s+(%w+)%s*%(")
+              if method_match then break end
+            end
             if method_match and class_name then
               table.insert(M.beans, {
                 name = method_match,
