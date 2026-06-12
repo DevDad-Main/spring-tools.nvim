@@ -4,6 +4,33 @@ M.defaults = {
   java_command = "java",
   terminal = "float",
   cache_dir = vim.fn.stdpath("cache") .. "/spring-tools",
+  icons = {
+    running = "\u{f144}",
+    stopped = "\u{f04d}",
+    failed = "\u{f071}",
+    active = "\u{f00c}",
+  },
+  sidebar = {
+    width = 48,
+    keymaps = {
+      move_down = "j",
+      move_up = "k",
+      move_down_alt = "<Down>",
+      move_up_alt = "<Up>",
+      activate = "<CR>",
+      close = "q",
+      refresh = "R",
+      remove = "d",
+      switch_dashboard = "1",
+      switch_beans = "2",
+      switch_endpoints = "3",
+      switch_tests = "4",
+      switch_config = "5",
+      tab_next = "l",
+      tab_prev = "h",
+      show_help = "?",
+    },
+  },
   keymaps = {
     enable = true,
     boot = "<leader>sb",
@@ -20,6 +47,7 @@ M.defaults = {
   },
   auto_refresh = true,
   log_level = vim.log.levels.INFO,
+  highlights = {},
 }
 
 M.options = vim.deepcopy(M.defaults)

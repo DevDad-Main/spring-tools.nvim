@@ -1,24 +1,23 @@
-local config = require("spring-tools.config")
-local utils = require("spring-tools.utils")
-
 local M = {}
 
-local function close_dashboard()
+local function close_buf_by_name(name)
   for _, win_id in ipairs(vim.api.nvim_list_wins()) do
     local buf = vim.api.nvim_win_get_buf(win_id)
     local buf_name = vim.api.nvim_buf_get_name(buf)
-    if buf_name:find("spring.tools") then
-      if vim.api.nvim_win_is_valid(win_id) then
-        vim.api.nvim_win_close(win_id, true)
-      end
+    if buf_name:find(name, 1, true) and vim.api.nvim_win_is_valid(win_id) then
+      vim.api.nvim_win_close(win_id, true)
     end
   end
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     local buf_name = vim.api.nvim_buf_get_name(bufnr)
-    if buf_name:find("spring.tools") and vim.api.nvim_buf_is_valid(bufnr) then
-      vim.api.nvim_buf_delete(bufnr, { force = true })
+    if buf_name:find(name, 1, true) and vim.api.nvim_buf_is_valid(bufnr) then
+      pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
     end
   end
+end
+
+function M.close_dashboard()
+  close_buf_by_name("spring.tools")
 end
 
 function M.create_float_win(opts)
@@ -38,12 +37,16 @@ function M.create_float_win(opts)
     col = opts.col or math.floor((vim.o.columns - width) / 2)
   end
 
-  close_dashboard()
+  if opts.close_existing then
+    if opts.name then close_buf_by_name(opts.name) end
+  end
 
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
   vim.api.nvim_buf_set_option(buf, "modifiable", true)
-  vim.api.nvim_buf_set_name(buf, "spring.tools.dashboard")
+  if opts.name then
+    vim.api.nvim_buf_set_name(buf, opts.name)
+  end
 
   local win = vim.api.nvim_open_win(buf, true, {
     relative = "editor",
@@ -58,12 +61,6 @@ function M.create_float_win(opts)
   })
 
   vim.api.nvim_win_set_option(win, "winhl", "Normal:NormalFloat,FloatBorder:FloatBorder")
-
-  vim.api.nvim_buf_set_keymap(buf, "n", "q", "", {
-    noremap = true, silent = true, nowait = true,
-    callback = function() close_dashboard() end,
-  })
-
   return buf, win
 end
 
@@ -71,24 +68,29 @@ function M.set_lines(buf, lines)
   pcall(function()
     vim.api.nvim_buf_set_option(buf, "modifiable", true)
     vim.api.nvim_buf_clear_namespace(buf, -1, 0, -1)
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    local text_lines = {}
+    for _, line in ipairs(lines) do
+      if type(line) == "table" then
+        table.insert(text_lines, line[1] or "")
+      else
+        table.insert(text_lines, line)
+      end
+    end
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, text_lines)
     vim.api.nvim_buf_set_option(buf, "modifiable", false)
   end)
 end
 
-function M.set_highlights(buf, highlights)
-  for _, h in ipairs(highlights) do
-    local ns = vim.api.nvim_create_namespace("spring-tools-hl")
-    vim.api.nvim_buf_add_highlight(buf, ns, h.group, h.line, h.col_start or 0, h.col_end or -1)
-  end
-end
+function M.show_log_viewer(title, lines, opts)
+  opts = opts or {}
+  close_buf_by_name("spring.tools.logs")
 
-function M.show_log_viewer(title, lines)
   local buf, win = M.create_float_win({
     width = math.floor(vim.o.columns * 0.85),
     height = math.floor(vim.o.lines * 0.75),
     title = title,
     border = "double",
+    name = "spring.tools.logs",
   })
 
   local display = {}
@@ -98,7 +100,7 @@ function M.show_log_viewer(title, lines)
     table.insert(display, lines[i])
   end
   if #lines == 0 then
-    table.insert(display, "  (no output yet)")
+    table.insert(display, "  (waiting for output... press 'r' to refresh, 'q' to close)")
   end
 
   M.set_lines(buf, display)
@@ -106,21 +108,35 @@ function M.show_log_viewer(title, lines)
     vim.api.nvim_win_set_cursor(win, { #display, 0 })
   end)
 
-  vim.api.nvim_buf_set_keymap(buf, "n", "<C-u>", "", {
-    noremap = true, silent = true, nowait = true,
+  vim.api.nvim_buf_set_keymap(buf, "n", "q", "", {
     callback = function()
-      local cur = vim.api.nvim_win_get_cursor(win)
-      local new_row = math.max(1, cur[1] - 20)
-      vim.api.nvim_win_set_cursor(win, { new_row, 0 })
-    end,
+      pcall(vim.api.nvim_win_close, win, true)
+      pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    end, silent = true, nowait = true,
   })
-  vim.api.nvim_buf_set_keymap(buf, "n", "<C-d>", "", {
-    noremap = true, silent = true, nowait = true,
+
+  if opts.on_refresh then
+    vim.api.nvim_buf_set_keymap(buf, "n", "r", "", {
+      callback = function()
+        pcall(vim.api.nvim_win_close, win, true)
+        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+        opts.on_refresh()
+      end, silent = true, nowait = true,
+    })
+  end
+
+  vim.api.nvim_buf_set_keymap(buf, "n", "<C-u>", "", {
     callback = function()
       local cur = vim.api.nvim_win_get_cursor(win)
-      local new_row = math.min(#display, cur[1] + 20)
-      vim.api.nvim_win_set_cursor(win, { new_row, 0 })
-    end,
+      vim.api.nvim_win_set_cursor(win, { math.max(1, cur[1] - 20), 0 })
+    end, silent = true, nowait = true,
+  })
+
+  vim.api.nvim_buf_set_keymap(buf, "n", "<C-d>", "", {
+    callback = function()
+      local cur = vim.api.nvim_win_get_cursor(win)
+      vim.api.nvim_win_set_cursor(win, { math.min(#display, cur[1] + 20), 0 })
+    end, silent = true, nowait = true,
   })
 
   return buf, win
@@ -128,15 +144,12 @@ end
 
 function M.start_background_job(cmd, cwd, callbacks)
   callbacks = callbacks or {}
-  local stdout_data = {}
-  local stderr_data = {}
   local all_data = {}
 
-  local function collect_data(data, store)
+  local function collect_data(data)
     if not data then return end
     for _, line in ipairs(data) do
       if line ~= "" then
-        table.insert(store, line)
         table.insert(all_data, line)
       end
     end
@@ -145,16 +158,16 @@ function M.start_background_job(cmd, cwd, callbacks)
   local job_id = vim.fn.jobstart(cmd, {
     cwd = cwd,
     on_stdout = function(_, data)
-      collect_data(data, stdout_data)
+      collect_data(data)
       if callbacks.on_stdout then callbacks.on_stdout(data) end
     end,
     on_stderr = function(_, data)
-      collect_data(data, stderr_data)
+      collect_data(data)
       if callbacks.on_stderr then callbacks.on_stderr(data) end
     end,
     on_exit = function(_, exit_code, _)
       vim.schedule(function()
-        if callbacks.on_exit then callbacks.on_exit(exit_code) end
+        if callbacks.on_exit then callbacks.on_exit(exit_code, all_data) end
       end)
     end,
     stdout_buffered = true,

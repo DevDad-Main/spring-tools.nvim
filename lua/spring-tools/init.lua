@@ -1,14 +1,14 @@
 local config = require("spring-tools.config")
 local commands = require("spring-tools.commands")
 local utils = require("spring-tools.utils")
+local components = require("spring-tools.ui.components")
 
 local M = {}
 
 function M.setup(opts)
   config.setup(opts)
-
   utils.load_cache()
-
+  components.setup_highlights()
   commands.setup()
   commands.setup_keymaps()
   commands.setup_autocommands()
@@ -18,6 +18,10 @@ function M.get_config()
   return config.options
 end
 
-M.version = "0.1.0"
+function M.open()
+  commands.open_sidebar("dashboard")
+end
+
+M.version = "0.3.0"
 
 return M

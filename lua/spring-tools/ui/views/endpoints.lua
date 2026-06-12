@@ -1,0 +1,80 @@
+local endpoints_mod = require("spring-tools.endpoints")
+local sidebar = require("spring-tools.ui.sidebar")
+local utils = require("spring-tools.utils")
+
+local M = {}
+
+M.title = "Endpoints"
+
+M.items = {}
+
+local method_colors = {
+  GET = "SpringToolsRunning",
+  POST = "SpringToolsAccent",
+  PUT = "SpringToolsKey",
+  PATCH = "SpringToolsDim",
+  DELETE = "SpringToolsError",
+}
+
+function M.header()
+  endpoints_mod.scan_endpoints()
+  return { { "REST Endpoints (" .. #endpoints_mod.endpoints .. ")", "SpringToolsHeader" } }
+end
+
+function M:load_items()
+  endpoints_mod.scan_endpoints()
+  local order = { GET = 1, POST = 2, PUT = 3, DELETE = 4, PATCH = 5 }
+  table.sort(endpoints_mod.endpoints, function(a, b)
+    if a.method ~= b.method then return (order[a.method] or 99) < (order[b.method] or 99) end
+    return a.path < b.path
+  end)
+  M.items = {}
+  for _, ep in ipairs(endpoints_mod.endpoints) do
+    table.insert(M.items, { type = "endpoint", endpoint = ep })
+  end
+end
+
+function M:render_item(item, selected)
+  local ep = item.endpoint
+  local method_hl = method_colors[ep.method] or nil
+  local hl = selected and "SpringToolsSelected" or method_hl
+  local method = ep.method .. string.rep(" ", 6 - #ep.method)
+  return { { method .. ep.path, hl } }
+end
+
+function M:on_activate(idx)
+  local item = M.items[idx]
+  if not item then return end
+  local ep = item.endpoint
+  local actions = {
+    { label = "Jump to definition", fn = function()
+      vim.cmd("edit " .. ep.file)
+      vim.api.nvim_win_set_cursor(0, { ep.line, 0 })
+      vim.cmd("normal! zz")
+    end },
+    { label = "Copy curl", fn = function()
+      local curl = "curl -X " .. ep.method .. " http://localhost:8080" .. ep.path
+      vim.fn.setreg("+", curl)
+      utils.notify("Curl copied")
+    end },
+    { label = "Open in browser", fn = function()
+      local url = "http://localhost:8080" .. ep.path
+      if vim.fn.has("mac") == 1 then vim.fn.system({ "open", url })
+      elseif vim.fn.has("unix") == 1 then vim.fn.system({ "xdg-open", url }) end
+    end },
+  }
+  local sidebar_win = sidebar.win
+  if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+    pcall(vim.api.nvim_set_current_win, sidebar_win)
+  end
+  local labels = vim.tbl_map(function(a) return a.label end, actions)
+  local map = {}
+  for _, a in ipairs(actions) do map[a.label] = a.fn end
+  vim.ui.select(labels, {
+    prompt = ep.method .. " " .. ep.path .. ":",
+  }, function(choice)
+    if choice and map[choice] then map[choice]() end
+  end)
+end
+
+return M

@@ -47,9 +47,11 @@ end
 function M.determine_method(mapping_type, annotation_line)
   local default_method = method_map[mapping_type]
   if mapping_type == "RequestMapping" then
-    local method_str = annotation_line:match("method%s*=%s*(%w+)")
+    local method_str = annotation_line:match("method%s*=%s*RequestMethod%.(%w+)")
+    if not method_str then
+      method_str = annotation_line:match("method%s*=%s*(%w+)")
+    end
     if method_str then
-      method_str = method_str:gsub("RequestMethod%.", "")
       return method_str
     end
     return "GET"
@@ -104,12 +106,17 @@ function M.scan_endpoints(dir)
         class_mapping = ""
       end
 
+      local class_request = false
       if stripped:find("@RequestMapping") and in_controller then
         class_mapping = M.extract_path(line)
+        class_request = true
       end
 
       for _, method in ipairs(http_methods) do
         if stripped:find("@" .. method) then
+          if method == "RequestMapping" and class_request then
+            goto continue_method
+          end
           local method_path = M.extract_path(line)
           local http_method = M.determine_method(method, line)
           local full_path = class_mapping .. method_path
@@ -133,6 +140,7 @@ function M.scan_endpoints(dir)
             mtime = mtime,
           })
         end
+        ::continue_method::
       end
     end
 
