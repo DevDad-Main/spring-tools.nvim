@@ -84,7 +84,7 @@ function M.build_index(dir)
             if method_match and class_name then
               table.insert(M.beans, {
                 name = method_match,
-                type = "bean",
+                type = "beans",
                 parent = class_name,
                 file = file,
                 line = i,
