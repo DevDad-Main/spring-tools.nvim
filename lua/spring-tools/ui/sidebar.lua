@@ -335,6 +335,55 @@ function M.get_selected()
   return M.items[M.selected]
 end
 
+function M.open_in_main(file, line)
+  if not file then return end
+  if not win_is_valid() then
+    vim.cmd("edit " .. file)
+    if line then vim.api.nvim_win_set_cursor(0, { line, 0 }); vim.cmd("normal! zz") end
+    return
+  end
+
+  local target_win = nil
+  local sidebar_row = nil
+  pcall(function() sidebar_row = select(1, vim.api.nvim_win_get_position(M.win)) end)
+
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if win ~= M.win and vim.api.nvim_win_is_valid(win) then
+      local ok, pos = pcall(vim.api.nvim_win_get_position, win)
+      if ok and sidebar_row and pos[1] == sidebar_row then
+        target_win = win
+        break
+      end
+    end
+  end
+
+  if not target_win then
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      if win ~= M.win and vim.api.nvim_win_is_valid(win) then
+        target_win = win
+        break
+      end
+    end
+  end
+
+  if target_win then
+    vim.api.nvim_set_current_win(target_win)
+    vim.cmd("edit " .. file)
+    if line then
+      vim.api.nvim_win_set_cursor(0, { line, 0 })
+      vim.cmd("normal! zz")
+    end
+  else
+    vim.api.nvim_set_current_win(M.win)
+    vim.cmd("vsplit")
+    vim.cmd("edit " .. file)
+    if line then
+      vim.api.nvim_win_set_cursor(0, { line, 0 })
+      vim.cmd("normal! zz")
+    end
+  end
+end
+
 vim.api.nvim_create_autocmd("VimResized", {
   group = vim.api.nvim_create_augroup("SpringToolsSidebar", { clear = true }),
   callback = function()

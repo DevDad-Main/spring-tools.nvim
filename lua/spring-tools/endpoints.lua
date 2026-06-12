@@ -80,7 +80,7 @@ function M.scan_endpoints(dir)
         break
       end
     end
-    if valid then
+    if valid and #cached > 0 then
       M.endpoints = cached
       return M.endpoints
     end

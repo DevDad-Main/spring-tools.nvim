@@ -47,7 +47,7 @@ function M.build_index(dir)
         break
       end
     end
-    if valid then
+    if valid and #cached > 0 then
       M.beans = cached
       M.index_built = true
       return M.beans
@@ -64,8 +64,8 @@ function M.build_index(dir)
     local lines = vim.split(content, "\n", { plain = true })
 
     local class_name = nil
-    local class_line = nil
-    local class_type = nil
+    local pending_type = nil
+    local found_class = false
 
     for i, line in ipairs(lines) do
       local stripped = line:gsub("%s+", "")
@@ -73,24 +73,29 @@ function M.build_index(dir)
       for _, annotation in ipairs(bean_annotations) do
         local pattern = "@" .. annotation
         if stripped:find(pattern, 1, true) then
-          class_type = category_map[annotation]
+          local cat = category_map[annotation]
 
           if annotation == "Bean" then
             local method_match = line:match("public%s+%w+%s+(%w+)%s*%(")
-            if method_match then
+            if method_match and class_name then
               table.insert(M.beans, {
                 name = method_match,
                 type = "bean",
+                parent = class_name,
                 file = file,
                 line = i,
                 mtime = mtime,
               })
             end
           else
+            pending_type = cat
+            found_class = false
             for j = i, math.min(i + 5, #lines) do
-              local class_match = lines[j]:match("(class|interface)%s+(%w+)")
-              if class_match then
-                class_name = class_match
+              local cap = lines[j]:match("class%s+(%w+)")
+              if not cap then cap = lines[j]:match("interface%s+(%w+)") end
+              if cap then
+                class_name = cap
+                found_class = true
                 break
               end
             end
@@ -99,16 +104,15 @@ function M.build_index(dir)
         end
       end
 
-      if class_name and class_type then
+      if pending_type and found_class then
         table.insert(M.beans, {
           name = class_name,
-          type = class_type,
+          type = pending_type,
           file = file,
           line = i,
           mtime = mtime,
         })
-        class_name = nil
-        class_type = nil
+        pending_type = nil
       end
     end
 

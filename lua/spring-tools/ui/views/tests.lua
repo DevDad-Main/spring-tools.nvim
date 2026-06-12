@@ -10,13 +10,18 @@ M.title = "Tests"
 
 M.items = {}
 
+local function scan_dir()
+  local proj = project.get_active_project()
+  return proj and proj.root or vim.fn.getcwd()
+end
+
 function M.header()
-  local classes = tests_mod.find_test_methods()
+  local classes = tests_mod.find_test_methods(scan_dir())
   return { { "Test Explorer (" .. #classes .. " classes)", "SpringToolsHeader" } }
 end
 
 function M:load_items()
-  local test_classes = tests_mod.find_test_methods()
+  local test_classes = tests_mod.find_test_methods(scan_dir())
   M.items = {}
   table.insert(M.items, { type = "all", label = "Run all tests" })
   for _, test in ipairs(test_classes) do

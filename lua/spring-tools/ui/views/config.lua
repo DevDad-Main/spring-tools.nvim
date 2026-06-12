@@ -1,4 +1,5 @@
 local config_mod = require("spring-tools.config_explorer")
+local project = require("spring-tools.project")
 local sidebar = require("spring-tools.ui.sidebar")
 local output = require("spring-tools.ui.output")
 local utils = require("spring-tools.utils")
@@ -9,13 +10,18 @@ M.title = "Config"
 
 M.items = {}
 
+local function scan_dir()
+  local proj = project.get_active_project()
+  return proj and proj.root or vim.fn.getcwd()
+end
+
 function M.header()
-  config_mod.build_index()
+  config_mod.build_index(scan_dir())
   return { { "Config (" .. #config_mod.properties .. " props)", "SpringToolsHeader" } }
 end
 
 function M:load_items()
-  config_mod.build_index()
+  config_mod.build_index(scan_dir())
   table.sort(config_mod.properties, function(a, b) return a.key < b.key end)
   M.items = {}
   for _, prop in ipairs(config_mod.properties) do
@@ -35,7 +41,7 @@ function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
   if item.prop and item.prop.file then
-    vim.cmd("edit " .. item.prop.file)
+    sidebar.open_in_main(item.prop.file)
   end
 end
 

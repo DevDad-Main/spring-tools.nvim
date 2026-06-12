@@ -1,12 +1,18 @@
 local endpoints_mod = require("spring-tools.endpoints")
 local sidebar = require("spring-tools.ui.sidebar")
 local utils = require("spring-tools.utils")
+local project = require("spring-tools.project")
 
 local M = {}
 
 M.title = "Endpoints"
 
 M.items = {}
+
+local function scan_dir()
+  local proj = project.get_active_project()
+  return proj and proj.root or vim.fn.getcwd()
+end
 
 local method_colors = {
   GET = "SpringToolsRunning",
@@ -17,12 +23,12 @@ local method_colors = {
 }
 
 function M.header()
-  endpoints_mod.scan_endpoints()
+  endpoints_mod.scan_endpoints(scan_dir())
   return { { "REST Endpoints (" .. #endpoints_mod.endpoints .. ")", "SpringToolsHeader" } }
 end
 
 function M:load_items()
-  endpoints_mod.scan_endpoints()
+  endpoints_mod.scan_endpoints(scan_dir())
   local order = { GET = 1, POST = 2, PUT = 3, DELETE = 4, PATCH = 5 }
   table.sort(endpoints_mod.endpoints, function(a, b)
     if a.method ~= b.method then return (order[a.method] or 99) < (order[b.method] or 99) end
@@ -48,9 +54,7 @@ function M:on_activate(idx)
   local ep = item.endpoint
   local actions = {
     { label = "Jump to definition", fn = function()
-      vim.cmd("edit " .. ep.file)
-      vim.api.nvim_win_set_cursor(0, { ep.line, 0 })
-      vim.cmd("normal! zz")
+      sidebar.open_in_main(ep.file, ep.line)
     end },
     { label = "Copy curl", fn = function()
       local curl = "curl -X " .. ep.method .. " http://localhost:8080" .. ep.path

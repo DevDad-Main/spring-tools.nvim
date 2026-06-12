@@ -335,7 +335,7 @@ function M.open_config(proj)
     return
   end
   vim.ui.select(found, { prompt = "Open config:" }, function(path)
-    if path then vim.cmd("edit " .. path) end
+    if path then sidebar.open_in_main(path) end
   end)
 end
 

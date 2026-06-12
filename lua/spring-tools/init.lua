@@ -8,6 +8,7 @@ local M = {}
 function M.setup(opts)
   config.setup(opts)
   utils.load_cache()
+  utils.cache.data = {}
   components.setup_highlights()
   commands.setup()
   commands.setup_keymaps()

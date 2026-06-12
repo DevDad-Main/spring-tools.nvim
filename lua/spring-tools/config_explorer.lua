@@ -18,7 +18,7 @@ function M.find_config_files(project_root)
   local files = {}
   for _, dir in ipairs(config_dirs) do
     if vim.fn.isdirectory(dir) == 1 then
-      local patterns = { "application%.properties", "application.*%.properties", "application.*%.yml", "application.*%.yaml", "bootstrap.*%.properties", "bootstrap.*%.yml" }
+      local patterns = { "application*.properties", "application*.yml", "application*.yaml", "bootstrap*.properties", "bootstrap*.yml" }
       for _, pat in ipairs(patterns) do
         local handle = io.popen("find " .. utils.escape_shell_arg(dir) .. " -maxdepth 1 -name '" .. pat .. "' 2>/dev/null")
         if handle then
@@ -110,7 +110,7 @@ function M.build_index(project_root)
         break
       end
     end
-    if valid then
+    if valid and #cached > 0 then
       M.properties = cached
       return M.properties
     end
