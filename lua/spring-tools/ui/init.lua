@@ -1,3 +1,6 @@
+local config = require("spring-tools.config")
+local utils = require("spring-tools.utils")
+
 local M = {}
 
 function M.create_float_win(opts)
