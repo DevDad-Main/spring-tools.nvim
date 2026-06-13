@@ -1,6 +1,35 @@
-# spring-tools.nvim
+<p align="center">
+  <img src="https://img.shields.io/github/stars/DevDad-Main/spring-tools.nvim?style=for-the-badge&logo=github" alt="Stars">
+  <img src="https://img.shields.io/github/forks/DevDad-Main/spring-tools.nvim?style=for-the-badge&logo=github" alt="Forks">
+  <img src="https://img.shields.io/github/issues/DevDad-Main/spring-tools.nvim?style=for-the-badge&logo=github" alt="Issues">
+  <img src="https://img.shields.io/github/license/DevDad-Main/spring-tools.nvim?style=for-the-badge" alt="License">
+  <img src="https://img.shields.io/badge/neovim-0.10+-blue?style=for-the-badge&logo=neovim" alt="Neovim">
+  <img src="https://img.shields.io/github/last-commit/DevDad-Main/spring-tools.nvim?style=for-the-badge&logo=git" alt="Last Commit">
+</p>
 
-IntelliJ-like Spring Boot development features inside Neovim. Sidebar UI, live log streaming, configurable backends.
+<h1 align="center">spring-tools.nvim</h1>
+
+<p align="center">
+  IntelliJ-like Spring Boot development features inside Neovim.
+  <br>
+  Sidebar UI, live log streaming, configurable backends.
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#usage">Usage</a> •
+  <a href="#highlights">Highlights</a> •
+  <a href="#troubleshooting">Troubleshooting</a>
+</p>
+
+<br>
+
+## Screenshots
+
+> *Screenshots coming soon — recording with [asciinema](https://asciinema.org) for terminal-to-GIF demos.*
+
+<br>
 
 ## Features
 
