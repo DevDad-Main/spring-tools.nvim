@@ -9,7 +9,7 @@ M.title = "Endpoints"
 
 M.items = {}
 
-M.collapsed = {}
+local collapsed = {}
 
 local function scan_dir()
   local proj = project.get_active_project()
@@ -24,6 +24,8 @@ local method_colors = {
   DELETE = "SpringToolsError",
 }
 
+local method_order = { "GET", "POST", "PUT", "DELETE", "PATCH" }
+
 function M.header()
   endpoints_mod.scan_endpoints(scan_dir())
   return { { "REST Endpoints (" .. #endpoints_mod.endpoints .. ")", "SpringToolsHeader" } }
@@ -31,27 +33,27 @@ end
 
 function M:load_items()
   endpoints_mod.scan_endpoints(scan_dir())
-  local order = { GET = 1, POST = 2, PUT = 3, DELETE = 4, PATCH = 5 }
   table.sort(endpoints_mod.endpoints, function(a, b)
-    if a.method ~= b.method then return (order[a.method] or 99) < (order[b.method] or 99) end
+    local oa, ob = method_order[a.method] or 99, method_order[b.method] or 99
+    if oa ~= ob then return oa < ob end
     return a.path < b.path
   end)
 
-  local grouped = {}
+  local counts = {}
   for _, ep in ipairs(endpoints_mod.endpoints) do
-    grouped[ep.method] = grouped[ep.method] or {}
-    table.insert(grouped[ep.method], ep)
+    counts[ep.method] = (counts[ep.method] or 0) + 1
   end
 
   M.items = {}
-  for _, method in ipairs({ "GET", "POST", "PUT", "DELETE", "PATCH" }) do
-    local eps = grouped[method]
-    if eps and #eps > 0 then
-      local collapsed = M.collapsed[method] ~= false
-      table.insert(M.items, { type = "header", label = method .. "  (" .. #eps .. ")", method = method, collapsed = collapsed })
-      if not collapsed then
-        for _, ep in ipairs(eps) do
-          table.insert(M.items, { type = "endpoint", endpoint = ep })
+  for _, method in ipairs(method_order) do
+    if counts[method] and counts[method] > 0 then
+      local is_collapsed = collapsed[method] ~= false
+      M.items[#M.items + 1] = { type = "header", method = method, label = method .. "  (" .. counts[method] .. ")", collapsed = is_collapsed }
+      if not is_collapsed then
+        for _, ep in ipairs(endpoints_mod.endpoints) do
+          if ep.method == method then
+            M.items[#M.items + 1] = { type = "endpoint", endpoint = ep }
+          end
         end
       end
     end
@@ -68,9 +70,8 @@ function M:render_item(item, selected)
   if selected then
     return { { "  " .. ep.method .. "  " .. ep.path, "SpringToolsSelected" } }
   end
-  local method_hl = method_colors[ep.method] or nil
   return { segments = {
-    { "    " .. ep.method .. "  ", method_hl },
+    { "    " .. ep.method .. "  ", method_colors[ep.method] },
     { ep.path, nil },
   } }
 end
@@ -79,7 +80,11 @@ function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
   if item.type == "header" then
-    M.collapsed[item.method] = not item.collapsed
+    if item.collapsed then
+      collapsed[item.method] = false
+    else
+      collapsed[item.method] = nil
+    end
     sidebar.refresh()
     return
   end
