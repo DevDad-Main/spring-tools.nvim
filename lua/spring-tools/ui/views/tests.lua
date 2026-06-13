@@ -42,12 +42,20 @@ function M:render_item(item, selected)
     return { { "  " .. "\u{25b6}" .. " " .. item.label, hl } }
   end
   if item.type == "class" then
-    local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local cr = tests_mod.class_results and tests_mod.class_results[item.test.class]
+    local icon
+    if cr then
+      icon = cr.failed > 0 and "\u{2717}" or "\u{2713}"
+    else
+      icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    end
     local hl = selected and "SpringToolsSelected" or "SpringToolsTestClass"
     return { { "  " .. icon .. " " .. item.label, hl } }
   end
   local hl = selected and "SpringToolsSelected" or "SpringToolsTestMethod"
-  return { { "      " .. "\u{22a1}" .. " " .. item.label, hl } }
+  local mr = tests_mod.method_results
+  local status_icon = (mr and mr[item.test.class] and mr[item.test.class][item.method.name]) and (mr[item.test.class][item.method.name] == "failed" and "\u{2717}" or "\u{2713}") or "\u{22a1}"
+  return { { "      " .. status_icon .. " " .. item.label, hl } }
 end
 
 function M:run_test(cmd)
@@ -70,6 +78,9 @@ function M:run_test(cmd)
     end,
     on_stderr = function(data)
       if data then for _, l in ipairs(data) do output.append(l) end end
+    end,
+    on_exit = function(exit_code, all_data)
+      tests_mod.handle_test_results(all_data, exit_code)
     end,
   })
 end

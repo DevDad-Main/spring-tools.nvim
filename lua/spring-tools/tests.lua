@@ -7,6 +7,102 @@ local M = {}
 
 M.results = {}
 M.current_job = nil
+M.class_results = {}
+M.method_results = {}
+
+local function parse_surefire_per_class(output)
+  local classes = {}
+  for line in output:gmatch("([^\n]+)") do
+    local run, failures, errors, skipped, full_class = line:match("Tests run: (%d+), Failures: (%d+), Errors: (%d+), Skipped: (%d+).*in (%S+)")
+    if not run then
+      run, failures, errors, skipped, full_class = line:match("%[INFO%]%s*Tests run: (%d+), Failures: (%d+), Errors: (%d+), Skipped: (%d+).*in (%S+)")
+    end
+    if run then
+      local simple_name = full_class:match("([%w]+)$")
+      local failed = tonumber(failures) + tonumber(errors)
+      classes[simple_name] = {
+        passed = tonumber(run) - failed - tonumber(skipped),
+        failed = failed,
+        skipped = tonumber(skipped),
+        total = tonumber(run),
+      }
+    end
+  end
+  return classes
+end
+
+local function parse_surefire_xml(proj_root)
+  local method_results = {}
+  local reports_dir = proj_root .. "/target/surefire-reports"
+  local ok, files = pcall(vim.fn.readdir, reports_dir)
+  if not ok or not files then return {} end
+  for _, file in ipairs(files) do
+    if file:match("%.xml$") then
+      local ok2, lines = pcall(vim.fn.readfile, reports_dir .. "/" .. file)
+      if ok2 and lines then
+        local content = table.concat(lines, "\n")
+        local classname = content:match('<testsuite%s+name="([^"]+)"')
+          or content:match('classname="([^"]+)"')
+        if classname then
+          local simple_class = classname:match("([%w]+)$")
+          method_results[simple_class] = method_results[simple_class] or {}
+          for tc in content:gmatch('<testcase(.-)</testcase>') do
+            local method = tc:match('name="([^"]+)"')
+            if method then
+              local failed = tc:find('<failure') and true or false
+              method_results[simple_class][method] = failed and "failed" or "passed"
+            end
+          end
+          for tc in content:gmatch('<testcase(.-)/>') do
+            local method = tc:match('name="([^"]+)"')
+            if method and not method_results[simple_class][method] then
+              method_results[simple_class][method] = "passed"
+            end
+          end
+        end
+      end
+    end
+  end
+  return method_results
+end
+
+local function parse_gradle_per_class(output)
+  local classes = {}
+  for line in output:gmatch("([^\n]+)") do
+    local status, full_name = line:match("^%s*%w+%s+(%w+)%s+(%S+)")
+    if status then
+      local simple_name = full_name:match("^(.+)%.[^%.]+$") or full_name
+      if not classes[simple_name] then
+        classes[simple_name] = { passed = 0, failed = 0, skipped = 0, total = 0 }
+      end
+      local c = classes[simple_name]
+      c.total = c.total + 1
+      if status == "PASSED" then c.passed = c.passed + 1
+      elseif status == "FAILED" then c.failed = c.failed + 1
+      elseif status == "SKIPPED" then c.skipped = c.skipped + 1 end
+    end
+  end
+  return classes
+end
+
+local function parse_gradle_per_method(output)
+  local method_results = {}
+  for line in output:gmatch("([^\n]+)") do
+    local full_class, method_name, status = line:match("^%s*(%S+)%s+>%s+(%S+)%s+(%w+)")
+    if full_class and method_name and status then
+      local simple_class = full_class:match("([%w]+)$")
+      if simple_class then
+        method_results[simple_class] = method_results[simple_class] or {}
+        if status == "PASSED" then
+          method_results[simple_class][method_name] = "passed"
+        elseif status == "FAILED" then
+          method_results[simple_class][method_name] = "failed"
+        end
+      end
+    end
+  end
+  return method_results
+end
 
 local function parse_junit5_output(output)
   local results = {
@@ -217,18 +313,26 @@ function M.run_test_process(cmd, cwd)
 end
 
 function M.handle_test_results(output_lines, exit_code)
+  M.method_results = {}
   local raw_output = table.concat(output_lines, "\n")
   local results
   local proj = project.get_active_project()
 
   if proj and proj.build_type == "gradle" then
     results = parse_gradle_output(raw_output)
+    M.class_results = parse_gradle_per_class(raw_output)
+    M.method_results = parse_gradle_per_method(raw_output)
   else
     results = parse_junit5_output(raw_output)
+    M.class_results = parse_surefire_per_class(raw_output)
+    M.method_results = proj and proj.root and parse_surefire_xml(proj.root) or {}
   end
 
   M.results = results
   M.show_results(results)
+  vim.schedule(function()
+    require("spring-tools.ui.sidebar").refresh()
+  end)
 end
 
 function M.show_results(results)
@@ -259,6 +363,7 @@ function M.show_results(results)
 
   ui.set_lines(buf, lines)
 
+  vim.api.nvim_buf_set_keymap(buf, "n", "q", "<cmd>close<CR>", { noremap = true, silent = true, nowait = true })
   if results.stack_traces and #results.stack_traces > 0 then
     vim.api.nvim_buf_set_keymap(buf, "n", "f", ":lua require('spring-tools.tests').jump_to_failure()<CR>", { noremap = true, silent = true, nowait = true })
   end
