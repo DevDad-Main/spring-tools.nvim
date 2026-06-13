@@ -503,6 +503,11 @@ function M._show_command_input(proj, default_text, on_submit)
   vim.keymap.set("i", "<CR>", function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-y>", true, false, true), "n")
+      vim.schedule(function()
+        local text = vim.api.nvim_get_current_line()
+        cleanup()
+        on_submit(text)
+      end)
       return
     end
     local text = vim.api.nvim_get_current_line()
@@ -532,6 +537,11 @@ function M._show_command_input(proj, default_text, on_submit)
 
   vim.keymap.set("n", "<Esc>", cleanup, { buffer = buf, silent = true })
   vim.keymap.set("n", "q", cleanup, { buffer = buf, silent = true })
+  vim.keymap.set("n", "<CR>", function()
+    local text = vim.api.nvim_get_current_line()
+    cleanup()
+    on_submit(text)
+  end, { buffer = buf, silent = true })
   vim.keymap.set("n", "<C-w>", "<Nop>", { buffer = buf })
   vim.keymap.set("n", "<C-h>", "<Nop>", { buffer = buf })
   vim.keymap.set("n", "<C-j>", "<Nop>", { buffer = buf })
