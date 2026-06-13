@@ -320,7 +320,7 @@ function M:on_activate(idx)
       if not choice then return end
       if choice:match("^---") then return end
       if choice == "Custom..." then
-        M._show_command_input(proj, default_str, function(input)
+        M._show_command_input(proj, "", function(input)
           save_and_run(input)
         end)
       else
@@ -435,10 +435,14 @@ function M._show_command_input(proj, default_text, on_submit)
     title = " Run command ",
     title_pos = "center",
   })
+  vim.wo[win].winfixbuf = true
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { default_text })
 
+  local closing = false
+
   local function cleanup()
+    closing = true
     pcall(vim.api.nvim_win_close, win, true)
     pcall(vim.api.nvim_buf_delete, buf, { force = true })
   end
@@ -508,9 +512,24 @@ function M._show_command_input(proj, default_text, on_submit)
     end
   end, { buffer = buf, silent = true })
 
-  vim.keymap.set("i", "<Esc>", function()
-    cleanup()
-  end, { buffer = buf, silent = true, nowait = true })
+  vim.keymap.set("n", "<Esc>", cleanup, { buffer = buf, silent = true })
+  vim.keymap.set("n", "q", cleanup, { buffer = buf, silent = true })
+  vim.keymap.set("n", "<C-w>", "<Nop>", { buffer = buf })
+  vim.keymap.set("n", "<C-h>", "<Nop>", { buffer = buf })
+  vim.keymap.set("n", "<C-j>", "<Nop>", { buffer = buf })
+  vim.keymap.set("n", "<C-k>", "<Nop>", { buffer = buf })
+  vim.keymap.set("n", "<C-l>", "<Nop>", { buffer = buf })
+
+  vim.api.nvim_create_autocmd("BufLeave", {
+    buffer = buf,
+    callback = function()
+      if closing then return end
+      vim.schedule(function()
+        pcall(vim.api.nvim_win_close, win, true)
+        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+      end)
+    end,
+  })
 
   vim.api.nvim_create_autocmd("TextChangedI", {
     buffer = buf,
@@ -522,6 +541,7 @@ function M._show_command_input(proj, default_text, on_submit)
       local char = line:sub(col, col)
       if not char:match("[%w:_%-.@/]") then return end
       vim.schedule(function()
+        if vim.fn.mode() ~= "i" then return end
         vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-x><C-o>", true, false, true), "n")
       end)
     end,
