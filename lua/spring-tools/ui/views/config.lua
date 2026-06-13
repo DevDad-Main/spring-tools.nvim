@@ -10,6 +10,7 @@ local M = {}
 M.title = "Config"
 
 M.items = {}
+M.expanded_props = {}
 
 local function scan_dir()
   local proj = project.get_active_project()
@@ -76,7 +77,7 @@ function M:load_items()
         table.insert(M.items, { type = "section", key = section_key, label = top .. ": (" .. #groups[top] .. " props)", collapsed = is_collapsed })
         if not is_collapsed then
           for _, prop in ipairs(groups[top]) do
-            table.insert(M.items, { type = "prop", prop = prop, expanded = false })
+            table.insert(M.items, { type = "prop", prop = prop, expanded = M.expanded_props[prop.key] or false })
           end
         end
       end
@@ -97,24 +98,51 @@ function M:render_item(item, selected)
   end
   local sub_key = item.prop.key:sub(#get_top_key(item.prop.key) + 2)
   local value = item.prop.value
-  local sidebar_width = require("spring-tools.config").options.sidebar.width
-  local max_val = sidebar_width - 8 - #sub_key - 5
-  if max_val < 10 then max_val = 10 end
-  if not item.expanded and #value > max_val then
-    value = value:sub(1, max_val - 3) .. "..."
+  if item.expanded then
+    if selected then
+      return {
+        { "        " .. sub_key .. " =", "SpringToolsSelected" },
+        { "          " .. value, "SpringToolsSelected" },
+      }
+    end
+    return {
+      { segments = {
+        { "        " .. sub_key, "SpringToolsConfigKey" },
+        { " =", nil },
+      } },
+      { segments = {
+        { "          ", nil },
+        { value, "SpringToolsConfigValue" },
+      } },
+    }
   end
-  local icon = item.expanded and "\u{25be}" or "\u{25b8}"
+  local sidebar_width = require("spring-tools.config").options.sidebar.width
+  local indent = 8
+  local full = sub_key .. " = " .. value
+  local max = sidebar_width - indent - 1
+  if #full > max then
+    local overflow = #full - max
+    local keep = math.max(3, #value - overflow - 3)
+    value = value:sub(1, keep) .. "..."
+  end
   if selected then
-    return { { "        " .. icon .. " " .. sub_key .. " = " .. value, "SpringToolsSelected" } }
+    return { { "        " .. sub_key .. " = " .. value, "SpringToolsSelected" } }
   end
   return { {
     segments = {
-      { "        " .. icon .. " ", nil },
-      { sub_key, "SpringToolsConfigKey" },
+      { "        " .. sub_key, "SpringToolsConfigKey" },
       { " = ", nil },
       { value, "SpringToolsConfigValue" },
     },
   } }
+end
+
+function M:toggle_preview(idx)
+  local item = M.items[idx]
+  if not item or item.type ~= "prop" then return end
+  item.expanded = not item.expanded
+  M.expanded_props[item.prop.key] = item.expanded
+  sidebar.refresh()
 end
 
 function M:on_activate(idx)
@@ -125,8 +153,9 @@ function M:on_activate(idx)
     sidebar.refresh()
     return
   end
-  item.expanded = not item.expanded
-  sidebar.refresh()
+  if item.prop and item.prop.file then
+    sidebar.open_in_main(item.prop.file, item.prop.line)
+  end
 end
 
 return M

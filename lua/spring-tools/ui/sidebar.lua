@@ -113,6 +113,7 @@ function M.refresh()
   if M.selected > #M.items then M.selected = #M.items end
   if M.selected < 1 then M.selected = #M.items > 0 and 1 or 0 end
   M.render()
+  M.setup_keymaps()
 end
 
 function M.render()
@@ -231,6 +232,7 @@ function M.setup_keymaps()
   if km.show_help then
     bmap(km.show_help, [[:lua require('spring-tools.ui.sidebar').show_help()<CR>]])
   end
+  bmap("p", [[:lua require('spring-tools.ui.sidebar').preview_value()<CR>]])
 end
 
 function M.show_help()
@@ -249,6 +251,7 @@ function M.show_help()
     { "", "" },
     { "  Actions", "SpringToolsAccent" },
     { "    Enter   Activate / start / stop", "" },
+    { "    p       Preview value (config)", "" },
     { "    d       Remove from cache", "" },
     { "    R       Refresh", "" },
     { "    q       Close sidebar", "" },
@@ -317,6 +320,11 @@ end
 function M.remove_item()
   local view = M.get_view()
   if view and view.on_remove then view:on_remove(M.selected) end
+end
+
+function M.preview_value()
+  local view = M.get_view()
+  if view and view.toggle_preview then view:toggle_preview(M.selected) end
 end
 
 function M.move_down()
