@@ -144,6 +144,10 @@ All highlights are theme-derived via `nvim_get_hl` at startup:
 | `SpringToolsTestMethod` | Inherits `SpringToolsDim` | Test method name |
 | `SpringToolsError` | `ErrorMsg` | Failed status |
 | `SpringToolsKey` | `Special` |  |
+| `SpringToolsValue` | `Normal` |  |
+| `SpringToolsConfigSection` | Inherits `SpringToolsAccent` | Config section headers (server:, spring:) |
+| `SpringToolsConfigKey` | Inherits `SpringToolsKey` | Config property key name |
+| `SpringToolsConfigValue` | Inherits `SpringToolsValue` | Config property value |
 | `SpringToolsDim` | `Comment` | Stopped, inactive tab |
 
 Override any group via `setup()`:
@@ -179,6 +183,11 @@ require("spring-tools").setup({
     -- Status
     SpringToolsRunning      = { fg = "#00ff00" },              -- Running indicator ●
     SpringToolsStopped      = { fg = "#ff0000" },              -- Stopped indicator ○
+
+    -- Config
+    SpringToolsConfigSection = { fg = "#ffaa00" },             -- server:, spring: section headers
+    SpringToolsConfigKey     = { fg = "#eebb00" },             -- port, datasource.url property keys
+    SpringToolsConfigValue   = { fg = "#aabbcc" },             -- 9090, jdbc:h2:mem:testdb values
   },
 })
 ```
