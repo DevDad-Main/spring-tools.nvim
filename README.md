@@ -276,6 +276,20 @@ require("spring-tools").setup({
 
 <br>
 
+## Similar Projects
+
+A few other plugins also aim to improve the Spring Boot experience in Neovim. Here's how they compare:
+
+| Plugin | Approach | What it does well |
+|--------|----------|-------------------|
+| [`JavaHello/spring-boot.nvim`](https://github.com/JavaHello/spring-boot.nvim) | LSP integration (STS4) | Config completion, bean finding via workspace symbols, code actions — all through the language server |
+| [`elmcgill/springboot-nvim`](https://github.com/elmcgill/springboot-nvim) | Compile & run helpers | Incremental compiling on save, quick bootRun, Java file templates |
+| [`jkeresman01/spring-initializr.nvim`](https://github.com/jkeresman01/spring-initializr.nvim) | Project scaffolding | Spring Initializr UI to generate new projects from within Neovim |
+
+I was already using `spring-boot.nvim` for LSP-based config hints and found it useful, but I wanted a more visual sidebar — something closer to what IntelliJ's Spring Boot panel provides. That's what led me to build this plugin: a dedicated UI with tabbed views for projects, beans, endpoints, tests, and config, all sitting alongside the editor in Neovim's own window layout.
+
+<br>
+
 ## Architecture
 
 <details><summary>Module tree</summary>
