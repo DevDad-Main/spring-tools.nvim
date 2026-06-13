@@ -69,10 +69,10 @@ function M:render_item(item, selected)
     return { { "  " .. icon .. " " .. item.label, hl } }
   end
   if item.type == "bean_method" then
-    local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
+    local hl = selected and "SpringToolsSelected" or "SpringToolsBeanMethod"
     return { { "        @" .. item.bean.name .. "()", hl } }
   end
-  local hl = selected and "SpringToolsSelected" or nil
+  local hl = selected and "SpringToolsSelected" or "SpringToolsBeanName"
   return { { "      " .. item.bean.name, hl } }
 end
 

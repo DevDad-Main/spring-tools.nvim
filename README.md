@@ -128,20 +128,60 @@ All highlights are theme-derived via `nvim_get_hl` at startup:
 |-------|-------------|-------------|
 | `SpringToolsNormal` | `Normal` | Default text |
 | `SpringToolsSelected` | `Visual` | Selected line |
-| `SpringToolsAccent` | `Special` | POST method keyword on endpoint lines |
+| `SpringToolsAccent` | `Special` | ? help window section headers |
 | `SpringToolsMethodHeader` | Inherits `SpringToolsAccent` by default | Endpoint method section headers (GET, POST) |
 | `SpringToolsBeanHeader` | Inherits `SpringToolsAccent` by default | Bean type section headers (Controllers, Services) |
+| `SpringToolsBeanName` | Inherits `Normal` | Individual bean names (UserController, UserService) |
+| `SpringToolsBeanMethod` | Inherits `SpringToolsDim` | @Bean method entries (@appName(), @maxConnections()) |
 | `SpringToolsRunning` | `DiagnosticOk` | Running status |
 | `SpringToolsGet` | Inherits `SpringToolsRunning` | GET keyword on endpoint lines |
 | `SpringToolsPost` | Inherits `SpringToolsRunning` | POST keyword on endpoint lines |
 | `SpringToolsPut` | Inherits `SpringToolsRunning` | PUT keyword on endpoint lines |
 | `SpringToolsPatch` | Inherits `SpringToolsRunning` | PATCH keyword on endpoint lines |
 | `SpringToolsDelete` | Inherits `SpringToolsRunning` | DELETE keyword on endpoint lines |
+| `SpringToolsTestRunAll` | Inherits `SpringToolsAccent` | Run all tests header |
+| `SpringToolsTestClass` | Inherits `SpringToolsAccent` | Test class header |
+| `SpringToolsTestMethod` | Inherits `SpringToolsDim` | Test method name |
 | `SpringToolsError` | `ErrorMsg` | Failed status |
 | `SpringToolsKey` | `Special` |  |
 | `SpringToolsDim` | `Comment` | Stopped, inactive tab |
 
-Override any group in `setup({ highlights = { SpringToolsMethodHeader = { fg = "#ff0000" } } })`.
+Override any group via `setup()`:
+
+```lua
+require("spring-tools").setup({
+  highlights = {
+    -- General UI
+    SpringToolsHeader     = { bold = true },                  -- View titles ("Spring Beans", "REST Endpoints")
+    SpringToolsSelected   = { bg = "#334455" },               -- Currently selected line
+    SpringToolsAccent     = { link = "@comment" },             -- ? help window headers
+    SpringToolsDim        = { fg = "#888888" },                -- Dim/muted text, inactive tabs
+    SpringToolsError      = { fg = "#ff0000" },                -- Error/failure status
+
+    -- Endpoints
+    SpringToolsMethodHeader = { fg = "#ffaa00" },              -- GET(8), POST(2) section headers
+    SpringToolsGet          = { fg = "#00ff00" },              -- GET keyword on endpoint lines
+    SpringToolsPost         = { fg = "#00ff00" },              -- POST keyword
+    SpringToolsPut          = { fg = "#00ff00" },              -- PUT keyword
+    SpringToolsPatch        = { fg = "#00ff00" },              -- PATCH keyword
+    SpringToolsDelete       = { fg = "#ff0000" },              -- DELETE keyword
+
+    -- Beans
+    SpringToolsBeanHeader   = { fg = "#ffaa00" },              -- Controllers, Services section headers
+    SpringToolsBeanName     = { fg = "#aabbcc" },              -- Individual bean names
+    SpringToolsBeanMethod   = { link = "Comment" },            -- @appName(), @maxConnections()
+
+    -- Tests
+    SpringToolsTestRunAll   = { fg = "#00ff00" },              -- ▶ Run all tests
+    SpringToolsTestClass    = { fg = "#ffaa00" },              -- Test class headers
+    SpringToolsTestMethod   = { fg = "#888888" },              -- ⊡ testGetUser, ⊡ testCreateUser
+
+    -- Status
+    SpringToolsRunning      = { fg = "#00ff00" },              -- Running indicator ●
+    SpringToolsStopped      = { fg = "#ff0000" },              -- Stopped indicator ○
+  },
+})
+```
 
 ## Modules
 

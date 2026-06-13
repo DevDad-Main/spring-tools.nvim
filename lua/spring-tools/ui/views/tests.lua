@@ -38,15 +38,15 @@ end
 
 function M:render_item(item, selected)
   if item.type == "all" then
-    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    local hl = selected and "SpringToolsSelected" or "SpringToolsTestRunAll"
     return { { "  " .. "\u{25b6}" .. " " .. item.label, hl } }
   end
   if item.type == "class" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
-    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    local hl = selected and "SpringToolsSelected" or "SpringToolsTestClass"
     return { { "  " .. icon .. " " .. item.label, hl } }
   end
-  local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
+  local hl = selected and "SpringToolsSelected" or "SpringToolsTestMethod"
   return { { "      " .. "\u{22a1}" .. " " .. item.label, hl } }
 end
 
@@ -58,7 +58,14 @@ function M:run_test(cmd)
     on_stdout = function(data)
       if data then
         for _, l in ipairs(data) do output.append(l) end
-        vim.schedule(function() vim.api.nvim_win_set_cursor(output.win, {-1, 0}) end)
+        vim.schedule(function()
+          if output.buf and vim.api.nvim_buf_is_valid(output.buf) then
+            local lc = vim.api.nvim_buf_line_count(output.buf)
+            if lc > 0 then
+              pcall(vim.api.nvim_win_set_cursor, output.win, {lc, 0})
+            end
+          end
+        end)
       end
     end,
     on_stderr = function(data)
