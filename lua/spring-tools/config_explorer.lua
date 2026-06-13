@@ -35,11 +35,9 @@ function M.find_config_files(project_root)
   return files
 end
 
-function M.parse_properties(content, source)
+function M.parse_properties(lines, source)
   local props = {}
-  local line_num = 0
-  for raw_line in content:gmatch("([^\n]+)") do
-    line_num = line_num + 1
+  for line_num, raw_line in ipairs(lines) do
     local line = raw_line:gsub("#.*", ""):gsub("^%s+", ""):gsub("%s+$", "")
     if line ~= "" and line:find("=") then
       local key, value = line:match("([^=]+)=%s*(.*)")
@@ -59,14 +57,12 @@ function M.parse_properties(content, source)
   return props
 end
 
-function M.parse_yaml(content, file_path)
+function M.parse_yaml(lines, file_path)
   local props = {}
   local stack = {}
   local source = vim.fn.fnamemodify(file_path, ":t")
-  local line_num = 0
 
-  for line in content:gmatch("([^\n]+)") do
-    line_num = line_num + 1
+  for line_num, line in ipairs(lines) do
     local indent = #line:match("^(%s*)")
     local stripped = line:gsub("^%s+", "")
     local key = stripped:match("([%w%.%-_]+):")
@@ -128,17 +124,15 @@ function M.build_index(project_root)
 
   local files = M.find_config_files(project_root)
   for _, f in ipairs(files) do
-    local handle = io.open(f, "r")
-    if handle then
-      local content = handle:read("*a")
-      handle:close()
+    local lines = vim.fn.readfile(f)
+    if lines and #lines > 0 then
       local mtime = vim.fn.getftime(f)
       local extracted
 
       if f:match("%.yml$") or f:match("%.yaml$") then
-        extracted = M.parse_yaml(content, f)
+        extracted = M.parse_yaml(lines, f)
       else
-        extracted = M.parse_properties(content, vim.fn.fnamemodify(f, ":t"))
+        extracted = M.parse_properties(lines, vim.fn.fnamemodify(f, ":t"))
       end
 
       for _, prop in ipairs(extracted) do
