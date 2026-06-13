@@ -378,6 +378,16 @@ function M._omni(findstart, base)
         table.insert(results, c)
       end
     end
+    for _, g in ipairs(data.goals) do
+      if g:lower():find(base:lower(), 1, true) then
+        table.insert(results, g)
+      end
+    end
+    for _, p in ipairs(data.phases) do
+      if p:lower():find(base:lower(), 1, true) then
+        table.insert(results, p)
+      end
+    end
     return results
   end
 

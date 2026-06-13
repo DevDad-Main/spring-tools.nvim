@@ -159,8 +159,8 @@ end
 
 local function parse_pom(root)
   local pom_path = root .. "/pom.xml"
-  local lines = vim.fn.readfile(pom_path)
-  if not lines or #lines == 0 then return {} end
+  local ok, lines = pcall(vim.fn.readfile, pom_path)
+  if not ok or not lines or #lines == 0 then return {} end
   local text = table.concat(lines, "\n")
   local artifact_ids = {}
   for plugin_block in text:gmatch("<plugin>(.-)</plugin>") do
@@ -175,16 +175,29 @@ end
 function M.get_plugin_goals(root)
   if PLUGIN_CACHE[root] then return PLUGIN_CACHE[root] end
   local artifact_ids = parse_pom(root)
+  local seen = {}
   local goals = {}
+  for _, g in ipairs(M.default_plugin_goals) do
+    goals[#goals + 1] = g
+    seen[g] = true
+  end
   for _, aid in ipairs(artifact_ids) do
     local known_goals = PLUGIN_GOALS[aid]
     local prefix = artifact_to_prefix(aid)
     if known_goals then
       for _, g in ipairs(known_goals) do
-        goals[#goals + 1] = prefix .. ":" .. g
+        local prefixed = prefix .. ":" .. g
+        if not seen[prefixed] then
+          goals[#goals + 1] = prefixed
+          seen[prefixed] = true
+        end
       end
     else
-      goals[#goals + 1] = prefix .. ":"
+      local prefixed = prefix .. ":"
+      if not seen[prefixed] then
+        goals[#goals + 1] = prefixed
+        seen[prefixed] = true
+      end
     end
   end
   PLUGIN_CACHE[root] = goals
