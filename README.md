@@ -128,13 +128,20 @@ All highlights are theme-derived via `nvim_get_hl` at startup:
 |-------|-------------|-------------|
 | `SpringToolsNormal` | `Normal` | Default text |
 | `SpringToolsSelected` | `Visual` | Selected line |
-| `SpringToolsAccent` | `Special` | Section headers (method groups, bean types) |
-| `SpringToolsRunning` | `DiagnosticOk` | Running status, GET |
-| `SpringToolsError` | `ErrorMsg` | Failed status, DELETE |
-| `SpringToolsKey` | `Special` | PUT |
-| `SpringToolsDim` | `Comment` | Stopped, PATCH, inactive tab |
+| `SpringToolsAccent` | `Special` | POST method keyword on endpoint lines |
+| `SpringToolsMethodHeader` | Inherits `SpringToolsAccent` by default | Endpoint method section headers (GET, POST) |
+| `SpringToolsBeanHeader` | Inherits `SpringToolsAccent` by default | Bean type section headers (Controllers, Services) |
+| `SpringToolsRunning` | `DiagnosticOk` | Running status |
+| `SpringToolsGet` | Inherits `SpringToolsRunning` | GET keyword on endpoint lines |
+| `SpringToolsPost` | Inherits `SpringToolsRunning` | POST keyword on endpoint lines |
+| `SpringToolsPut` | Inherits `SpringToolsRunning` | PUT keyword on endpoint lines |
+| `SpringToolsPatch` | Inherits `SpringToolsRunning` | PATCH keyword on endpoint lines |
+| `SpringToolsDelete` | Inherits `SpringToolsRunning` | DELETE keyword on endpoint lines |
+| `SpringToolsError` | `ErrorMsg` | Failed status |
+| `SpringToolsKey` | `Special` |  |
+| `SpringToolsDim` | `Comment` | Stopped, inactive tab |
 
-Override any group in `setup({ highlights = { SpringToolsRunning = { fg = "#00ff00" } } })`.
+Override any group in `setup({ highlights = { SpringToolsMethodHeader = { fg = "#ff0000" } } })`.
 
 ## Modules
 

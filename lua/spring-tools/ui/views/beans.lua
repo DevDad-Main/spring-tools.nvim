@@ -31,25 +31,31 @@ function M:load_items()
 
   M.items = {}
   for _, t in ipairs(type_order) do
-    if #grouped[t] > 0 then
+    local items = {}
+    if t == "configurations" then
+      for _, bean in ipairs(grouped[t]) do
+        table.insert(items, { type = "bean", bean = bean })
+        for _, b in ipairs(grouped.beans or {}) do
+          if b.parent == bean.name then
+            table.insert(items, { type = "bean_method", bean = b })
+          end
+        end
+      end
+    else
+      for _, bean in ipairs(grouped[t]) do
+        if t == "beans" and bean.parent then
+          -- skip parented beans (shown under their @Configuration parent)
+        else
+          table.insert(items, { type = "bean", bean = bean })
+        end
+      end
+    end
+    if #items > 0 then
       local is_collapsed = sections:is_collapsed(t)
       M.items[#M.items + 1] = { type = "header", section_key = t, label = type_labels[t], collapsed = is_collapsed }
       if not is_collapsed then
-        if t == "configurations" then
-          for _, bean in ipairs(grouped[t]) do
-            table.insert(M.items, { type = "bean", bean = bean })
-            for _, b in ipairs(grouped.beans or {}) do
-              if b.parent == bean.name then
-                table.insert(M.items, { type = "bean_method", bean = b })
-              end
-            end
-          end
-        else
-          for _, bean in ipairs(grouped[t]) do
-            if t == "beans" and bean.parent then goto skip_bean end
-            table.insert(M.items, { type = "bean", bean = bean })
-            ::skip_bean::
-          end
+        for _, item in ipairs(items) do
+          table.insert(M.items, item)
         end
       end
     end
@@ -59,7 +65,7 @@ end
 function M:render_item(item, selected)
   if item.type == "header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
-    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    local hl = selected and "SpringToolsSelected" or "SpringToolsBeanHeader"
     return { { "  " .. icon .. " " .. item.label, hl } }
   end
   if item.type == "bean_method" then

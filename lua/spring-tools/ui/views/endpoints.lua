@@ -16,11 +16,11 @@ local function scan_dir()
 end
 
 local method_colors = {
-  GET = "SpringToolsRunning",
-  POST = "SpringToolsAccent",
-  PUT = "SpringToolsKey",
-  PATCH = "SpringToolsDim",
-  DELETE = "SpringToolsError",
+  GET = "SpringToolsGet",
+  POST = "SpringToolsPost",
+  PUT = "SpringToolsPut",
+  PATCH = "SpringToolsPatch",
+  DELETE = "SpringToolsDelete",
 }
 
 local method_order = { "GET", "POST", "PUT", "DELETE", "PATCH" }
@@ -62,7 +62,7 @@ end
 function M:render_item(item, selected)
   if item.type == "header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
-    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    local hl = selected and "SpringToolsSelected" or "SpringToolsMethodHeader"
     return { { "  " .. icon .. " " .. item.label, hl } }
   end
   local ep = item.endpoint

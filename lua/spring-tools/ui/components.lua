@@ -45,6 +45,13 @@ function M.setup_highlights()
     SpringToolsBorder = { fg = title_fg, bg = bg },
     SpringToolsKey = { fg = special_fg, bg = bg },
     SpringToolsValue = { fg = fg, bg = bg },
+    SpringToolsMethodHeader = { fg = special_fg, bold = true, bg = bg },
+    SpringToolsBeanHeader = { fg = special_fg, bold = true, bg = bg },
+    SpringToolsGet = { fg = ok_fg, bg = bg },
+    SpringToolsPost = { fg = ok_fg, bg = bg },
+    SpringToolsPut = { fg = ok_fg, bg = bg },
+    SpringToolsPatch = { fg = ok_fg, bg = bg },
+    SpringToolsDelete = { fg = ok_fg, bg = bg },
   }
 
   for name, spec in pairs(specs) do
