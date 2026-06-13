@@ -118,6 +118,9 @@ require("spring-tools").setup({
   telescope = {
     enable = true,
   },
+  command_input = {
+    position = "center",     -- "top", "center", or "bottom"
+  },
 })
 ```
 
@@ -148,6 +151,10 @@ require("spring-tools").setup({
 | `R` | Refresh current view |
 | `q` | Close sidebar |
 | `?` | Show help floating window |
+
+### Custom Run Command Input
+
+Press `<CR>` on a stopped project, select **Custom...**, and a centered floating window appears. Type your command with Tab-completion (Maven lifecycle phases, plugin goals, `-D` properties, Gradle tasks). The float position is configurable via `command_input.position` (`"top"`, `"center"`, or `"bottom"`). Press `<Esc>` to exit insert mode, then `<Esc>` or `q` to close.
 
 ## Highlights
 
@@ -303,6 +310,7 @@ nvim --headless -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/init.lu
 Ideas for future releases:
 
 - [x] **POM-driven CLI completion** — parses `pom.xml` to discover configured plugins and their goals; Tab-complete `mvn <phase>`, `mvn <plugin>:<goal>`, `mvn -D<property>` in the custom command prompt
+- [x] **Configurable float position** — `command_input.position` accepts `"top"`, `"center"`, or `"bottom"`
 - [ ] **Gradle build file parsing** — parse `build.gradle`/`build.gradle.kts` for dynamic task discovery (currently uses a static list)
 - [ ] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects in the same Neovim session
 - [ ] **Custom command history management** — UI to browse, edit, and delete saved custom commands

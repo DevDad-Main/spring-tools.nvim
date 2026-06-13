@@ -45,6 +45,9 @@ M.defaults = {
   jdtls = {
     enable = false,
   },
+  command_input = {
+    position = "center",
+  },
   auto_refresh = true,
   log_level = vim.log.levels.INFO,
   highlights = {},

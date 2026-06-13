@@ -420,7 +420,15 @@ end
 function M._show_command_input(proj, default_text, on_submit)
   local width = math.min(80, vim.o.columns - 4)
   local height = 1
-  local row = math.floor((vim.o.lines - 3) / 2)
+  local pos = config.options.command_input and config.options.command_input.position or "center"
+  local row
+  if pos == "top" then
+    row = 1
+  elseif pos == "bottom" then
+    row = vim.o.lines - 4
+  else
+    row = math.floor((vim.o.lines - 3) / 2)
+  end
   local col = math.floor((vim.o.columns - width) / 2)
 
   local buf = vim.api.nvim_create_buf(false, true)
