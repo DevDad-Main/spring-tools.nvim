@@ -46,7 +46,7 @@ M.defaults = {
     enable = false,
   },
   command_input = {
-    position = "center",
+    position = "center",  -- "top", "center", or "bottom"
   },
   auto_refresh = true,
   log_level = vim.log.levels.INFO,

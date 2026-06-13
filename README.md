@@ -81,16 +81,16 @@ use {
 
 ```lua
 require("spring-tools").setup({
-  java_command = "java",
-  auto_refresh = true,       -- re-index on file save
+  java_command = "java",       -- Java binary path
+  auto_refresh = true,         -- re-index on file save
   icons = {
-    running = "\u{f144}",
-    stopped = "\u{f04d}",
-    failed = "\u{f071}",
-    active = "\u{f00c}",
+    running = "\u{f144}",      -- playing icon
+    stopped = "\u{f04d}",      -- pause icon
+    failed = "\u{f071}",       -- warning icon
+    active = "\u{f00c}",       -- checkmark icon
   },
   sidebar = {
-    width = 48,
+    width = 48,                -- sidebar width in columns
     keymaps = {
       move_down = "j",
       move_up = "k",
@@ -116,10 +116,10 @@ require("spring-tools").setup({
     -- SpringToolsSelected = { bg = "#334455" },
   },
   telescope = {
-    enable = true,
+    enable = true,             -- enable Telescope-based pickers
   },
   command_input = {
-    position = "center",     -- "top", "center", or "bottom"
+    position = "center",       -- "top", "center", or "bottom"
   },
 })
 ```
