@@ -110,6 +110,9 @@ function M.refresh()
   local view = M.get_view()
   if view and view.load_items then view:load_items() end
   M.items = (view and view.items) or {}
+  for i, item in ipairs(M.items) do
+    if item.is_active then M.selected = i; break end
+  end
   if M.selected > #M.items then M.selected = #M.items end
   if M.selected < 1 then M.selected = #M.items > 0 and 1 or 0 end
   M.render()
