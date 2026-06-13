@@ -9,6 +9,8 @@ M.title = "Endpoints"
 
 M.items = {}
 
+M.collapsed = {}
+
 local function scan_dir()
   local proj = project.get_active_project()
   return proj and proj.root or vim.fn.getcwd()
@@ -34,20 +36,41 @@ function M:load_items()
     if a.method ~= b.method then return (order[a.method] or 99) < (order[b.method] or 99) end
     return a.path < b.path
   end)
-  M.items = {}
+
+  local grouped = {}
   for _, ep in ipairs(endpoints_mod.endpoints) do
-    table.insert(M.items, { type = "endpoint", endpoint = ep })
+    grouped[ep.method] = grouped[ep.method] or {}
+    table.insert(grouped[ep.method], ep)
+  end
+
+  M.items = {}
+  for _, method in ipairs({ "GET", "POST", "PUT", "DELETE", "PATCH" }) do
+    local eps = grouped[method]
+    if eps and #eps > 0 then
+      local collapsed = M.collapsed[method] ~= false
+      table.insert(M.items, { type = "header", label = method .. "  (" .. #eps .. ")", method = method, collapsed = collapsed })
+      if not collapsed then
+        for _, ep in ipairs(eps) do
+          table.insert(M.items, { type = "endpoint", endpoint = ep })
+        end
+      end
+    end
   end
 end
 
 function M:render_item(item, selected)
+  if item.type == "header" then
+    local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    return { { "  " .. icon .. " " .. item.label, hl } }
+  end
   local ep = item.endpoint
   if selected then
-    return { { " " .. ep.method .. "  " .. ep.path, "SpringToolsSelected" } }
+    return { { "  " .. ep.method .. "  " .. ep.path, "SpringToolsSelected" } }
   end
   local method_hl = method_colors[ep.method] or nil
   return { segments = {
-    { "  " .. ep.method .. "  ", method_hl },
+    { "    " .. ep.method .. "  ", method_hl },
     { ep.path, nil },
   } }
 end
@@ -55,6 +78,11 @@ end
 function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
+  if item.type == "header" then
+    M.collapsed[item.method] = not item.collapsed
+    sidebar.refresh()
+    return
+  end
   local ep = item.endpoint
   local actions = {
     { label = "Jump to definition", fn = function()
