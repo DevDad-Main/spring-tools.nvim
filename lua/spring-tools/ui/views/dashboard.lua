@@ -203,58 +203,88 @@ function M:on_activate(idx)
     }
     M.show_actions(actions)
   elseif item.status == "stopped" then
-    local cmd = be and be:get_run_command(proj)
-    if not cmd then utils.notify("No run command available for " .. proj.name, vim.log.levels.WARN) return end
-    output.show({ "Starting " .. proj.name .. " with: " .. table.concat(cmd, " ") }, proj.name)
-    local ok = backend.ProcessManager:start(proj, cmd, proj.root, {
-      on_stdout = function(line)
-        backend.ProcessManager:extract_port(proj, line)
-        local logs = be:get_logs(proj)
-        if #logs > 0 then
-          local start = math.max(1, #logs - 50)
-          local recent = {}
-          for i = start, #logs do table.insert(recent, logs[i]) end
-          vim.schedule(function()
-            if output.win and vim.api.nvim_win_is_valid(output.win) then
-              vim.bo[output.buf].modifiable = true
-              vim.api.nvim_buf_set_lines(output.buf, 0, -1, false, recent)
-              vim.bo[output.buf].modifiable = false
-            end
-          end)
-        end
-      end,
-      on_exit = function(exit_code)
-        vim.schedule(function()
-          local log_lines = be:get_logs(proj)
-          if #log_lines == 0 then log_lines = { "(no output captured)" } end
-          local start = math.max(1, #log_lines - 100)
-          local recent = {}
-          for i = start, #log_lines do table.insert(recent, log_lines[i]) end
-          local cause = M.extract_cause(recent)
-          table.insert(recent, "")
-          if exit_code == 0 then
-            table.insert(recent, "Process exited cleanly")
-          else
-            table.insert(recent, "Process exited with code " .. exit_code)
-          end
-          local final = {}
-          for _, l in ipairs(cause) do table.insert(final, l) end
-          if #cause > 0 then table.insert(final, "═══ Full output ═══") end
-          for _, l in ipairs(recent) do table.insert(final, l) end
-          if output.win and vim.api.nvim_win_is_valid(output.win) then
-            output.show(final, proj.name .. " (exit " .. exit_code .. ")")
-          end
-          if exit_code ~= 0 then
-            utils.notify(proj.name .. " exited with code " .. exit_code, vim.log.levels.ERROR)
-          end
-          sidebar.refresh()
-        end)
-      end,
-    })
-    if not ok then
-      utils.notify("Failed to start " .. proj.name, vim.log.levels.ERROR)
+    local default_cmd = be and be:get_run_command(proj)
+    if not default_cmd then utils.notify("No run command available for " .. proj.name, vim.log.levels.WARN) return end
+    local default_str = table.concat(default_cmd, " ")
+    local build_type = proj.build_type or "maven"
+    local suggestions = { default_str }
+    if build_type == "maven" then
+      suggestions[#suggestions + 1] = "mvn clean compile"
+      suggestions[#suggestions + 1] = "mvn test"
+      suggestions[#suggestions + 1] = "mvn package -DskipTests"
+      suggestions[#suggestions + 1] = "mvn clean install"
+    else
+      suggestions[#suggestions + 1] = "gradle build"
+      suggestions[#suggestions + 1] = "gradle test"
+      suggestions[#suggestions + 1] = "gradle clean build"
+      suggestions[#suggestions + 1] = "gradle bootRun"
     end
-    sidebar.refresh()
+    suggestions[#suggestions + 1] = "Custom..."
+
+    local function run_cmd(cmd)
+      output.show({ "Starting " .. proj.name .. " with: " .. table.concat(cmd, " ") }, proj.name)
+      local ok = backend.ProcessManager:start(proj, cmd, proj.root, {
+        on_stdout = function(line)
+          backend.ProcessManager:extract_port(proj, line)
+          local logs = be:get_logs(proj)
+          if #logs > 0 then
+            local start = math.max(1, #logs - 50)
+            local recent = {}
+            for i = start, #logs do table.insert(recent, logs[i]) end
+            vim.schedule(function()
+              if output.win and vim.api.nvim_win_is_valid(output.win) then
+                vim.bo[output.buf].modifiable = true
+                vim.api.nvim_buf_set_lines(output.buf, 0, -1, false, recent)
+                vim.bo[output.buf].modifiable = false
+              end
+            end)
+          end
+        end,
+        on_exit = function(exit_code)
+          vim.schedule(function()
+            local log_lines = be:get_logs(proj)
+            if #log_lines == 0 then log_lines = { "(no output captured)" } end
+            local start = math.max(1, #log_lines - 100)
+            local recent = {}
+            for i = start, #log_lines do table.insert(recent, log_lines[i]) end
+            local cause = M.extract_cause(recent)
+            table.insert(recent, "")
+            if exit_code == 0 then
+              table.insert(recent, "Process exited cleanly")
+            else
+              table.insert(recent, "Process exited with code " .. exit_code)
+            end
+            local final = {}
+            for _, l in ipairs(cause) do table.insert(final, l) end
+            if #cause > 0 then table.insert(final, "═══ Full output ═══") end
+            for _, l in ipairs(recent) do table.insert(final, l) end
+            if output.win and vim.api.nvim_win_is_valid(output.win) then
+              output.show(final, proj.name .. " (exit " .. exit_code .. ")")
+            end
+            if exit_code ~= 0 then
+              utils.notify(proj.name .. " exited with code " .. exit_code, vim.log.levels.ERROR)
+            end
+            sidebar.refresh()
+          end)
+        end,
+      })
+      if not ok then
+        utils.notify("Failed to start " .. proj.name, vim.log.levels.ERROR)
+      end
+      sidebar.refresh()
+    end
+
+    vim.ui.select(suggestions, { prompt = "Select or enter a command:" }, function(choice)
+      if not choice then return end
+      if choice == "Custom..." then
+        vim.ui.input({ prompt = "Run command:", default = default_str }, function(input)
+          if input == nil then return end
+          run_cmd(input == "" and default_cmd or vim.split(input, "%s+"))
+        end)
+      else
+        run_cmd(vim.split(choice, "%s+"))
+      end
+    end)
   end
 end
 
