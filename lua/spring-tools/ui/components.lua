@@ -61,6 +61,9 @@ function M.setup_highlights()
     SpringToolsConfigFile = { fg = title_fg, bold = true, bg = bg },
     SpringToolsConfigKey = { fg = special_fg, bg = bg },
     SpringToolsConfigValue = { fg = fg, bg = bg },
+    SpringToolsDashboardProject = { fg = fg, bold = true, bg = bg },
+    SpringToolsDashboardStatus = { fg = dim_fg, bg = bg },
+    SpringToolsDashboardBuildType = { fg = dim_fg, bg = bg },
   }
 
   for name, spec in pairs(specs) do

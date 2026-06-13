@@ -56,34 +56,44 @@ function M:render_item(item, selected)
     dot_hl = "SpringToolsDim"
   end
 
-  local prefix = item.is_active and "\u{2605}" or " "
-  local parts = { prefix .. "  " .. dot .. "  " .. proj.name }
-
-  local details = {}
+  local status_tag, status_hl
   if is_running then
+    local parts = {}
     local port = (be and be.get_port and be:get_port(proj)) or ""
     local profile = (be and be.get_profile and be:get_profile(proj)) or ""
     local uptime = (be and be.get_uptime and be:get_uptime(proj)) or ""
-    if port ~= "" then table.insert(details, ":" .. port) end
-    if profile ~= "" and profile ~= "default" then table.insert(details, profile) end
-    if uptime ~= "" then table.insert(details, uptime) end
-    table.insert(details, "running")
+    if port ~= "" then table.insert(parts, ":" .. port) end
+    if profile ~= "" and profile ~= "default" then table.insert(parts, profile) end
+    if uptime ~= "" then table.insert(parts, uptime) end
+    table.insert(parts, "running")
+    status_tag = table.concat(parts, "  ")
+    status_hl = "SpringToolsRunning"
   elseif is_failed then
     local code = proc and proc.exit_code or "?"
-    table.insert(details, "failed" .. (code ~= "" and " exit " .. code or ""))
+    status_tag = "failed" .. (code ~= "" and " exit " .. code or "")
+    status_hl = "SpringToolsError"
   else
-    table.insert(details, "stopped")
+    status_tag = "stopped"
+    status_hl = "SpringToolsDim"
   end
 
   local build_type = (proj.build_type or ""):len() > 0 and proj.build_type or nil
-  if build_type then table.insert(details, build_type) end
 
-  table.insert(parts, "  " .. table.concat(details, "  "))
+  local active_mark = item.is_active and "\u{2605} " or "  "
 
-  local line = table.concat(parts, "")
-  local hl = selected and "SpringToolsSelected" or dot_hl
+  if selected then
+    local line = active_mark .. dot .. "  " .. proj.name .. "  " .. status_tag .. (build_type and "  " .. build_type or "")
+    return { { line, "SpringToolsSelected" } }
+  end
 
-  return { { line, hl } }
+  return { {
+    segments = {
+      { active_mark .. dot .. "  ", dot_hl },
+      { proj.name, "SpringToolsDashboardProject" },
+      { "  " .. status_tag, status_hl },
+      { build_type and "  " .. build_type or "", build_type and "SpringToolsDashboardBuildType" or nil },
+    },
+  } }
 end
 
 function M:on_activate(idx)

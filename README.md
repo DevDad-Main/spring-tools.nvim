@@ -149,6 +149,9 @@ All highlights are theme-derived via `nvim_get_hl` at startup:
 | `SpringToolsConfigFile` | Inherits `SpringToolsHeader` | Config file section headers (application.properties) |
 | `SpringToolsConfigKey` | Inherits `SpringToolsKey` | Config property key name |
 | `SpringToolsConfigValue` | Inherits `SpringToolsValue` | Config property value |
+| `SpringToolsDashboardProject` | Inherits `Normal` (bold) | Project name in dashboard |
+| `SpringToolsDashboardStatus` | Inherits `SpringToolsDim` | Status text (stopped/running/failed) |
+| `SpringToolsDashboardBuildType` | Inherits `SpringToolsDim` | Build type (maven/gradle) |
 | `SpringToolsDim` | `Comment` | Stopped, inactive tab |
 
 Override any group via `setup()`:
@@ -186,9 +189,15 @@ require("spring-tools").setup({
     SpringToolsStopped      = { fg = "#ff0000" },              -- Stopped indicator ○
 
     -- Config
-    SpringToolsConfigSection = { fg = "#ffaa00" },             -- server:, spring: section headers
+    SpringToolsConfigSection = { fg = "#ffaa00" },             -- server:, spring: prefix section headers
+    SpringToolsConfigFile     = { fg = "#ffaa00", bold = true }, -- application.properties file headers
     SpringToolsConfigKey     = { fg = "#eebb00" },             -- port, datasource.url property keys
     SpringToolsConfigValue   = { fg = "#aabbcc" },             -- 9090, jdbc:h2:mem:testdb values
+
+    -- Dashboard
+    SpringToolsDashboardProject   = { fg = "#ffffff", bold = true }, -- Project name
+    SpringToolsDashboardStatus    = { fg = "#888888" },             -- stopped/running/failed
+    SpringToolsDashboardBuildType = { fg = "#666666" },             -- maven/gradle
   },
 })
 ```
