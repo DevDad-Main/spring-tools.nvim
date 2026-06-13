@@ -37,7 +37,9 @@ end
 
 function M.parse_properties(content, source)
   local props = {}
+  local line_num = 0
   for raw_line in content:gmatch("([^\n]+)") do
+    line_num = line_num + 1
     local line = raw_line:gsub("#.*", ""):gsub("^%s+", ""):gsub("%s+$", "")
     if line ~= "" and line:find("=") then
       local key, value = line:match("([^=]+)=%s*(.*)")
@@ -49,6 +51,7 @@ function M.parse_properties(content, source)
           value = value,
           source = source,
           raw_line = raw_line,
+          line = line_num,
         })
       end
     end
@@ -60,8 +63,10 @@ function M.parse_yaml(content, file_path)
   local props = {}
   local stack = {}
   local source = vim.fn.fnamemodify(file_path, ":t")
+  local line_num = 0
 
   for line in content:gmatch("([^\n]+)") do
+    line_num = line_num + 1
     local indent = #line:match("^(%s*)")
     local stripped = line:gsub("^%s+", "")
     local key = stripped:match("([%w%.%-_]+):")
@@ -86,6 +91,7 @@ function M.parse_yaml(content, file_path)
           value = value,
           source = source,
           file = file_path,
+          line = line_num,
         })
       end
     end
@@ -99,13 +105,17 @@ function M.build_index(project_root)
   if not project_root then return {} end
 
   M.properties = {}
-  local cache_key = "config_index:" .. project_root
+  local cache_key = "config_index_v2:" .. project_root
 
   if utils.cache.data and utils.cache.data[cache_key] then
     local cached = utils.cache.data[cache_key]
     local valid = true
     for _, entry in ipairs(cached) do
       if entry.file and utils.file_modified_since(entry.file, entry.mtime or 0) then
+        valid = false
+        break
+      end
+      if entry.line == nil then
         valid = false
         break
       end

@@ -90,7 +90,7 @@ function M:on_activate(idx)
     return
   end
   if item.prop and item.prop.file then
-    sidebar.open_in_main(item.prop.file)
+    sidebar.open_in_main(item.prop.file, item.prop.line)
   end
 end
 
