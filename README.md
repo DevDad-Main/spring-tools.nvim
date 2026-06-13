@@ -19,39 +19,36 @@
   <a href="#features">Features</a> •
   <a href="#installation">Installation</a> •
   <a href="#usage">Usage</a> •
+  <a href="#configuration">Configuration</a> •
   <a href="#highlights">Highlights</a> •
   <a href="#troubleshooting">Troubleshooting</a>
 </p>
 
 <br>
 
-## Screenshots
+## Features
 
-> *Screenshots coming soon — recording with [asciinema](https://asciinema.org) for terminal-to-GIF demos.*
+- **Sidebar UI** — persistent left sidebar with 5 tabbed views and `?` help float
+- **Output Panel** — bottom split (12 rows, 30% height) for live log streaming
+- **Dashboard** — project list with ★ active marker, ●/○ status dots, auto-selects CWD project
+- **Action Picker** — start, stop, restart, custom run with POM-driven Tab-completion
+- **Custom Run Command** — floating input with omnifunc completion (mvn phases, plugin goals, `-D` properties, Gradle tasks), position configurable (`top`/`center`/`bottom`), locked against window navigation
+- **Bean Explorer** — collapsible sections by stereotype, nested `@Bean` methods under `@Configuration`
+- **Endpoint Explorer** — routes grouped by HTTP method (GET/POST/PUT/PATCH/DELETE), collapsible
+- **Test Runner** — discover/run JUnit 5 tests, per-method results from surefire XML
+- **Config Explorer** — browse application.properties/YAML, file-grouped, preview values with `p`, Enter jumps to exact line
+- **Process Manager** — unbuffered I/O, port extraction, exit code tracking
+- **Project Cache** — persistent JSON at `~/.local/share/nvim/spring-tools/projects.json`
 
 <br>
 
-## Features
-
-- **Sidebar UI** — persistent left sidebar with tabbed views (Dashboard, Beans, Endpoints, Tests, Config)
-- **Output Panel** — bottom panel for live log streaming during build/run
-- **Spring Boot Dashboard** — detect, start, stop, restart apps with action picker
-- **Bean Explorer** — scan and navigate @Component, @Service, @Repository, @Controller, @Configuration, @Bean (with nesting), all sections collapsible
-- **REST Endpoint Explorer** — discover routes grouped by HTTP method, sections collapsible, copy curl, open in browser
-- **Java Test Runner** — discover and run JUnit tests
-- **Configuration Explorer** — browse application.properties / YAML
-- **Process Manager** — unbuffered stdout/stderr, port extraction, exit code tracking
-- **Backend System** — extensible backend registry (`spring_boot`, `docker`), priority-based selection
-- **Project Cache** — persistent project list at `~/.local/share/nvim/spring-tools/projects.json`
-
 ## Installation
 
-### lazy.nvim
+<details><summary>lazy.nvim</summary>
 
 ```lua
 {
-  "spring-tools.nvim",
-  dev = true,
+  "DevDad-Main/spring-tools.nvim",
   dependencies = {
     "nvim-telescope/telescope.nvim",
     "nvim-lua/plenary.nvim",
@@ -62,11 +59,13 @@
 }
 ```
 
-### packer.nvim
+</details>
+
+<details><summary>packer.nvim</summary>
 
 ```lua
 use {
-  'spring-tools.nvim',
+  'DevDad-Main/spring-tools.nvim',
   requires = {
     'nvim-telescope/telescope.nvim',
     'nvim-lua/plenary.nvim',
@@ -77,7 +76,66 @@ use {
 }
 ```
 
+</details>
+
+<br>
+
+## Usage
+
+<details><summary>Commands</summary>
+
+| Command | Description |
+|---------|-------------|
+| `:SpringTools` | Open sidebar (defaults to Dashboard) |
+| `:SpringBoot` | Open sidebar on Dashboard |
+| `:SpringBeans` | Open sidebar on Beans |
+| `:SpringEndpoints` | Open sidebar on Endpoints |
+| `:SpringTest` | Open sidebar on Tests |
+| `:SpringConfig` | Open sidebar on Config |
+| `:SpringRefresh` | Clear caches and re-index |
+| `:SpringTestClass` | Run current test class |
+| `:SpringTestMethod` | Run current test method |
+| `:SpringConfigSearch <query>` | Search config properties |
+
+</details>
+
+<details><summary>Sidebar Navigation (default keymaps)</summary>
+
+| Key | Action |
+|-----|--------|
+| `j` / `k` | Move selection up/down |
+| `h` / `l` | Previous/next tab |
+| `1`–`5` | Jump to tab |
+| `<CR>` | Activate (start/stop/open) |
+| `p` | Preview config value (in Config view) |
+| `d` | Remove project from cache |
+| `R` | Refresh current view |
+| `q` | Close sidebar |
+| `?` | Toggle help floating window |
+
+</details>
+
+<details><summary>Custom Run Command Input</summary>
+
+Press `<CR>` on a stopped project → select **Custom...** → a floating input window appears.
+
+- **Tab** triggers omnifunc completion (mvn lifecycle phases, plugin goals, `-D` properties, Gradle tasks)
+- `<C-j>` / `<C-k>` navigate the completion popup
+- **Completion auto-triggers** as you type after word characters
+- Position configurable via `command_input.position` (`"top"`, `"center"`, `"bottom"`)
+
+**Window locked** — can't navigate away:
+- `<Esc>` exits insert mode (stays in float)
+- `<Esc>` or `q` in normal mode closes
+- `<C-w/h/j/k/l>`, mouse clicks all blocked
+
+</details>
+
+<br>
+
 ## Configuration
+
+<details><summary>Full default config with inline docs</summary>
 
 ```lua
 require("spring-tools").setup({
@@ -124,49 +182,23 @@ require("spring-tools").setup({
 })
 ```
 
-## Usage
+</details>
 
-| Command | Description |
-|---------|-------------|
-| `:SpringTools` | Open sidebar (defaults to Dashboard) |
-| `:SpringBoot` | Open sidebar on Dashboard |
-| `:SpringBeans` | Open sidebar on Beans |
-| `:SpringEndpoints` | Open sidebar on Endpoints |
-| `:SpringTest` | Open sidebar on Tests |
-| `:SpringConfig` | Open sidebar on Config |
-| `:SpringRefresh` | Clear caches and re-index |
-| `:SpringTestClass` | Run current test class |
-| `:SpringTestMethod` | Run current test method |
-| `:SpringConfigSearch <query>` | Search config properties |
-
-### Sidebar Navigation (default keymaps)
-
-| Key | Action |
-|-----|--------|
-| `j` / `k` | Move selection up/down |
-| `h` / `l` | Previous/next tab |
-| `1`–`5` | Jump to tab |
-| `<CR>` | Activate (start/stop/open) |
-| `d` | Remove project from cache |
-| `R` | Refresh current view |
-| `q` | Close sidebar |
-| `?` | Show help floating window |
-
-### Custom Run Command Input
-
-Press `<CR>` on a stopped project, select **Custom...**, and a centered floating window appears. Type your command with Tab-completion (Maven lifecycle phases, plugin goals, `-D` properties, Gradle tasks). The float position is configurable via `command_input.position` (`"top"`, `"center"`, or `"bottom"`). Press `<Esc>` to exit insert mode, then `<Esc>` or `q` to close.
+<br>
 
 ## Highlights
 
-All highlights are theme-derived via `nvim_get_hl` at startup:
+<details><summary>All theme-derived highlight groups</summary>
+
+All highlights derive from your active colorscheme via `nvim_get_hl` at startup:
 
 | Group | Derives from | Description |
 |-------|-------------|-------------|
 | `SpringToolsNormal` | `Normal` | Default text |
 | `SpringToolsSelected` | `Visual` | Selected line |
 | `SpringToolsAccent` | `Special` | ? help window section headers |
-| `SpringToolsMethodHeader` | Inherits `SpringToolsAccent` by default | Endpoint method section headers (GET, POST) |
-| `SpringToolsBeanHeader` | Inherits `SpringToolsAccent` by default | Bean type section headers (Controllers, Services) |
+| `SpringToolsMethodHeader` | Inherits `SpringToolsAccent` | Endpoint method section headers (GET, POST) |
+| `SpringToolsBeanHeader` | Inherits `SpringToolsAccent` | Bean type section headers (Controllers, Services) |
 | `SpringToolsBeanName` | Inherits `Normal` | Individual bean names (UserController, UserService) |
 | `SpringToolsBeanMethod` | Inherits `SpringToolsDim` | @Bean method entries (@appName(), @maxConnections()) |
 | `SpringToolsRunning` | `DiagnosticOk` | Running status |
@@ -179,8 +211,8 @@ All highlights are theme-derived via `nvim_get_hl` at startup:
 | `SpringToolsTestClass` | Inherits `SpringToolsAccent` | Test class header |
 | `SpringToolsTestMethod` | Inherits `SpringToolsDim` | Test method name |
 | `SpringToolsError` | `ErrorMsg` | Failed status |
-| `SpringToolsKey` | `Special` |  |
-| `SpringToolsValue` | `Normal` |  |
+| `SpringToolsKey` | `Special` | Keys in config/key-value views |
+| `SpringToolsValue` | `Normal` | Values in config/key-value views |
 | `SpringToolsConfigSection` | Inherits `SpringToolsAccent` | Config prefix section headers (server:, spring:) |
 | `SpringToolsConfigFile` | Inherits `SpringToolsHeader` | Config file section headers (application.properties) |
 | `SpringToolsConfigKey` | Inherits `SpringToolsKey` | Config property key name |
@@ -190,7 +222,9 @@ All highlights are theme-derived via `nvim_get_hl` at startup:
 | `SpringToolsDashboardBuildType` | Inherits `SpringToolsDim` | Build type (maven/gradle) |
 | `SpringToolsDim` | `Comment` | Stopped, inactive tab |
 
-Override any group via `setup()`:
+</details>
+
+<details><summary>Override examples</summary>
 
 ```lua
 require("spring-tools").setup({
@@ -198,37 +232,37 @@ require("spring-tools").setup({
     -- General UI
     SpringToolsHeader     = { bold = true },                  -- View titles ("Spring Beans", "REST Endpoints")
     SpringToolsSelected   = { bg = "#334455" },               -- Currently selected line
-    SpringToolsAccent     = { link = "@comment" },             -- ? help window headers
-    SpringToolsDim        = { fg = "#888888" },                -- Dim/muted text, inactive tabs
-    SpringToolsError      = { fg = "#ff0000" },                -- Error/failure status
+    SpringToolsAccent     = { link = "@comment" },            -- ? help window headers
+    SpringToolsDim        = { fg = "#888888" },               -- Dim/muted text, inactive tabs
+    SpringToolsError      = { fg = "#ff0000" },               -- Error/failure status
 
     -- Endpoints
-    SpringToolsMethodHeader = { fg = "#ffaa00" },              -- GET(8), POST(2) section headers
-    SpringToolsGet          = { fg = "#00ff00" },              -- GET keyword on endpoint lines
-    SpringToolsPost         = { fg = "#00ff00" },              -- POST keyword
-    SpringToolsPut          = { fg = "#00ff00" },              -- PUT keyword
-    SpringToolsPatch        = { fg = "#00ff00" },              -- PATCH keyword
-    SpringToolsDelete       = { fg = "#ff0000" },              -- DELETE keyword
+    SpringToolsMethodHeader = { fg = "#ffaa00" },             -- GET(8), POST(2) section headers
+    SpringToolsGet          = { fg = "#00ff00" },             -- GET keyword on endpoint lines
+    SpringToolsPost         = { fg = "#00ff00" },             -- POST keyword
+    SpringToolsPut          = { fg = "#00ff00" },             -- PUT keyword
+    SpringToolsPatch        = { fg = "#00ff00" },             -- PATCH keyword
+    SpringToolsDelete       = { fg = "#ff0000" },             -- DELETE keyword
 
     -- Beans
-    SpringToolsBeanHeader   = { fg = "#ffaa00" },              -- Controllers, Services section headers
-    SpringToolsBeanName     = { fg = "#aabbcc" },              -- Individual bean names
-    SpringToolsBeanMethod   = { link = "Comment" },            -- @appName(), @maxConnections()
+    SpringToolsBeanHeader   = { fg = "#ffaa00" },             -- Controllers, Services section headers
+    SpringToolsBeanName     = { fg = "#aabbcc" },             -- Individual bean names
+    SpringToolsBeanMethod   = { link = "Comment" },           -- @appName(), @maxConnections()
 
     -- Tests
-    SpringToolsTestRunAll   = { fg = "#00ff00" },              -- ▶ Run all tests
-    SpringToolsTestClass    = { fg = "#ffaa00" },              -- Test class headers
-    SpringToolsTestMethod   = { fg = "#888888" },              -- ⊡ testGetUser, ⊡ testCreateUser
+    SpringToolsTestRunAll   = { fg = "#00ff00" },             -- ▶ Run all tests
+    SpringToolsTestClass    = { fg = "#ffaa00" },             -- Test class headers
+    SpringToolsTestMethod   = { fg = "#888888" },             -- ⊡ testGetUser, ⊡ testCreateUser
 
     -- Status
-    SpringToolsRunning      = { fg = "#00ff00" },              -- Running indicator ●
-    SpringToolsStopped      = { fg = "#ff0000" },              -- Stopped indicator ○
+    SpringToolsRunning      = { fg = "#00ff00" },             -- Running indicator ●
+    SpringToolsStopped      = { fg = "#ff0000" },             -- Stopped indicator ○
 
     -- Config
-    SpringToolsConfigSection = { fg = "#ffaa00" },             -- server:, spring: prefix section headers
+    SpringToolsConfigSection = { fg = "#ffaa00" },            -- server:, spring: prefix section headers
     SpringToolsConfigFile     = { fg = "#ffaa00", bold = true }, -- application.properties file headers
-    SpringToolsConfigKey     = { fg = "#eebb00" },             -- port, datasource.url property keys
-    SpringToolsConfigValue   = { fg = "#aabbcc" },             -- 9090, jdbc:h2:mem:testdb values
+    SpringToolsConfigKey     = { fg = "#eebb00" },            -- port, datasource.url property keys
+    SpringToolsConfigValue   = { fg = "#aabbcc" },            -- 9090, jdbc:h2:mem:testdb values
 
     -- Dashboard
     SpringToolsDashboardProject   = { fg = "#ffffff", bold = true }, -- Project name
@@ -238,7 +272,13 @@ require("spring-tools").setup({
 })
 ```
 
-## Modules
+</details>
+
+<br>
+
+## Architecture
+
+<details><summary>Module tree</summary>
 
 ```
 lua/spring-tools/
@@ -252,6 +292,7 @@ lua/spring-tools/
 ├── endpoints.lua          -- REST endpoint discovery
 ├── tests.lua              -- JUnit test discovery and runner
 ├── config_explorer.lua    -- properties/YAML parser
+├── mvn_completion.lua     -- POM parser for Tab-completion plugin goals
 ├── backends/
 │   ├── init.lua           -- Backend registry
 │   ├── spring_boot.lua    -- Maven/Gradle backend
@@ -262,18 +303,34 @@ lua/spring-tools/
 │   └── state.lua          -- Pub/sub state, shared project list
 └── ui/
     ├── init.lua           -- Legacy helpers (float windows, background jobs)
-    ├── sidebar.lua        -- Sidebar manager, tab bar, keymaps, help window
+    ├── sidebar.lua        -- Sidebar manager, tab bar, keymaps, help window, auto-select active
     ├── output.lua         -- Bottom output panel
     ├── components.lua     -- Theme-derived highlight setup
-    ├── sections.lua       -- Reusable collapsible sections (used by beans, endpoints)
+    ├── sections.lua       -- Reusable collapsible sections module
     └── views/
         ├── init.lua       -- View registry (tab order)
-        ├── dashboard.lua  -- Project dashboard with start/stop/restart
-        ├── beans.lua      -- Bean browser with type grouping + nesting
-        ├── endpoints.lua  -- Endpoint browser with method grouping
-        ├── tests.lua      -- Test explorer with class/method listing
-        └── config.lua     -- Config property browser
+        ├── dashboard.lua  -- Project dashboard with action picker, custom command float
+        ├── beans.lua      -- Bean browser with type grouping + @Bean nesting
+        ├── endpoints.lua  -- Endpoint browser with HTTP method grouping
+        ├── tests.lua      -- Test explorer with class/method listing, surefire XML parsing
+        └── config.lua     -- Config property browser, value preview, line jump
 ```
+
+</details>
+
+<details><summary>Key implementation details</summary>
+
+- **`render()` vs `refresh()`** — j/k uses lightweight `render()` (no re-scan), tab-switch/Enter/R uses full `refresh()` (re-scan + render)
+- **`p` keymap** — global in sidebar, dispatches to view's `toggle_preview` for config value preview
+- **Custom command float** — `buftype = "prompt"` buffer with `omnifunc`, `TextChangedI` auto-trigger, `<C-j>`/`<C-k>` popup nav, `winfixbuf`, `BufLeave` fail-safe
+- **Maven completion** — POM parser for `<plugin>` blocks, prefix resolver, 55+ well-known plugins, 76 default goals, 26 lifecycle phases, 31 `-D` properties, 45 Gradle tasks, per-project cached
+- **Segments-based rendering** — dashboard items use separate highlight groups per element (project name, status text, build type tag)
+- **Expanded props persistence** — config view's `M.expanded_props` survives `load_items()` rebuild
+- **Dashboard auto-select** — sidebar `refresh()` searches for `is_active` and jumps `M.selected` to the CWD-matching project
+
+</details>
+
+<br>
 
 ## Troubleshooting
 
@@ -292,6 +349,12 @@ lua/spring-tools/
 nvim --headless -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/init.lua'}" -c "q"
 ```
 
+A production-grade Spring Boot test app is available at `tests/ProductionApp/`:
+- Full MVC: models, repositories, services, controllers
+- All HTTP methods (GET, POST, PUT, PATCH, DELETE)
+- `@Configuration` with `@Bean` methods, `@Component` runners
+- 5 test classes (11 methods), 30+ config properties with dev profile
+
 ## Requirements
 
 - Neovim 0.10+
@@ -307,12 +370,12 @@ nvim --headless -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/init.lu
 
 ## Roadmap
 
-Ideas for future releases:
-
-- [x] **POM-driven CLI completion** — parses `pom.xml` to discover configured plugins and their goals; Tab-complete `mvn <phase>`, `mvn <plugin>:<goal>`, `mvn -D<property>` in the custom command prompt
+- [x] **POM-driven CLI completion** — parses `pom.xml` for configured plugin goals, Tab-complete in custom command prompt
 - [x] **Configurable float position** — `command_input.position` accepts `"top"`, `"center"`, or `"bottom"`
-- [ ] **Gradle build file parsing** — parse `build.gradle`/`build.gradle.kts` for dynamic task discovery (currently uses a static list)
-- [ ] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects in the same Neovim session
+- [x] **Float window lock** — no accidental navigation away (`<C-w/h/j/k/l>` blocked, `BufLeave` fail-safe)
+- [x] **Auto-select active project** — jumps cursor to CWD-matching project on sidebar refresh
+- [ ] **Gradle build file parsing** — parse `build.gradle`/`build.gradle.kts` for dynamic task discovery
+- [ ] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects
 - [ ] **Custom command history management** — UI to browse, edit, and delete saved custom commands
 
 ## License
