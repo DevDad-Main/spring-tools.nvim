@@ -11,7 +11,6 @@ local M = {}
 M.title = "Dashboard"
 
 function M.header()
-  state.set_projects(project.detect_projects())
   local count = #state.get_projects()
   local parts = { "Spring Tools \u{b7} " .. count .. " project" .. (count ~= 1 and "s" or "") }
   return { { table.concat(parts, ""), "SpringToolsHeader" } }
@@ -20,6 +19,7 @@ end
 M.items = {}
 
 function M:load_items()
+  state.set_projects(project.detect_projects())
   local projs = state.get_projects()
   local active = project.get_active_project()
   M.items = {}
