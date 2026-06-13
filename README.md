@@ -1,14 +1,19 @@
 # spring-tools.nvim
 
-IntelliJ-like Spring Boot development features inside Neovim. Lightweight, composable, idiomatic.
+IntelliJ-like Spring Boot development features inside Neovim. Sidebar UI, live log streaming, configurable backends.
 
 ## Features
 
-- **Spring Boot Dashboard** (`:SpringBoot`) — detect, start, stop, restart apps, view logs
-- **Bean Explorer** (`:SpringBeans`) — scan and navigate @Component, @Service, @Repository, @Controller, @Bean
-- **REST Endpoint Explorer** (`:SpringEndpoints`) — discover routes, copy curl, open in browser
-- **Java Test Runner** (`:SpringTest`) — run JUnit tests, parse results, jump to failures
-- **Configuration Explorer** (`:SpringConfig`) — browse application.properties / YAML, search keys
+- **Sidebar UI** — persistent left sidebar with tabbed views (Dashboard, Beans, Endpoints, Tests, Config)
+- **Output Panel** — bottom panel for live log streaming during build/run
+- **Spring Boot Dashboard** — detect, start, stop, restart apps with action picker
+- **Bean Explorer** — scan and navigate @Component, @Service, @Repository, @Controller, @Configuration, @Bean (with nesting)
+- **REST Endpoint Explorer** — discover routes grouped by HTTP method, copy curl, open in browser
+- **Java Test Runner** — discover and run JUnit tests
+- **Configuration Explorer** — browse application.properties / YAML
+- **Process Manager** — unbuffered stdout/stderr, port extraction, exit code tracking
+- **Backend System** — extensible backend registry (`spring_boot`, `docker`), priority-based selection
+- **Project Cache** — persistent project list at `~/.local/share/nvim/spring-tools/projects.json`
 
 ## Installation
 
@@ -48,100 +53,134 @@ use {
 ```lua
 require("spring-tools").setup({
   java_command = "java",
-  terminal = "float",             -- "float" or "buffer"
-  auto_refresh = true,            -- re-index on file save
-  keymaps = {
-    enable = true,
-    boot = "<leader>sb",          -- Spring Boot Dashboard
-    beans = "<leader>be",         -- Bean Explorer
-    endpoints = "<leader>se",     -- Endpoint Explorer
-    tests = "<leader>st",         -- Test Runner
-    config = "<leader>sc",        -- Config Explorer
+  auto_refresh = true,       -- re-index on file save
+  icons = {
+    running = "\u{f144}",
+    stopped = "\u{f04d}",
+    failed = "\u{f071}",
+    active = "\u{f00c}",
+  },
+  sidebar = {
+    width = 48,
+    keymaps = {
+      move_down = "j",
+      move_up = "k",
+      move_down_alt = "<Down>",
+      move_up_alt = "<Up>",
+      activate = "<CR>",
+      close = "q",
+      refresh = "R",
+      remove = "d",
+      switch_dashboard = "1",
+      switch_beans = "2",
+      switch_endpoints = "3",
+      switch_tests = "4",
+      switch_config = "5",
+      tab_next = "l",
+      tab_prev = "h",
+      show_help = "?",
+    },
+  },
+  highlights = {
+    -- Override any highlight group. Can use attributes or link.
+    -- SpringToolsNormal = { link = "Normal" },
+    -- SpringToolsSelected = { bg = "#334455" },
   },
   telescope = {
-    enable = true,                -- use Telescope picker (falls back to vim.ui.select)
+    enable = true,
   },
 })
 ```
 
-## Commands
+## Usage
 
 | Command | Description |
 |---------|-------------|
-| `:SpringBoot` | Open Spring Boot Dashboard |
-| `:SpringBeans` | Open Spring Bean Explorer |
-| `:SpringEndpoints` | Open REST Endpoint Explorer |
-| `:SpringTest` | Open Java Test Runner |
-| `:SpringConfig` | Open Configuration Explorer |
-| `:SpringRefresh` | Clear all caches and re-index |
+| `:SpringTools` | Open sidebar (defaults to Dashboard) |
+| `:SpringBoot` | Open sidebar on Dashboard |
+| `:SpringBeans` | Open sidebar on Beans |
+| `:SpringEndpoints` | Open sidebar on Endpoints |
+| `:SpringTest` | Open sidebar on Tests |
+| `:SpringConfig` | Open sidebar on Config |
+| `:SpringRefresh` | Clear caches and re-index |
 | `:SpringTestClass` | Run current test class |
 | `:SpringTestMethod` | Run current test method |
 | `:SpringConfigSearch <query>` | Search config properties |
 
-## ASCII Mockups
+### Sidebar Navigation (default keymaps)
 
-### Spring Boot Dashboard
+| Key | Action |
+|-----|--------|
+| `j` / `k` | Move selection up/down |
+| `h` / `l` | Previous/next tab |
+| `1`–`5` | Jump to tab |
+| `<CR>` | Activate (start/stop/open) |
+| `d` | Remove project from cache |
+| `R` | Refresh current view |
+| `q` | Close sidebar |
+| `?` | Show help floating window |
 
-```
-╭─────────────────────────────────────╮
-│      Spring Boot Applications       │
-│                                     │
-│  ✓ user-service                     │
-│     port: 8081                      │
-│     profile: dev                    │
-│     status: running                 │
-│                                     │
-│  ○ payment-service                  │
-│     status: stopped                 │
-│                                     │
-│  r-refresh  s-start  t-stop  l-logs │
-╰─────────────────────────────────────╯
-```
+## Highlights
 
-### Bean Explorer
+All highlights are theme-derived via `nvim_get_hl` at startup:
 
-```
-╭─────────────────────────────────────╮
-│         Spring Beans                │
-│                                     │
-│  Controllers                        │
-│  ├── UserController                 │
-│  Services                           │
-│  ├── UserService                    │
-│  Repositories                       │
-│  └── UserRepository                 │
-╰─────────────────────────────────────╯
-```
+| Group | Derives from | Description |
+|-------|-------------|-------------|
+| `SpringToolsNormal` | `Normal` | Default text |
+| `SpringToolsSelected` | `Visual` | Selected line |
+| `SpringToolsAccent` | `Title` / `@function` | Section headers |
+| `SpringToolsRunning` | `DiagnosticOk` | Running status, GET |
+| `SpringToolsError` | `ErrorMsg` | Failed status, DELETE |
+| `SpringToolsKey` | `Special` | PUT |
+| `SpringToolsDim` | `Comment` | Stopped, PATCH, inactive tab |
+
+Override any group in `setup({ highlights = { SpringToolsRunning = { fg = "#00ff00" } } })`.
 
 ## Modules
 
 ```
 lua/spring-tools/
-├── init.lua          -- Entry point, calls setup()
-├── config.lua        -- User config with defaults
-├── commands.lua      -- :Spring* commands and keymaps
-├── utils.lua         -- Cache, project helpers, picker
-├── project.lua       -- Maven/Gradle project detection
-├── boot.lua          -- Spring Boot Dashboard
-├── beans.lua         -- Bean scanner and explorer
-├── endpoints.lua     -- REST endpoint discovery
-├── tests.lua         -- JUnit test runner
-├── config_explorer.lua -- properties/YAML parser
+├── init.lua               -- Entry point
+├── config.lua             -- User config with defaults
+├── commands.lua           -- :Spring* commands and keymaps
+├── utils.lua              -- Cache, file helpers, picker
+├── project.lua            -- Project detection, active project, persistent cache
+├── boot.lua               -- Thin wrapper for sidebar commands
+├── beans.lua              -- Bean scanner (class annotations + @Bean methods)
+├── endpoints.lua          -- REST endpoint discovery
+├── tests.lua              -- JUnit test discovery and runner
+├── config_explorer.lua    -- properties/YAML parser
+├── backends/
+│   ├── init.lua           -- Backend registry
+│   ├── spring_boot.lua    -- Maven/Gradle backend
+│   └── docker.lua         -- Docker backend
+├── core/
+│   ├── init.lua
+│   ├── backend.lua        -- BaseBackend, ProcessManager with unbuffered I/O
+│   └── state.lua          -- Pub/sub state, shared project list
 └── ui/
-    └── init.lua      -- Floating window helpers
+    ├── init.lua           -- Legacy helpers (float windows, background jobs)
+    ├── sidebar.lua        -- Sidebar manager, tab bar, keymaps, help window
+    ├── output.lua         -- Bottom output panel
+    ├── components.lua     -- Theme-derived highlight setup
+    ├── panels.lua
+    └── views/
+        ├── init.lua       -- View registry (tab order)
+        ├── dashboard.lua  -- Project dashboard with start/stop/restart
+        ├── beans.lua      -- Bean browser with type grouping + nesting
+        ├── endpoints.lua  -- Endpoint browser with method grouping
+        ├── tests.lua      -- Test explorer with class/method listing
+        └── config.lua     -- Config property browser
 ```
-
-## Caching
-
-Indexes are stored in `~/.local/share/nvim/spring-tools/spring-tools.json`. Invalidated when Java or build files change. Use `:SpringRefresh` to force re-index.
 
 ## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
-| No projects detected | Ensure you're in a dir with pom.xml / build.gradle |
-| Commands not found | Install Maven/Gradle or use the wrapper script |
-| Telescope picker not showing | Install telescope.nvim or check `telescope.enable = true` |
+| No projects detected | Cache has old data — press `R` in sidebar or run `:SpringRefresh` |
+| Compile errors in output | Check the "Root cause" section at the top of the output panel |
+| Port conflict | `fuser -k 9090/tcp` to kill existing process, then restart |
+| Telescope not showing | Check `telescope.enable = true` in config |
 | Tests not running | Ensure Maven/Gradle is on PATH |
 
 ## Testing
@@ -160,10 +199,9 @@ nvim --headless -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/init.lu
 
 ## Limitations
 
-- Parsing uses regex heuristics, not a full Java AST — complex nested annotations may not be detected
-- Only single-module projects supported; multi-module Maven/Gradle projects require manual `cd`
+- Java parsing uses regex heuristics, not a full AST — complex nested annotations may not be detected
 - Windows support limited — `find` command is used for file discovery
-- JDTLS integration is optional and currently limited to LSP-based jump-to-definition enhancements (not yet implemented)
+- Multi-module projects not fully supported
 
 ## License
 
