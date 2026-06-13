@@ -68,12 +68,12 @@ function M:render_item(item, selected)
   local ep = item.endpoint
   local path = ep.path
   if selected then
-    return { { "  " .. ep.method .. "  " .. path, "SpringToolsSelected" } }
+    return { { "      " .. ep.method .. "  " .. path, "SpringToolsSelected" } }
   end
-  return { segments = {
-    { "    " .. ep.method .. "  ", method_colors[ep.method] },
+  return { { segments = {
+    { "      " .. ep.method .. "  ", method_colors[ep.method] },
     { path, nil },
-  } }
+  } } }
 end
 
 function M:on_activate(idx)

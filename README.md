@@ -7,8 +7,8 @@ IntelliJ-like Spring Boot development features inside Neovim. Sidebar UI, live l
 - **Sidebar UI** — persistent left sidebar with tabbed views (Dashboard, Beans, Endpoints, Tests, Config)
 - **Output Panel** — bottom panel for live log streaming during build/run
 - **Spring Boot Dashboard** — detect, start, stop, restart apps with action picker
-- **Bean Explorer** — scan and navigate @Component, @Service, @Repository, @Controller, @Configuration, @Bean (with nesting)
-- **REST Endpoint Explorer** — discover routes grouped by HTTP method, copy curl, open in browser
+- **Bean Explorer** — scan and navigate @Component, @Service, @Repository, @Controller, @Configuration, @Bean (with nesting), all sections collapsible
+- **REST Endpoint Explorer** — discover routes grouped by HTTP method, sections collapsible, copy curl, open in browser
 - **Java Test Runner** — discover and run JUnit tests
 - **Configuration Explorer** — browse application.properties / YAML
 - **Process Manager** — unbuffered stdout/stderr, port extraction, exit code tracking
@@ -128,7 +128,7 @@ All highlights are theme-derived via `nvim_get_hl` at startup:
 |-------|-------------|-------------|
 | `SpringToolsNormal` | `Normal` | Default text |
 | `SpringToolsSelected` | `Visual` | Selected line |
-| `SpringToolsAccent` | `Title` / `@function` | Section headers |
+| `SpringToolsAccent` | `Special` | Section headers (method groups, bean types) |
 | `SpringToolsRunning` | `DiagnosticOk` | Running status, GET |
 | `SpringToolsError` | `ErrorMsg` | Failed status, DELETE |
 | `SpringToolsKey` | `Special` | PUT |
@@ -163,7 +163,7 @@ lua/spring-tools/
     ├── sidebar.lua        -- Sidebar manager, tab bar, keymaps, help window
     ├── output.lua         -- Bottom output panel
     ├── components.lua     -- Theme-derived highlight setup
-    ├── panels.lua
+    ├── sections.lua       -- Reusable collapsible sections (used by beans, endpoints)
     └── views/
         ├── init.lua       -- View registry (tab order)
         ├── dashboard.lua  -- Project dashboard with start/stop/restart
