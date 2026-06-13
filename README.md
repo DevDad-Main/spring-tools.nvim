@@ -145,7 +145,8 @@ All highlights are theme-derived via `nvim_get_hl` at startup:
 | `SpringToolsError` | `ErrorMsg` | Failed status |
 | `SpringToolsKey` | `Special` |  |
 | `SpringToolsValue` | `Normal` |  |
-| `SpringToolsConfigSection` | Inherits `SpringToolsAccent` | Config section headers (server:, spring:) |
+| `SpringToolsConfigSection` | Inherits `SpringToolsAccent` | Config prefix section headers (server:, spring:) |
+| `SpringToolsConfigFile` | Inherits `SpringToolsHeader` | Config file section headers (application.properties) |
 | `SpringToolsConfigKey` | Inherits `SpringToolsKey` | Config property key name |
 | `SpringToolsConfigValue` | Inherits `SpringToolsValue` | Config property value |
 | `SpringToolsDim` | `Comment` | Stopped, inactive tab |

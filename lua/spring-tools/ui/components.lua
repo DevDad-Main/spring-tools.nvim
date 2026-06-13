@@ -58,6 +58,7 @@ function M.setup_highlights()
     SpringToolsPatch = { fg = ok_fg, bg = bg },
     SpringToolsDelete = { fg = ok_fg, bg = bg },
     SpringToolsConfigSection = { fg = special_fg, bold = true, bg = bg },
+    SpringToolsConfigFile = { fg = title_fg, bold = true, bg = bg },
     SpringToolsConfigKey = { fg = special_fg, bg = bg },
     SpringToolsConfigValue = { fg = fg, bg = bg },
   }
