@@ -2,14 +2,13 @@ local endpoints_mod = require("spring-tools.endpoints")
 local sidebar = require("spring-tools.ui.sidebar")
 local utils = require("spring-tools.utils")
 local project = require("spring-tools.project")
+local sections = require("spring-tools.ui.sections").new("endpoints")
 
 local M = {}
 
 M.title = "Endpoints"
 
 M.items = {}
-
-local collapsed = {}
 
 local function scan_dir()
   local proj = project.get_active_project()
@@ -47,7 +46,7 @@ function M:load_items()
   M.items = {}
   for _, method in ipairs(method_order) do
     if counts[method] and counts[method] > 0 then
-      local is_collapsed = collapsed[method] ~= false
+      local is_collapsed = sections:is_collapsed(method)
       M.items[#M.items + 1] = { type = "header", method = method, label = method .. "  (" .. counts[method] .. ")", collapsed = is_collapsed }
       if not is_collapsed then
         for _, ep in ipairs(endpoints_mod.endpoints) do
@@ -67,12 +66,13 @@ function M:render_item(item, selected)
     return { { "  " .. icon .. " " .. item.label, hl } }
   end
   local ep = item.endpoint
+  local path = ep.path
   if selected then
-    return { { "  " .. ep.method .. "  " .. ep.path, "SpringToolsSelected" } }
+    return { { "  " .. ep.method .. "  " .. path, "SpringToolsSelected" } }
   end
   return { segments = {
     { "    " .. ep.method .. "  ", method_colors[ep.method] },
-    { ep.path, nil },
+    { path, nil },
   } }
 end
 
@@ -80,11 +80,7 @@ function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
   if item.type == "header" then
-    if item.collapsed then
-      collapsed[item.method] = false
-    else
-      collapsed[item.method] = nil
-    end
+    sections:toggle(item.method)
     sidebar.refresh()
     return
   end

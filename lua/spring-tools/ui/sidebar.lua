@@ -155,6 +155,8 @@ function M.render()
     end
   end
 
+  vim.notify("render: " .. #lines .. " lines, " .. #lines_flat .. " flat, " .. #M.items .. " items")
+
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, lines_flat)
   vim.bo[M.buf].modifiable = false
 
