@@ -502,13 +502,23 @@ function M._show_command_input(proj, default_text, on_submit)
 
   vim.keymap.set("i", "<CR>", function()
     if vim.fn.pumvisible() == 1 then
-      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-y>", true, false, true), "n")
-      vim.schedule(function()
-        local text = vim.api.nvim_get_current_line()
-        cleanup()
-        on_submit(text)
-      end)
-      return
+      local info = vim.fn.complete_info()
+      local items = info and info.items or {}
+      local selected = info and info.selected or 0
+      if selected >= 0 and selected < #items then
+        local word = items[selected + 1].word
+        if word then
+          local line = vim.api.nvim_get_current_line()
+          local col = vim.api.nvim_win_get_cursor(0)[2]
+          local start = col
+          while start > 0 and line:sub(start, start):match("[%w:_%-.@/]") do
+            start = start - 1
+          end
+          local new_line = line:sub(1, start) .. word
+          vim.api.nvim_buf_set_lines(buf, 0, -1, false, { new_line })
+          vim.api.nvim_win_set_cursor(win, { 1, start + #word })
+        end
+      end
     end
     local text = vim.api.nvim_get_current_line()
     cleanup()
