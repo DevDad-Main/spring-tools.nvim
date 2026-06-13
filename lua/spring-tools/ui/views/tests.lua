@@ -3,6 +3,7 @@ local project = require("spring-tools.project")
 local sidebar = require("spring-tools.ui.sidebar")
 local output = require("spring-tools.ui.output")
 local utils = require("spring-tools.utils")
+local sections = require("spring-tools.ui.sections").new("tests")
 
 local M = {}
 
@@ -25,26 +26,28 @@ function M:load_items()
   M.items = {}
   table.insert(M.items, { type = "all", label = "Run all tests" })
   for _, test in ipairs(test_classes) do
-    table.insert(M.items, { type = "class", test = test, label = test.class })
-    for _, method in ipairs(test.methods) do
-      table.insert(M.items, { type = "method", test = test, method = method, label = method.name })
+    local is_collapsed = sections:is_collapsed(test.class)
+    M.items[#M.items + 1] = { type = "class", test = test, label = test.class, section_key = test.class, collapsed = is_collapsed }
+    if not is_collapsed then
+      for _, method in ipairs(test.methods) do
+        M.items[#M.items + 1] = { type = "method", test = test, method = method, label = method.name }
+      end
     end
   end
 end
 
 function M:render_item(item, selected)
-  local hl, prefix
   if item.type == "all" then
-    hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
-    prefix = "\u{25b6} "
-  elseif item.type == "class" then
-    hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
-    prefix = "\u{25b8} "
-  else
-    hl = selected and "SpringToolsSelected" or nil
-    prefix = "  \u{22a1} "
+    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    return { { "  " .. "\u{25b6}" .. " " .. item.label, hl } }
   end
-  return { { prefix .. item.label, hl } }
+  if item.type == "class" then
+    local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    return { { "  " .. icon .. " " .. item.label, hl } }
+  end
+  local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
+  return { { "      " .. "\u{22a1}" .. " " .. item.label, hl } }
 end
 
 function M:run_test(cmd)
@@ -72,12 +75,16 @@ function M:on_activate(idx)
   local be = project.get_backend_for_project(proj)
   if not be then return end
 
+  if item.type == "class" then
+    sections:toggle(item.section_key)
+    sidebar.refresh()
+    return
+  end
+
   local cmd
   if item.type == "all" then
     cmd = be:get_build_command(proj)
     if cmd then table.insert(cmd, "test") end
-  elseif item.type == "class" then
-    cmd = be:get_test_command(proj, item.test.full_class, nil)
   elseif item.type == "method" then
     cmd = be:get_test_command(proj, item.test.full_class, item.method.name)
   end
