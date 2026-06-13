@@ -298,6 +298,15 @@ nvim --headless -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/init.lu
 - Windows support limited — `find` command is used for file discovery
 - Multi-module projects not fully supported
 
+## Roadmap
+
+Ideas for future releases:
+
+- [x] **POM-driven CLI completion** — parses `pom.xml` to discover configured plugins and their goals; Tab-complete `mvn <phase>`, `mvn <plugin>:<goal>`, `mvn -D<property>` in the custom command prompt
+- [ ] **Gradle build file parsing** — parse `build.gradle`/`build.gradle.kts` for dynamic task discovery (currently uses a static list)
+- [ ] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects in the same Neovim session
+- [ ] **Custom command history management** — UI to browse, edit, and delete saved custom commands
+
 ## License
 
 MIT

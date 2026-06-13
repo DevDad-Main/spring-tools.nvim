@@ -256,6 +256,11 @@ function M.show_help()
     { "    R       Refresh", "" },
     { "    q       Close sidebar", "" },
     { "", "" },
+    { "  Custom Run", "SpringToolsAccent" },
+    { "    Enter on stopped -> picker", "" },
+    { "    Pick Custom... -> type in float", "" },
+    { "    Tab     Auto-complete in float", "" },
+    { "", "" },
     { "  ? / q / Esc  Close this window", "SpringToolsDim" },
     { "", "" },
   }

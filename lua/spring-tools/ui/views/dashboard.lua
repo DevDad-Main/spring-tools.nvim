@@ -5,6 +5,7 @@ local state = require("spring-tools.core.state")
 local sidebar = require("spring-tools.ui.sidebar")
 local output = require("spring-tools.ui.output")
 local utils = require("spring-tools.utils")
+local mvn = require("spring-tools.mvn_completion")
 
 local M = {}
 
@@ -19,6 +20,7 @@ end
 M.items = {}
 
 function M:load_items()
+  mvn.invalidate_cache()
   state.set_projects(project.detect_projects())
   local projs = state.get_projects()
   local active = project.get_active_project()
@@ -207,17 +209,44 @@ function M:on_activate(idx)
     if not default_cmd then utils.notify("No run command available for " .. proj.name, vim.log.levels.WARN) return end
     local default_str = table.concat(default_cmd, " ")
     local build_type = proj.build_type or "maven"
+    local cache_key = "recent_cmds:" .. proj.root
+    local recent = (utils.cache.data and utils.cache.data[cache_key]) or {}
     local suggestions = { default_str }
+    if #recent > 0 then
+      table.insert(suggestions, "--- recent ---")
+      for _, cmd in ipairs(recent) do suggestions[#suggestions + 1] = cmd end
+      table.insert(suggestions, "--- common ---")
+    end
     if build_type == "maven" then
-      suggestions[#suggestions + 1] = "mvn clean compile"
-      suggestions[#suggestions + 1] = "mvn test"
-      suggestions[#suggestions + 1] = "mvn package -DskipTests"
-      suggestions[#suggestions + 1] = "mvn clean install"
+      for _, cmd in ipairs({
+        "mvn clean compile",
+        "mvn test",
+        "mvn package -DskipTests",
+        "mvn clean install",
+        "mvn verify",
+        "mvn clean",
+      }) do suggestions[#suggestions + 1] = cmd end
+      local plugin_goals = mvn.get_plugin_goals(proj.root)
+      for _, goal in ipairs(plugin_goals) do
+        if not goal:match(":$") then
+          suggestions[#suggestions + 1] = "mvn " .. goal
+        end
+      end
     else
-      suggestions[#suggestions + 1] = "gradle build"
-      suggestions[#suggestions + 1] = "gradle test"
-      suggestions[#suggestions + 1] = "gradle clean build"
-      suggestions[#suggestions + 1] = "gradle bootRun"
+      for _, cmd in ipairs({
+        "gradle build",
+        "gradle test",
+        "gradle clean build",
+        "gradle bootRun",
+        "gradle dependencies",
+        "gradle clean",
+        "gradle compileJava",
+        "gradle check",
+        "gradle assemble",
+        "gradle bootJar",
+        "gradle bootRun --debug",
+        "gradle bootRun --args='--server.port=9090'",
+      }) do suggestions[#suggestions + 1] = cmd end
     end
     suggestions[#suggestions + 1] = "Custom..."
 
@@ -274,18 +303,234 @@ function M:on_activate(idx)
       sidebar.refresh()
     end
 
-    vim.ui.select(suggestions, { prompt = "Select or enter a command:" }, function(choice)
+    local function save_and_run(input)
+      if input == "" then return end
+      if input ~= default_str then
+        recent[#recent + 1] = input
+        if #recent > 10 then table.remove(recent, 1) end
+        if not utils.cache.data then utils.cache.data = {} end
+        utils.cache.data[cache_key] = recent
+        utils.mark_dirty()
+        utils.save_cache()
+      end
+      run_cmd(vim.split(input, "%s+"))
+    end
+
+    vim.ui.select(suggestions, { prompt = "Select a command:" }, function(choice)
       if not choice then return end
+      if choice:match("^---") then return end
       if choice == "Custom..." then
-        vim.ui.input({ prompt = "Run command:", default = default_str }, function(input)
-          if input == nil then return end
-          run_cmd(input == "" and default_cmd or vim.split(input, "%s+"))
+        M._show_command_input(proj, default_str, function(input)
+          save_and_run(input)
         end)
       else
-        run_cmd(vim.split(choice, "%s+"))
+        save_and_run(choice)
       end
     end)
   end
+end
+
+function M._omni(findstart, base)
+  local bufnr = vim.api.nvim_get_current_buf()
+  local data = M._omni_data and M._omni_data[bufnr]
+  if not data then return {} end
+
+  if findstart == 1 then
+    local line = vim.api.nvim_get_current_line()
+    local col = vim.api.nvim_win_get_cursor(0)[2]
+    local start = col
+    while start > 0 and line:sub(start, start):match("[%w:_%-.@/]") do
+      start = start - 1
+    end
+    if start == col then return col end
+    return start
+  end
+
+  local results = {}
+  local line = vim.api.nvim_get_current_line()
+  local col = vim.api.nvim_win_get_cursor(0)[2]
+  local before = line:sub(1, col)
+  local words = vim.split(before, "%s+", { trimempty = true })
+  local first = words[1] or ""
+
+  if base:match("^-D") then
+    local props = first:match("^gradle") and data.gprops or data.dprops
+    for _, p in ipairs(props) do
+      if p:lower():find(base:lower(), 1, true) then
+        table.insert(results, p)
+      end
+    end
+    return results
+  end
+
+  if base:find(":", 1, true) then
+    for _, g in ipairs(data.goals) do
+      if g:lower():find(base:lower(), 1, true) then
+        table.insert(results, g)
+      end
+    end
+    return results
+  end
+
+  if not first:match("^mv") and not first:match("^gradle") then
+    for _, c in ipairs({ "mvn", "mvnw", "mvnDebug", "gradle", "gradlew" }) do
+      if c:lower():find(base:lower(), 1, true) then
+        table.insert(results, c)
+      end
+    end
+    return results
+  end
+
+  if first:match("^mv") then
+    for _, p in ipairs(data.phases) do
+      if p:lower():find(base:lower(), 1, true) then
+        table.insert(results, p)
+      end
+    end
+    for _, g in ipairs(data.goals) do
+      if g:lower():find(base:lower(), 1, true) then
+        table.insert(results, g)
+      end
+    end
+    return results
+  end
+
+  if first:match("^gradle") then
+    for _, t in ipairs(data.gtasks) do
+      if t:lower():find(base:lower(), 1, true) then
+        table.insert(results, t)
+      end
+    end
+    return results
+  end
+
+  return results
+end
+
+function M._show_command_input(proj, default_text, on_submit)
+  local width = math.min(80, vim.o.columns - 4)
+  local height = 1
+  local row = math.floor((vim.o.lines - 3) / 2)
+  local col = math.floor((vim.o.columns - width) / 2)
+
+  local buf = vim.api.nvim_create_buf(false, true)
+  local saved_buftype = vim.bo[buf].buftype
+  local saved_complete = vim.bo[buf].complete
+  local saved_omnifunc = vim.bo[buf].omnifunc
+  vim.bo[buf].buftype = "prompt"
+  pcall(vim.fn.prompt_setprompt, buf, "")
+  vim.bo[buf].complete = ""
+  vim.b[buf].cmp_enabled = false
+  vim.b[buf].cmp_disable = true
+  vim.b[buf].blink_cmp_disable = true
+
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = "minimal",
+    border = "rounded",
+    title = " Run command ",
+    title_pos = "center",
+  })
+
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { default_text })
+
+  local function cleanup()
+    pcall(vim.api.nvim_win_close, win, true)
+    pcall(vim.api.nvim_buf_delete, buf, { force = true })
+  end
+
+  local plugin_goals = mvn.get_plugin_goals(proj.root)
+
+  M._omni_data = M._omni_data or {}
+  M._omni_data[buf] = { goals = plugin_goals, phases = mvn.phases, dprops = mvn.d_properties, gprops = mvn.gradle_d_properties, gtasks = mvn.gradle_tasks,
+    saved_complete = saved_complete, saved_omnifunc = saved_omnifunc, saved_buftype = saved_buftype }
+
+  vim.bo[buf].omnifunc = "SpringToolsOmni"
+  if not M._omni_reg then
+    M._omni_reg = true
+    pcall(vim.cmd, [[
+      function! SpringToolsOmni(findstart, base)
+        return luaeval("require('spring-tools.ui.views.dashboard')._omni(_A[1], _A[2])", [a:findstart, a:base])
+      endfunction
+    ]])
+  end
+
+  local function restore_buf()
+    local d = M._omni_data[buf]
+    if d then
+      pcall(function() vim.bo[buf].buftype = d.saved_buftype end)
+      pcall(function() vim.bo[buf].complete = d.saved_complete end)
+      pcall(function() vim.bo[buf].omnifunc = d.saved_omnifunc end)
+      vim.b[buf].cmp_enabled = nil
+      vim.b[buf].cmp_disable = nil
+      vim.b[buf].blink_cmp_disable = nil
+    end
+    M._omni_data[buf] = nil
+  end
+
+  vim.api.nvim_create_autocmd("BufDelete", {
+    buffer = buf,
+    once = true,
+    callback = restore_buf,
+  })
+
+  vim.keymap.set("i", "<CR>", function()
+    if vim.fn.pumvisible() == 1 then
+      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-y>", true, false, true), "n")
+      return
+    end
+    local text = vim.api.nvim_get_current_line()
+    cleanup()
+    on_submit(text)
+  end, { buffer = buf, silent = true })
+
+  vim.keymap.set("i", "<Tab>", function()
+    if vim.fn.pumvisible() == 1 then
+      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
+    else
+      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-x><C-o>", true, false, true), "n")
+    end
+  end, { buffer = buf, silent = true })
+
+  vim.keymap.set("i", "<C-j>", function()
+    if vim.fn.pumvisible() == 1 then
+      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
+    end
+  end, { buffer = buf, silent = true })
+
+  vim.keymap.set("i", "<C-k>", function()
+    if vim.fn.pumvisible() == 1 then
+      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-p>", true, false, true), "n")
+    end
+  end, { buffer = buf, silent = true })
+
+  vim.keymap.set("i", "<Esc>", function()
+    cleanup()
+  end, { buffer = buf, silent = true, nowait = true })
+
+  vim.api.nvim_create_autocmd("TextChangedI", {
+    buffer = buf,
+    callback = function()
+      if vim.fn.pumvisible() == 1 then return end
+      local col = vim.api.nvim_win_get_cursor(0)[2]
+      if col < 2 then return end
+      local line = vim.api.nvim_get_current_line()
+      local char = line:sub(col, col)
+      if not char:match("[%w:_%-.@/]") then return end
+      vim.schedule(function()
+        vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-x><C-o>", true, false, true), "n")
+      end)
+    end,
+  })
+
+  vim.bo[buf].filetype = "springtools-cmd-input"
+
+  vim.cmd("startinsert!")
+  vim.api.nvim_win_set_cursor(win, { 1, #default_text })
 end
 
 function M:on_remove(idx)
