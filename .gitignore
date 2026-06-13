@@ -1,0 +1,5 @@
+tests/ProductionApp/target/
+tests/ProductionApp/.classpath
+tests/ProductionApp/.project
+tests/ProductionApp/.settings/
+tests/ProductionApp/demo.cast
