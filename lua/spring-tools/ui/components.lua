@@ -64,6 +64,11 @@ function M.setup_highlights()
     SpringToolsDashboardProject = { fg = fg, bold = true, bg = bg },
     SpringToolsDashboardStatus = { fg = dim_fg, bg = bg },
     SpringToolsDashboardBuildType = { fg = dim_fg, bg = bg },
+    SpringToolsLogError = { fg = err_fg, bold = true, bg = bg },
+    SpringToolsLogWarn = { fg = special_fg, bg = bg },
+    SpringToolsLogInfo = { fg = ok_fg, bg = bg },
+    SpringToolsLogDebug = { fg = dim_fg, bg = bg },
+    SpringToolsLogTrace = { fg = dim_fg, bg = bg },
   }
 
   for name, spec in pairs(specs) do

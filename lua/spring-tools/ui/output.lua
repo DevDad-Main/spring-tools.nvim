@@ -1,4 +1,21 @@
 local components = require("spring-tools.ui.components")
+local log_patterns = {
+  -- Spring Boot format: " 2024-01-01T00:00:00.000  INFO 12345 ---"
+  { pattern = " ERROR ", hl = "SpringToolsLogError" },
+  { pattern = " WARN  ", hl = "SpringToolsLogWarn" },
+  { pattern = " INFO  ", hl = "SpringToolsLogInfo" },
+  { pattern = " DEBUG ", hl = "SpringToolsLogDebug" },
+  { pattern = " TRACE ", hl = "SpringToolsLogTrace" },
+  { pattern = " FATAL ", hl = "SpringToolsLogError" },
+  { pattern = " SEVERE ", hl = "SpringToolsLogError" },
+  -- Maven format: "[ERROR]", "[WARNING]", "[INFO]"
+  { pattern = "[ERROR]", hl = "SpringToolsLogError" },
+  { pattern = "[WARNING]", hl = "SpringToolsLogWarn" },
+  { pattern = "[WARN]", hl = "SpringToolsLogWarn" },
+  { pattern = "[INFO]", hl = "SpringToolsLogInfo" },
+  { pattern = "[DEBUG]", hl = "SpringToolsLogDebug" },
+  { pattern = "[TRACE]", hl = "SpringToolsLogTrace" },
+}
 
 local M = {}
 
@@ -83,6 +100,7 @@ function M.show(lines, title)
 
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, display)
   vim.bo[M.buf].modifiable = false
+  M.highlight_logs()
 
   pcall(function()
     vim.api.nvim_win_set_cursor(M.win, { #display, 0 })
@@ -96,6 +114,7 @@ function M.append(line)
   table.insert(lines, " " .. tostring(line))
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, lines)
   vim.bo[M.buf].modifiable = false
+  M.highlight_logs()
   pcall(function()
     vim.api.nvim_win_set_cursor(M.win, { #lines, 0 })
   end)
@@ -106,6 +125,25 @@ function M.clear()
   vim.bo[M.buf].modifiable = true
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, { " " .. M.title, " " .. string.rep("─", 60) })
   vim.bo[M.buf].modifiable = false
+end
+
+function M.highlight_logs()
+  if not buf_is_valid() then return end
+  vim.api.nvim_buf_clear_namespace(M.buf, M.ns, 0, -1)
+  local lines = vim.api.nvim_buf_get_lines(M.buf, 0, -1, false)
+  for line_idx, line in ipairs(lines) do
+    for _, lp in ipairs(log_patterns) do
+      local s, e = line:find(lp.pattern, 1, true)
+      if s then
+        vim.api.nvim_buf_set_extmark(M.buf, M.ns, line_idx - 1, s - 1, {
+          end_col = e,
+          hl_group = lp.hl,
+          priority = 150,
+        })
+        break
+      end
+    end
+  end
 end
 
 function M.setup_keymaps()

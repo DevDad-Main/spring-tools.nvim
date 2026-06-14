@@ -249,6 +249,11 @@ All highlights derive from your active colorscheme via `nvim_get_hl` at startup:
 | `SpringToolsDashboardProject` | Inherits `Normal` (bold) | Project name in dashboard |
 | `SpringToolsDashboardStatus` | Inherits `SpringToolsDim` | Status text (stopped/running/failed) |
 | `SpringToolsDashboardBuildType` | Inherits `SpringToolsDim` | Build type (maven/gradle) |
+| `SpringToolsLogError` | `ErrorMsg` | Log ERROR, FATAL, SEVERE levels |
+| `SpringToolsLogWarn` | `Special` | Log WARN, WARNING levels |
+| `SpringToolsLogInfo` | `DiagnosticOk` | Log INFO level |
+| `SpringToolsLogDebug` | `Comment` | Log DEBUG level |
+| `SpringToolsLogTrace` | `Comment` | Log TRACE level |
 | `SpringToolsDim` | `Comment` | Stopped, inactive tab |
 
 </details>
@@ -297,6 +302,13 @@ require("spring-tools").setup({
     SpringToolsDashboardProject   = { fg = "#ffffff", bold = true }, -- Project name
     SpringToolsDashboardStatus    = { fg = "#888888" },             -- stopped/running/failed
     SpringToolsDashboardBuildType = { fg = "#666666" },             -- maven/gradle
+
+    -- Log output
+    SpringToolsLogError   = { fg = "#ff0000", bold = true },        -- ERROR, FATAL, SEVERE
+    SpringToolsLogWarn    = { fg = "#ffaa00" },                     -- WARN, WARNING
+    SpringToolsLogInfo    = { fg = "#00ff00" },                     -- INFO
+    SpringToolsLogDebug   = { fg = "#888888" },                     -- DEBUG
+    SpringToolsLogTrace   = { fg = "#555555" },                     -- TRACE
   },
 })
 ```

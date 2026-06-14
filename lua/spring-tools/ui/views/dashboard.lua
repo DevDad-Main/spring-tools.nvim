@@ -132,6 +132,7 @@ function M:on_activate(idx)
                   vim.bo[output.buf].modifiable = true
                   vim.api.nvim_buf_set_lines(output.buf, 0, -1, false, recent)
                   vim.bo[output.buf].modifiable = false
+                  output.highlight_logs()
                 end
               end)
             end
@@ -181,6 +182,7 @@ function M:on_activate(idx)
                   vim.bo[output.buf].modifiable = true
                   vim.api.nvim_buf_set_lines(output.buf, 0, -1, false, recent)
                   vim.bo[output.buf].modifiable = false
+                  output.highlight_logs()
                 end
               end)
             end
@@ -272,6 +274,7 @@ function M:on_activate(idx)
                 vim.bo[output.buf].modifiable = true
                 vim.api.nvim_buf_set_lines(output.buf, 0, -1, false, recent)
                 vim.bo[output.buf].modifiable = false
+                output.highlight_logs()
               end
             end)
           end
