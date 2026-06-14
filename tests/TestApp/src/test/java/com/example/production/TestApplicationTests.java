@@ -6,7 +6,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
 @ActiveProfiles("dev")
-class ProductionApplicationTests {
+class TestApplicationTests {
 
     @Test
     void contextLoads() {

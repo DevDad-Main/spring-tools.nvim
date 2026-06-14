@@ -1,5 +1,5 @@
-tests/ProductionApp/target/
-tests/ProductionApp/.classpath
-tests/ProductionApp/.project
-tests/ProductionApp/.settings/
-tests/ProductionApp/demo.cast
+tests/TestApp/target/
+tests/TestApp/.classpath
+tests/TestApp/.project
+tests/TestApp/.settings/
+tests/TestApp/demo.cast

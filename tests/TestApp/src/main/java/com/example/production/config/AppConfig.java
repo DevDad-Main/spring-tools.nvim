@@ -9,7 +9,7 @@ public class AppConfig {
 
     @Bean
     public String appName() {
-        return "ProductionApp";
+        return "TestApp";
     }
 
     @Bean
@@ -20,6 +20,6 @@ public class AppConfig {
     @Bean
     public String defaultGreeting(UserService userService) {
         int count = userService.countUsers();
-        return "Welcome to ProductionApp (" + count + " users)";
+        return "Welcome to TestApp (" + count + " users)";
     }
 }

@@ -12,13 +12,13 @@ public class HealthController {
     public ResponseEntity<Map<String, Object>> health() {
         return ResponseEntity.ok(Map.of(
             "status", "UP",
-            "service", "ProductionApp",
+            "service", "TestApp",
             "version", "1.0.0"
         ));
     }
 
     @GetMapping("/")
     public ResponseEntity<Map<String, String>> root() {
-        return ResponseEntity.ok(Map.of("message", "ProductionApp is running"));
+        return ResponseEntity.ok(Map.of("message", "TestApp is running"));
     }
 }
