@@ -32,7 +32,19 @@ function M.setup()
 
   vim.api.nvim_create_user_command("SpringRefresh", function()
     require("spring-tools.utils").invalidate_cache()
+    local mvn = require("spring-tools.mvn_completion")
+    mvn.invalidate_cache()
     sidebar.refresh()
+    local state = require("spring-tools.core.state")
+    local maven_roots = {}
+    for _, proj in ipairs(state.get_projects()) do
+      if proj.build_type == "maven" then
+        maven_roots[#maven_roots + 1] = proj.root
+      end
+    end
+    if #maven_roots > 0 then
+      mvn.fetch_dynamic_goals(maven_roots)
+    end
     utils.notify("Spring Tools indexes refreshed")
   end, { desc = "Refresh all Spring Tools indexes" })
 

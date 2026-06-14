@@ -56,7 +56,8 @@
 - **Output Panel** — bottom split (12 rows, 30% height) for live log streaming
 - **Dashboard** — project list with ★ active marker, ●/○ status dots, auto-selects CWD project
 - **Action Picker** — start, stop, restart, custom run with POM-driven Tab-completion
-- **Custom Run Command** — floating input with omnifunc completion (mvn phases, plugin goals, `-D` properties, Gradle tasks), position configurable (`top`/`center`/`bottom`), locked against window navigation
+- **Custom Run Command** — floating input with omnifunc completion (mvn lifecycle phases, plugin goals, `-D` properties, Gradle tasks), position configurable (`top`/`center`/`bottom`), locked against window navigation
+- **Dynamic Maven Goal Discovery** — auto-discovers plugin goals from `help:effective-pom` and `help:describe` for any Maven plugin, not just 55+ well-known ones; caches across sessions; auto-invalidates on POM changes
 - **Bean Explorer** — collapsible sections by stereotype, nested `@Bean` methods under `@Configuration`
 - **Endpoint Explorer** — routes grouped by HTTP method (GET/POST/PUT/PATCH/DELETE), collapsible
 - **Test Runner** — discover/run JUnit 5 tests, per-method results from surefire XML
@@ -330,7 +331,7 @@ lua/spring-tools/
 ├── endpoints.lua          -- REST endpoint discovery
 ├── tests.lua              -- JUnit test discovery and runner
 ├── config_explorer.lua    -- properties/YAML parser
-├── mvn_completion.lua     -- POM parser for Tab-completion plugin goals
+├── mvn_completion.lua     — POM parser with dynamic goal discovery via effective-pom and help:describe
 ├── backends/
 │   ├── init.lua           -- Backend registry
 │   ├── spring_boot.lua    -- Maven/Gradle backend
@@ -361,7 +362,7 @@ lua/spring-tools/
 - **`render()` vs `refresh()`** — j/k uses lightweight `render()` (no re-scan), tab-switch/Enter/R uses full `refresh()` (re-scan + render)
 - **`p` keymap** — global in sidebar, dispatches to view's `toggle_preview` for config value preview
 - **Custom command float** — `buftype = "prompt"` buffer with `omnifunc`, `TextChangedI` auto-trigger, `<C-j>`/`<C-k>` popup nav, `winfixbuf`, `BufLeave` fail-safe
-- **Maven completion** — POM parser for `<plugin>` blocks, prefix resolver, 55+ well-known plugins, 76 default goals, 26 lifecycle phases, 31 `-D` properties, 45 Gradle tasks, per-project cached
+- **Maven completion** — POM parser for `<plugin>` blocks, dynamic discovery via `help:effective-pom` + `help:describe` for unknown plugins, 55+ well-known plugins, 76 default goals, 26 lifecycle phases, 31 `-D` properties, 45 Gradle tasks, per-project cached with POM mtime invalidation
 - **Segments-based rendering** — dashboard items use separate highlight groups per element (project name, status text, build type tag)
 - **Expanded props persistence** — config view's `M.expanded_props` survives `load_items()` rebuild
 - **Dashboard auto-select** — sidebar `refresh()` searches for `is_active` and jumps `M.selected` to the CWD-matching project
@@ -408,7 +409,8 @@ A sample Spring Boot test app is available at `tests/TestApp/`:
 
 ## Roadmap
 
-- [x] **POM-driven CLI completion** — parses `pom.xml` for configured plugin goals, Tab-complete in custom command prompt
+- [x] **POM-driven CLI completion** — parses `pom.xml` for configured plugin goals, Tab-complete in custom command prompt; enhanced with dynamic discovery via `help:effective-pom` + `help:describe`
+- [x] **Persistent goal cache with POM invalidation** — discovered goals survive Neovim restarts; cache auto-invalidates when `pom.xml` changes
 - [x] **Configurable float position** — `command_input.position` accepts `"top"`, `"center"`, or `"bottom"`
 - [x] **Float window lock** — no accidental navigation away (`<C-w/h/j/k/l>` blocked, `BufLeave` fail-safe)
 - [x] **Auto-select active project** — jumps cursor to CWD-matching project on sidebar refresh
