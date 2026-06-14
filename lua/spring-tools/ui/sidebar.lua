@@ -261,14 +261,16 @@ function M.show_help()
     { "", "" },
     { "  Custom Run", "SpringToolsAccent" },
     { "    Enter on stopped -> picker", "" },
-    { "    Pick Custom... -> type in float", "" },
-    { "    Tab     Auto-complete in float", "" },
+    { "    Tab       Trigger / cycle completions", "" },
+    { "    Ctrl+j/k  Navigate completions", "" },
+    { "    Enter     Submit command", "" },
+    { "    Esc / q   Close", "" },
     { "", "" },
     { "  ? / q / Esc  Close this window", "SpringToolsDim" },
     { "", "" },
   }
 
-  local width = 38
+  local width = 46
   local height = #lines + 2
   local row = math.max(0, math.floor((vim.o.lines - height) / 2))
   local col = math.floor((vim.o.columns - width) / 2)

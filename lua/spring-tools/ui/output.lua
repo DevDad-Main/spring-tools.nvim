@@ -19,10 +19,20 @@ function M.open()
   if win_is_valid() then return end
 
   local main_win = nil
-  local max_col = -1
+  local min_col = math.huge
   for _, w in ipairs(vim.api.nvim_list_wins()) do
+    local ok, fixwidth = pcall(function() return vim.wo[w].winfixwidth end)
+    if ok and fixwidth then goto continue end
     local _, col = unpack(vim.api.nvim_win_get_position(w))
-    if col > max_col then max_col = col; main_win = w end
+    if col < min_col then min_col = col; main_win = w end
+    ::continue::
+  end
+  if not main_win then
+    local max_col = -1
+    for _, w in ipairs(vim.api.nvim_list_wins()) do
+      local _, col = unpack(vim.api.nvim_win_get_position(w))
+      if col > max_col then max_col = col; main_win = w end
+    end
   end
 
   if main_win then
