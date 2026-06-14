@@ -30,29 +30,67 @@
 
 <details><summary>Click to expand screenshots and demos</summary>
 
-![Plugin Demo](previews/plugin_demo.gif)
+<br>
 
-![Dashboard](previews/plugin_demo_dashboard.gif)
+<h4 align="center">Dashboard &mdash; project list, start/stop, custom run commands</h4>
+<p align="center">
+  <img src="previews/plugin_demo_dashboard.gif" width="900" />
+</p>
 
-![Beans Explorer](previews/plugin_demo_beans.gif)
+<h4 align="center">Beans Explorer &mdash; collapsible type sections, nested <code>@Bean</code> methods</h4>
+<p align="center">
+  <img src="previews/plugin_demo_beans.gif" width="900" />
+</p>
 
-![Endpoints Explorer](previews/plugin_demo_endpoints.gif)
+<h4 align="center">Endpoints Explorer &mdash; routes grouped by HTTP method</h4>
+<p align="center">
+  <img src="previews/plugin_demo_endpoints.gif" width="900" />
+</p>
 
-![Test Runner](previews/plugin_demo_tests.gif)
+<h4 align="center">Test Runner &mdash; discover and run JUnit 5 tests, per-method results</h4>
+<p align="center">
+  <img src="previews/plugin_demo_tests.gif" width="900" />
+</p>
 
-![Config Explorer](previews/plugin_demo_config.gif)
+<h4 align="center">Run All Tests &mdash; batch test execution with surefire reporting</h4>
+<p align="center">
+  <img src="previews/plugin_demo_tests_run_all.gif" width="900" />
+</p>
 
-![Run All Tests](previews/plugin_demo_tests_run_all.gif)
+<h4 align="center">Config Explorer &mdash; browse properties/YAML, preview values, jump to line</h4>
+<p align="center">
+  <img src="previews/plugin_demo_config.gif" width="900" />
+</p>
 
-![Keybindings](previews/spring-tools-keybinds.png)
+<h4 align="center">Log Filtering &mdash; color-coded levels (ERROR / WARN / INFO / DEBUG / TRACE) with toggle keys</h4>
+<p align="center">
+  <img src="previews/plugin_demo_log_highlighting.gif" width="900" />
+</p>
 
-![Commands Reference](previews/spring-tools-cmds.png)
+<h4 align="center">Log Filtering (multiple projects) &mdash; switch between project logs while filtering</h4>
+<p align="center">
+  <img src="previews/plugin_demo_log_highlighting_2.gif" width="900" />
+</p>
 
-![Formatted Output](previews/spring-tools-formatted-output.png)
+<h4 align="center">Full Walkthrough &mdash; sidebar navigation, command input, output panel</h4>
+<p align="center">
+  <img src="previews/plugin_demo.gif" width="900" />
+</p>
 
-![Filter Log](previews/plugin_demo_log_highlighting.gif)
+<h4 align="center">Keybindings Reference</h4>
+<p align="center">
+  <img src="previews/spring-tools-keybinds.png" width="650" />
+</p>
 
-![Filter Multiple Logs](previews/plugin_demo_log_highlighting_2.gif)
+<h4 align="center">Commands Reference</h4>
+<p align="center">
+  <img src="previews/spring-tools-cmds.png" width="650" />
+</p>
+
+<h4 align="center">Formatted Output &mdash; compile errors, root cause extraction</h4>
+<p align="center">
+  <img src="previews/spring-tools-formatted-output.png" width="650" />
+</p>
 
 </details>
 
