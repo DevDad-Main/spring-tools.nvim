@@ -8,7 +8,6 @@ local M = {}
 function M.setup(opts)
   config.setup(opts)
   utils.load_cache()
-  utils.cache.data = {}
   components.setup_highlights()
   commands.setup()
   commands.setup_keymaps()
@@ -23,6 +22,6 @@ function M.open()
   commands.open_sidebar("dashboard")
 end
 
-M.version = "0.3.0"
+M.version = "0.4.0"
 
 return M

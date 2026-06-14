@@ -153,8 +153,8 @@ local PENDING = {}
 
 local function find_mvn_cmd(root)
   local mvnw = root .. "/mvnw"
-  if vim.fn.filereadable(mvnw) == 1 and vim.fn.getfperm(mvnw):match("x") then
-    return { "./mvnw" }
+  if vim.fn.executable(mvnw) == 1 then
+    return { mvnw }
   end
   return { "mvn" }
 end
@@ -174,37 +174,66 @@ local function parse_describe_output(lines)
   local goals = {}
   local capturing = false
   for _, line in ipairs(lines) do
+    local stripped = line:match("^%[INFO%]%s*(.*)$") or line
     if capturing then
-      local goal = line:match("^%s*([%w][%w%.%-_]*:[%w][%w%.%-_]*)%s*$")
-      if goal and not goal:match(":.*:") then
-        goals[#goals + 1] = goal
-      elseif not line:match("^%s*$") then
+      if stripped:find("For more information", 1, true) then
         capturing = false
+      else
+        local goal = stripped:match("^%s*([%w][%w%.%-_]*:[%w][%w%.%-_]*)%s*$")
+        if goal and not goal:match(":.*:") then
+          goals[#goals + 1] = goal
+        end
       end
-    elseif line:find("has %d+ goal", 1, true) then
+    elseif stripped:find("has %d+ goal") then
       capturing = true
     end
   end
   return goals
 end
 
+local function artifact_to_prefix(artifact_id)
+  local prefix = artifact_id:match("^(.+)%-maven%-plugin$")
+  if prefix then return prefix end
+  prefix = artifact_id:match("^maven%-(.+)%-plugin$")
+  if prefix then return prefix end
+  prefix = artifact_id:match("^(.+)%-plugin$")
+  if prefix then return prefix end
+  prefix = artifact_id:match("^(.+)%-maven$")
+  if prefix then return prefix end
+  return artifact_id
+end
+
 local function fetch_async(root)
   if PENDING[root] then return end
   PENDING[root] = true
 
+  local name = vim.fn.fnamemodify(root, ":t")
+  vim.schedule(function()
+    vim.notify("[spring-tools] Discovering Maven goals for " .. name .. " (async)", vim.log.levels.INFO)
+  end)
+
   local mvn = find_mvn_cmd(root)
   local stdout = {}
 
-  vim.fn.jobstart(vim.list_extend(vim.deepcopy(mvn), { "help:effective-pom", "-q" }), {
+  vim.fn.jobstart(vim.list_extend(vim.deepcopy(mvn), { "help:effective-pom" }), {
     cwd = root,
     stdout_buffered = true,
+    stderr_buffered = true,
     on_stdout = function(_, data)
+      for _, line in ipairs(data) do
+        stdout[#stdout + 1] = line
+      end
+    end,
+    on_stderr = function(_, data)
       for _, line in ipairs(data) do
         stdout[#stdout + 1] = line
       end
     end,
     on_exit = function(_, code)
       if code ~= 0 or #stdout == 0 then
+        vim.schedule(function()
+          vim.notify("[spring-tools] Maven effective-pom failed for " .. name .. " (exit " .. code .. ")", vim.log.levels.WARN)
+        end)
         PENDING[root] = nil
         return
       end
@@ -219,7 +248,18 @@ local function fetch_async(root)
         end
       end
 
+      vim.schedule(function()
+        vim.notify("[spring-tools] " .. name .. ": " .. #plugins .. " plugins found, " .. #unknown .. " not in hardcoded table", vim.log.levels.INFO)
+      end)
+
       if #unknown == 0 then
+        -- Persist empty result so we don't re-fetch
+        local cache_key = "mvn_dynamic_goals:" .. root
+        if not utils.cache.data then utils.cache.data = {} end
+        utils.cache.data[cache_key] = { goals = {}, pom_mtime = vim.fn.getftime(root .. "/pom.xml") }
+        utils.mark_dirty()
+        utils.save_cache()
+        DYNAMIC_CACHE[root] = {}
         PENDING[root] = nil
         return
       end
@@ -230,10 +270,16 @@ local function fetch_async(root)
 
       for _, plugin in ipairs(unknown) do
         local out = {}
-        vim.fn.jobstart(vim.list_extend(vim.deepcopy(cmd_base), { "help:describe", "-Dplugin=" .. plugin.prefix, "-q" }), {
+        vim.fn.jobstart(vim.list_extend(vim.deepcopy(cmd_base), { "help:describe", "-Dplugin=" .. plugin.prefix }), {
           cwd = root,
           stdout_buffered = true,
+          stderr_buffered = true,
           on_stdout = function(_, data)
+            for _, line in ipairs(data) do
+              out[#out + 1] = line
+            end
+          end,
+          on_stderr = function(_, data)
             for _, line in ipairs(data) do
               out[#out + 1] = line
             end
@@ -247,10 +293,13 @@ local function fetch_async(root)
               end
             end
             if completed == #unknown then
+              vim.schedule(function()
+                vim.notify("[spring-tools] " .. name .. ": discovered " .. #dynamic .. " dynamic goals from " .. #unknown .. " plugins", vim.log.levels.INFO)
+              end)
               DYNAMIC_CACHE[root] = dynamic
               local cache_key = "mvn_dynamic_goals:" .. root
               if not utils.cache.data then utils.cache.data = {} end
-              utils.cache.data[cache_key] = dynamic
+              utils.cache.data[cache_key] = { goals = dynamic, pom_mtime = vim.fn.getftime(root .. "/pom.xml") }
               utils.mark_dirty()
               utils.save_cache()
               PLUGIN_CACHE[root] = nil
@@ -261,16 +310,6 @@ local function fetch_async(root)
       end
     end,
   })
-end
-
-local function artifact_to_prefix(artifact_id)
-  local prefix = artifact_id:match("^(.+)%-maven%-plugin$")
-  if prefix then return prefix end
-  prefix = artifact_id:match("^maven%-(.+)%-plugin$")
-  if prefix then return prefix end
-  prefix = artifact_id:match("^(.+)%-plugin$")
-  if prefix then return prefix end
-  return artifact_id
 end
 
 local function parse_pom(root)
@@ -297,6 +336,16 @@ function M.get_plugin_goals(root)
     goals[#goals + 1] = g
     seen[g] = true
   end
+  -- Load dynamic cache early so we can skip placeholders for resolved plugins
+  local dynamic = DYNAMIC_CACHE[root]
+  if not dynamic then
+    local cache_key = "mvn_dynamic_goals:" .. root
+    local entry = utils.cache.data and utils.cache.data[cache_key]
+    if entry then
+      dynamic = type(entry) == "table" and entry.goals or entry
+      DYNAMIC_CACHE[root] = dynamic
+    end
+  end
   for _, aid in ipairs(artifact_ids) do
     local known_goals = PLUGIN_GOALS[aid]
     local prefix = artifact_to_prefix(aid)
@@ -309,22 +358,25 @@ function M.get_plugin_goals(root)
         end
       end
     else
-      local prefixed = prefix .. ":"
-      if not seen[prefixed] then
-        goals[#goals + 1] = prefixed
-        seen[prefixed] = true
+      local has_dynamic = false
+      if dynamic then
+        for _, dg in ipairs(dynamic) do
+          if dg:find(prefix .. ":", 1, true) then
+            has_dynamic = true
+            break
+          end
+        end
+      end
+      if not has_dynamic then
+        local prefixed = prefix .. ":"
+        if not seen[prefixed] then
+          goals[#goals + 1] = prefixed
+          seen[prefixed] = true
+        end
       end
     end
   end
   -- Merge dynamically discovered goals from cache
-  local dynamic = DYNAMIC_CACHE[root]
-  if not dynamic then
-    local cache_key = "mvn_dynamic_goals:" .. root
-    if utils.cache.data and utils.cache.data[cache_key] then
-      dynamic = utils.cache.data[cache_key]
-      DYNAMIC_CACHE[root] = dynamic
-    end
-  end
   if dynamic then
     for _, g in ipairs(dynamic) do
       if not seen[g] then
@@ -340,10 +392,32 @@ end
 function M.fetch_dynamic_goals(roots)
   if type(roots) == "string" then roots = { roots } end
   for _, root in ipairs(roots) do
-    local cache_key = "mvn_dynamic_goals:" .. root
-    local has_cached = DYNAMIC_CACHE[root] or (utils.cache.data and utils.cache.data[cache_key])
-    if not has_cached then
-      fetch_async(root)
+    if DYNAMIC_CACHE[root] then
+      -- Already loaded in memory, skip
+    else
+      local cache_key = "mvn_dynamic_goals:" .. root
+      local entry = utils.cache.data and utils.cache.data[cache_key]
+      if entry then
+        local goals, stored_mtime
+        if type(entry) == "table" and entry.goals then
+          goals = entry.goals
+          stored_mtime = entry.pom_mtime
+        else
+          goals = entry
+          stored_mtime = nil
+        end
+        local current_mtime = vim.fn.getftime(root .. "/pom.xml")
+        if stored_mtime ~= nil and current_mtime ~= -1 and stored_mtime ~= current_mtime then
+          -- POM changed, invalidate and re-fetch
+          utils.cache.data[cache_key] = nil
+          DYNAMIC_CACHE[root] = nil
+          fetch_async(root)
+        else
+          DYNAMIC_CACHE[root] = goals
+        end
+      else
+        fetch_async(root)
+      end
     end
   end
 end
