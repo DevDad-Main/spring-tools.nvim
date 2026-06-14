@@ -48,6 +48,8 @@
 
 ![Commands Reference](previews/spring-tools-cmds.png)
 
+![Formatted Output](previews/spring-tools-formatted-output.png)
+
 </details>
 
 ## Features
@@ -174,6 +176,7 @@ require("spring-tools").setup({
     active = "\u{f00c}",       -- checkmark icon
   },
   sidebar = {
+    position = "left",         -- "left" or "right"
     width = 48,                -- sidebar width in columns
     keymaps = {
       move_down = "j",

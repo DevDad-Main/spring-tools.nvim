@@ -559,7 +559,7 @@ function M._show_command_input(proj, default_text, on_submit)
     cleanup()
     on_submit(text)
   end, { buffer = buf, silent = true })
-  vim.keymap.set("n", "<C-w>", "<Nop>", { buffer = buf })
+  -- <C-w> intentionally left unmapped to preserve i_<C-w> word-delete in prompt buffers
   vim.keymap.set("n", "<C-h>", "<Nop>", { buffer = buf })
   vim.keymap.set("n", "<C-j>", "<Nop>", { buffer = buf })
   vim.keymap.set("n", "<C-k>", "<Nop>", { buffer = buf })

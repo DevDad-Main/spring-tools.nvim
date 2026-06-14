@@ -11,6 +11,7 @@ M.defaults = {
     active = "\u{f00c}",
   },
   sidebar = {
+    position = "left",
     width = 48,
     keymaps = {
       move_down = "j",

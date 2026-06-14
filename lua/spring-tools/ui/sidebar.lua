@@ -71,16 +71,20 @@ function M.open()
     return
   end
 
-  local leftmost = nil
-  local left = math.huge
-  for _, w in ipairs(vim.api.nvim_list_wins()) do
-    local _, col = unpack(vim.api.nvim_win_get_position(w))
-    if col < left then left = col; leftmost = w end
+  local pos = config.options.sidebar.position
+  if pos == "left" then
+    vim.cmd("topleft vsplit")
+  else
+    local rightmost = nil
+    local right = 0
+    for _, w in ipairs(vim.api.nvim_list_wins()) do
+      local _, col = unpack(vim.api.nvim_win_get_position(w))
+      if col > right then right = col; rightmost = w end
+    end
+    if rightmost then vim.api.nvim_set_current_win(rightmost) end
+    vim.cmd("botright vsplit")
   end
 
-  if leftmost then vim.api.nvim_set_current_win(leftmost) end
-
-  vim.cmd("vsplit")
   M.win = vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_width(M.win, config.options.sidebar.width)
   vim.wo[M.win].winfixwidth = true
