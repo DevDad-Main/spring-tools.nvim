@@ -153,7 +153,7 @@ local PENDING = {}
 
 local function find_mvn_cmd(root)
   local mvnw = root .. "/mvnw"
-  if vim.fn.filereadable(mvnw) == 1 then
+  if vim.fn.filereadable(mvnw) == 1 and vim.fn.getfperm(mvnw):match("x") then
     return { "./mvnw" }
   end
   return { "mvn" }
