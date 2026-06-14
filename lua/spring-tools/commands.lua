@@ -145,6 +145,7 @@ function M.setup_autocommands()
         require("spring-tools.utils").mark_dirty()
         sidebar.refresh()
       end
+      require("spring-tools.ui.views.dashboard").auto_restart(vim.fn.expand("<afile>:p"))
     end,
   })
   vim.api.nvim_create_autocmd("VimLeavePre", {

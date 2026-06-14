@@ -62,6 +62,13 @@ M.defaults = {
     },
   },
   auto_refresh = true,
+  auto_restart = {
+    enable = true,       -- master switch (off = disabled for all projects)
+    delay = 500,         -- debounce delay in ms
+    cooldown = 3000,     -- minimum ms between restarts
+    clean = false,       -- run "mvn clean" / "gradle clean" before restart
+    skip_tests = true,   -- ignore saves in src/test/** directories
+  },
   log_level = vim.log.levels.INFO,
   highlights = {},
 }

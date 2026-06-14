@@ -79,6 +79,11 @@ function SpringBootBackend:get_status(proj)
   local proc = backend.ProcessManager:get(proj)
   if not proc then return "stopped" end
   if proc.exit_code and proc.exit_code ~= 0 then return "failed" end
+  if proc.status == "failed" and not proc.exit_code then
+    -- stale entry with no exit code recorded — clear it
+    backend.ProcessManager.processes[proj.root] = nil
+    return "stopped"
+  end
   return proc.status
 end
 

@@ -18,6 +18,10 @@ function M.header()
 end
 
 M.items = {}
+M._auto_restart = {}
+M._restart_timers = {}
+M._last_restart = {}
+M._auto_clean = {}
 
 function M:load_items()
   mvn.invalidate_cache()
@@ -26,6 +30,21 @@ function M:load_items()
   local active = project.get_active_project()
   M.items = {}
   local maven_roots = {}
+
+  -- Restore persisted auto-restart toggles
+  if utils.cache.data then
+    for _, proj in ipairs(projs) do
+      local ar_key = "auto_restart:" .. proj.root
+      if utils.cache.data[ar_key] ~= nil then
+        M._auto_restart[proj.root] = utils.cache.data[ar_key]
+      end
+      local cl_key = "auto_clean:" .. proj.root
+      if utils.cache.data[cl_key] ~= nil then
+        M._auto_clean[proj.root] = utils.cache.data[cl_key]
+      end
+    end
+  end
+
   for _, proj in ipairs(projs) do
     local be = project.get_backend_for_project(proj)
     local status = be and be:get_status(proj) or "stopped"
@@ -87,11 +106,12 @@ function M:render_item(item, selected)
   end
 
   local build_type = (proj.build_type or ""):len() > 0 and proj.build_type or nil
+  local auto_restart = M._auto_restart[proj.root] and "\u{21bb} " or ""
 
   local active_mark = item.is_active and "\u{2605} " or "  "
 
   if selected then
-    local line = active_mark .. dot .. "  " .. proj.name .. "  " .. status_tag .. (build_type and "  " .. build_type or "")
+    local line = active_mark .. dot .. "  " .. proj.name .. "  " .. auto_restart .. status_tag .. (build_type and "  " .. build_type or "")
     return { { line, "SpringToolsSelected" } }
   end
 
@@ -99,7 +119,7 @@ function M:render_item(item, selected)
     segments = {
       { active_mark .. dot .. "  ", dot_hl },
       { proj.name, "SpringToolsDashboardProject" },
-      { "  " .. status_tag, status_hl },
+      { "  " .. auto_restart .. status_tag, status_hl },
       { build_type and "  " .. build_type or "", build_type and "SpringToolsDashboardBuildType" or nil },
     },
   } }
@@ -148,7 +168,7 @@ function M:on_activate(idx)
           if output.win and vim.api.nvim_win_is_valid(output.win) then
             output.show(final, proj.name .. " (exit " .. exit_code .. ")", { footer = true })
           end
-          if exit_code ~= 0 then
+          if exit_code ~= 0 and exit_code ~= 143 then
             utils.notify(proj.name .. " exited with code " .. exit_code, vim.log.levels.ERROR)
           end
           sidebar.refresh()
@@ -203,7 +223,7 @@ function M:on_activate(idx)
           if output.win and vim.api.nvim_win_is_valid(output.win) then
             output.show(final, proj.name .. (exit_code == 0 and "" or " (exit " .. exit_code .. ")"), { footer = true })
           end
-          if exit_code ~= 0 then
+          if exit_code ~= 0 and exit_code ~= 143 then
             utils.notify(proj.name .. " restart failed", vim.log.levels.ERROR)
           end
           sidebar.refresh()
@@ -267,6 +287,24 @@ function M:on_activate(idx)
   if item.status == "running" then
     menu[#menu + 1] = { label = "  Restart", action = do_restart }
     menu[#menu + 1] = { label = "  Stop", action = function() require("spring-tools.core.backend").ProcessManager:stop(proj); sidebar.refresh() end }
+    local ar_on = M._auto_restart[proj.root]
+    menu[#menu + 1] = { label = (ar_on and "↻  Auto-restart: on" or "↻  Auto-restart: off"), action = function()
+      M._auto_restart[proj.root] = not ar_on
+      if not utils.cache.data then utils.cache.data = {} end
+      utils.cache.data["auto_restart:" .. proj.root] = not ar_on
+      utils.mark_dirty()
+      sidebar.refresh()
+    end }
+    if ar_on then
+      local cl_on = M._auto_clean[proj.root]
+      menu[#menu + 1] = { label = (cl_on and "  Clean rebuild: on" or "  Clean rebuild: off"), action = function()
+        M._auto_clean[proj.root] = not cl_on
+        if not utils.cache.data then utils.cache.data = {} end
+        utils.cache.data["auto_clean:" .. proj.root] = not cl_on
+        utils.mark_dirty()
+        sidebar.refresh()
+      end }
+    end
   end
   if item.status == "failed" then
     menu[#menu + 1] = { label = "  Restart", action = do_restart }
@@ -344,6 +382,119 @@ function M.show_actions(actions)
     end)
   end
   show(actions)
+end
+
+function M.auto_restart(file_path)
+  if not config.options.auto_restart.enable then return end
+
+  -- Skip test files
+  if config.options.auto_restart.skip_tests ~= false then
+    if file_path:find("/src/test/") or file_path:find("\\src\\test\\") then return end
+  end
+
+  local delay = config.options.auto_restart.delay or 500
+  local cooldown = config.options.auto_restart.cooldown or 3000
+  local proj = project.find_project_for_file(file_path)
+  if not proj then return end
+  if not M._auto_restart[proj.root] then return end
+
+  -- Cooldown check
+  if M._last_restart[proj.root] then
+    if os.time() * 1000 - M._last_restart[proj.root] < cooldown then return end
+  end
+
+  local be = project.get_backend_for_project(proj)
+  if not be then return end
+  local proc = require("spring-tools.core.backend").ProcessManager.get(nil, proj)
+  if not proc or proc.status ~= "running" then return end
+
+  -- Cancel previous timer for this project
+  if M._restart_timers[proj.root] then
+    vim.fn.timer_stop(M._restart_timers[proj.root])
+  end
+
+  local changed_file = vim.fn.fnamemodify(file_path, ":t")
+
+  M._restart_timers[proj.root] = vim.fn.timer_start(delay, function()
+    M._restart_timers[proj.root] = nil
+    vim.schedule(function()
+      utils.notify("Auto-restarting " .. proj.name .. "...", vim.log.levels.INFO)
+      local restart_done = false
+      local per_clean = M._auto_clean[proj.root]
+      local do_clean = (per_clean ~= nil) and per_clean or config.options.auto_restart.clean
+
+      local function do_restart()
+        require("spring-tools.core.backend").ProcessManager:restart(proj, {
+        on_stdout = function(line)
+          require("spring-tools.core.backend").ProcessManager:extract_port(proj, line)
+          if not restart_done then
+            local logs = be:get_logs(proj)
+            if #logs > 0 then
+              vim.schedule(function()
+                output.update_from_logs(logs, proj.name)
+              end)
+            end
+          end
+          if line:find("Started .+ in %d+") then
+            restart_done = true
+            local started_time = line:match(" in ([%d.]+) seconds?")
+            vim.schedule(function()
+              local proc = require("spring-tools.core.backend").ProcessManager.get(nil, proj)
+              local port_str = (proc and proc.port) and (":" .. proc.port) or ""
+              M._last_restart[proj.root] = os.time() * 1000
+              if output.buf and vim.api.nvim_buf_is_valid(output.buf) then
+                output.append("")
+                output.append("✓  Auto-restarted — " .. proj.name .. " " .. port_str .. " · " .. (started_time and (started_time .. "s") or "ready") .. " · " .. changed_file)
+              end
+              sidebar.refresh()
+            end)
+          end
+        end,
+        on_exit = function(exit_code)
+          vim.schedule(function()
+            if exit_code ~= 0 and exit_code ~= 143 then
+              local log_lines = be:get_logs(proj)
+              local start = math.max(1, #log_lines - 100)
+              local out = {}
+              for i = start, #log_lines do table.insert(out, log_lines[i]) end
+              local cause = M.extract_cause(out)
+              table.insert(out, "")
+              table.insert(out, "Auto-restart failed with code " .. exit_code)
+              local final = {}
+              for _, l in ipairs(cause) do table.insert(final, l) end
+              if #cause > 0 then table.insert(final, "═══ Full output ═══") end
+              for _, l in ipairs(out) do table.insert(final, l) end
+              if output.win and vim.api.nvim_win_is_valid(output.win) then
+                output.show(final, proj.name .. " (exit " .. exit_code .. ")", { footer = true })
+              end
+              utils.notify(proj.name .. " auto-restart failed (exit " .. exit_code .. ")", vim.log.levels.ERROR)
+            elseif exit_code == 0 then
+              utils.notify(proj.name .. " auto-restarted successfully", vim.log.levels.INFO)
+            end
+            sidebar.refresh()
+          end)
+        end,
+      })
+      end
+
+      if do_clean then
+        local proc = require("spring-tools.core.backend").ProcessManager.get(nil, proj)
+        if proc then require("spring-tools.core.backend").ProcessManager.stop(nil, proj) end
+        local build_type = proj.build_type or "maven"
+        local clean_cmd = build_type == "maven" and { "mvn", "clean" } or { "gradle", "clean" }
+        vim.fn.jobstart(clean_cmd, {
+          cwd = proj.root,
+          on_exit = function()
+            vim.schedule(function()
+              do_restart()
+            end)
+          end,
+        })
+      else
+        do_restart()
+      end
+    end)
+  end)
 end
 
 function M._omni(findstart, base)

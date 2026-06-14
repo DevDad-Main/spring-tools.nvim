@@ -110,6 +110,7 @@
 - **Process Manager** — unbuffered I/O, port extraction, exit code tracking
 - **Project Cache** — persistent JSON at `~/.local/share/nvim/spring-tools/projects.json`
 - **Unified Search** — `:SpringSearch` opens a fuzzy picker across all beans, endpoints, tests, and config properties with nerd-font icons — jumps directly to the definition on selection
+- **Auto-restart** — save any file and the app restarts automatically; skips test files, debounces rapid saves, shows changed filename in success line; per-project toggle persists across sessions; optional clean rebuild
 
 <br>
 
@@ -253,6 +254,32 @@ Open natively in Telescope when available; falls back to `vim.ui.select` otherwi
 
 </details>
 
+<details><summary>Auto-restart on save</summary>
+
+When enabled, saving a `.java` or build file automatically restarts the running Spring Boot app after a debounce delay. Toggle per-project from the dashboard action menu — a `↻` indicator appears on the project line when active.
+
+- **skip_tests** (default `true`) — ignores saves in `src/test/**` to avoid unnecessary restarts
+- **cooldown** (default `3000ms`) — prevents rapid double-restarts from quick consecutive saves
+- **clean** (default `false`) — runs `mvn clean` / `gradle clean` before each restart for a full rebuild
+- **Changed file** — the success line shows which file triggered the restart (`· AppStartupRunner.java`)
+
+**vs spring-boot-devtools**:
+
+Benchmarked on a small Spring Boot app (TestApp, ~15 classes, embedded H2):
+
+| | Auto-restart | DevTools |
+|---|---|---|
+| Restart time | ~4.2s (full JVM restart) | ~1–2s (class reload) |
+| Speed vs DevTools | ~2–4x slower | — |
+| Dependencies | None | `spring-boot-devtools` in pom.xml |
+| Config changes | Yes | Only via restart |
+| Bean wiring changes | Yes | Limited |
+| Works with any build | Yes | Maven/Gradle only |
+
+Times vary by hardware, JVM warm-up, and project size — larger projects will see longer restart times. Auto-restart is a zero-dependency convenience feature that works out of the box. DevTools is faster for pure code changes but requires the dependency and has limitations with configuration and bean wiring changes. Use both together — DevTools for live-coding, auto-restart as a fallback for projects where DevTools isn't set up.
+
+</details>
+
 <br>
 
 ## Configuration
@@ -311,6 +338,13 @@ require("spring-tools").setup({
   },
   command_input = {
     position = "center",       -- "top", "center", or "bottom"
+  },
+  auto_restart = {
+    enable = true,             -- master switch (off = disabled for all)
+    delay = 500,               -- debounce delay in ms
+    cooldown = 3000,           -- minimum ms between restarts
+    clean = false,             -- run mvn clean / gradle clean before restart
+    skip_tests = true,         -- ignore saves in src/test/**
   },
   search = {
     icons = {
@@ -547,9 +581,11 @@ A sample Spring Boot test app is available at `tests/TestApp/`:
 - [x] **Auto-select active project** — jumps cursor to CWD-matching project on sidebar refresh
 - [x] **Unified fuzzy search** — `:SpringSearch` across beans, endpoints, tests, and config with Telescope-native picker, nerd-font icons, and sidebar `/` keymap
 - [x] **Custom command history management** — `:SpringCommands` to browse, re-run, copy, and delete saved commands
+- [x] **Auto-restart on save** — debounced restart on file save with per-project toggle and `↻` indicator
 - [ ] **Gradle build file parsing** — parse `build.gradle`/`build.gradle.kts` for dynamic task discovery
 - [ ] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects
-- [ ] **Custom command history management** — UI to browse, edit, and delete saved custom commands
+- [ ] **Config diff view** — side-by-side comparison of config properties between profiles
+- [ ] **Profile picker** — select active Spring profiles when starting an app
 
 ## License
 

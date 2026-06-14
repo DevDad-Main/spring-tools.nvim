@@ -104,6 +104,7 @@ function ProcessManager.start(_, project, cmd, cwd, callbacks)
       end
     end,
     on_exit = function(_, exit_code, _)
+      local my_job_id = job_id
       vim.schedule(function()
         if partial_out ~= "" then
           table.insert(logs, partial_out)
@@ -114,7 +115,7 @@ function ProcessManager.start(_, project, cmd, cwd, callbacks)
           if callbacks.on_stderr then callbacks.on_stderr(partial_err) end
         end
         local proc = ProcessManager.processes[project.root]
-        if proc then
+        if proc and proc.job_id == my_job_id then
           proc.status = exit_code == 0 and "stopped" or "failed"
           proc.exit_code = exit_code
         end
@@ -146,6 +147,13 @@ function ProcessManager.stop(_, project)
   local proc = ProcessManager.processes[project.root]
   if proc and proc.status == "running" then
     vim.fn.jobstop(proc.job_id)
+    if proc.port then
+      if vim.fn.executable("fuser") == 1 then
+        vim.fn.system("fuser -k " .. proc.port .. "/tcp 2>/dev/null &")
+      elseif vim.fn.executable("lsof") == 1 then
+        vim.fn.system("lsof -ti :" .. proc.port .. " | xargs kill -9 2>/dev/null &")
+      end
+    end
     proc.status = "stopped"
     state.emit("process_stopped", project)
     return true

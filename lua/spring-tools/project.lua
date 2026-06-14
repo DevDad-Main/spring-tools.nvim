@@ -160,4 +160,20 @@ function M.get_backend_for_project(project, backend_name)
   return backends_mod.get_active_backend()
 end
 
+function M.find_project_for_file(file_path)
+  if not file_path then return nil end
+  local normalized = vim.fn.fnamemodify(file_path, ":p"):gsub("/$", "")
+  local best_root, best_proj
+  for _, p in ipairs(M.projects) do
+    local root = vim.fn.fnamemodify(p.root, ":p"):gsub("/$", "")
+    if normalized:find(root, 1, true) == 1 then
+      if not best_root or #root > #best_root then
+        best_root = root
+        best_proj = p
+      end
+    end
+  end
+  return best_proj
+end
+
 return M
