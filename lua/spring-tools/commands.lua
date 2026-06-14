@@ -48,6 +48,12 @@ function M.setup()
     utils.notify("Spring Tools indexes refreshed")
   end, { desc = "Refresh all Spring Tools indexes" })
 
+  vim.api.nvim_create_user_command("SpringClearCache", function()
+    utils.invalidate_cache()
+    require("spring-tools.mvn_completion").invalidate_cache()
+    utils.notify("Spring Tools caches cleared")
+  end, { desc = "Clear all Spring Tools caches (project cache + dynamic goals)" })
+
   vim.api.nvim_create_user_command("SpringTestClass", function()
     M.run_current_test("class")
   end, { desc = "Run current test class" })

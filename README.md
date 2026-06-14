@@ -118,6 +118,7 @@ use {
 | `:SpringTest` | Open sidebar on Tests |
 | `:SpringConfig` | Open sidebar on Config |
 | `:SpringRefresh` | Clear caches and re-index |
+| `:SpringClearCache` | Clear all caches (project cache + dynamic goals) |
 | `:SpringTestClass` | Run current test class |
 | `:SpringTestMethod` | Run current test method |
 | `:SpringConfigSearch <query>` | Search config properties |
