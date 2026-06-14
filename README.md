@@ -26,6 +26,30 @@
 
 <br>
 
+## Previews
+
+<details><summary>Click to expand screenshots and demos</summary>
+
+![Plugin Demo](previews/plugin_demo.gif)
+
+![Dashboard](previews/plugin_demo_dashboard.gif)
+
+![Beans Explorer](previews/plugin_demo_beans.gif)
+
+![Endpoints Explorer](previews/plugin_demo_endpoints.gif)
+
+![Test Runner](previews/plugin_demo_tests.gif)
+
+![Config Explorer](previews/plugin_demo_config.gif)
+
+![Run All Tests](previews/plugin_demo_tests_run_all.gif)
+
+![Keybindings](previews/spring-tools-keybinds.png)
+
+![Commands Reference](previews/spring-tools-cmds.png)
+
+</details>
+
 ## Features
 
 - **Sidebar UI** — persistent left sidebar with 5 tabbed views and `?` help float
@@ -363,7 +387,7 @@ lua/spring-tools/
 nvim --headless -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/init.lua'}" -c "q"
 ```
 
-A production-grade Spring Boot test app is available at `tests/ProductionApp/`:
+A sample Spring Boot test app is available at `tests/TestApp/`:
 - Full MVC: models, repositories, services, controllers
 - All HTTP methods (GET, POST, PUT, PATCH, DELETE)
 - `@Configuration` with `@Bean` methods, `@Component` runners
