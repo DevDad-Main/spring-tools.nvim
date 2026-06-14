@@ -1,3 +1,5 @@
+local utils = require("spring-tools.utils")
+
 local M = {}
 
 M.phases = {
@@ -146,6 +148,120 @@ M.gradle_d_properties = {
 }
 
 local PLUGIN_CACHE = {}
+local DYNAMIC_CACHE = {}
+local PENDING = {}
+
+local function find_mvn_cmd(root)
+  local mvnw = root .. "/mvnw"
+  if vim.fn.filereadable(mvnw) == 1 then
+    return { "./mvnw" }
+  end
+  return { "mvn" }
+end
+
+local function parse_effective_pom(text)
+  local plugins = {}
+  for plugin_block in text:gmatch("<plugin>(.-)</plugin>") do
+    local aid = plugin_block:match("<artifactId>(.-)</artifactId>")
+    if aid then
+      plugins[#plugins + 1] = aid
+    end
+  end
+  return plugins
+end
+
+local function parse_describe_output(lines)
+  local goals = {}
+  local capturing = false
+  for _, line in ipairs(lines) do
+    if capturing then
+      local goal = line:match("^%s*([%w][%w%.%-_]*:[%w][%w%.%-_]*)%s*$")
+      if goal and not goal:match(":.*:") then
+        goals[#goals + 1] = goal
+      elseif not line:match("^%s*$") then
+        capturing = false
+      end
+    elseif line:find("has %d+ goal", 1, true) then
+      capturing = true
+    end
+  end
+  return goals
+end
+
+local function fetch_async(root)
+  if PENDING[root] then return end
+  PENDING[root] = true
+
+  local mvn = find_mvn_cmd(root)
+  local stdout = {}
+
+  vim.fn.jobstart(vim.list_extend(vim.deepcopy(mvn), { "help:effective-pom", "-q" }), {
+    cwd = root,
+    stdout_buffered = true,
+    on_stdout = function(_, data)
+      for _, line in ipairs(data) do
+        stdout[#stdout + 1] = line
+      end
+    end,
+    on_exit = function(_, code)
+      if code ~= 0 or #stdout == 0 then
+        PENDING[root] = nil
+        return
+      end
+
+      local text = table.concat(stdout, "\n")
+      local plugins = parse_effective_pom(text)
+
+      local unknown = {}
+      for _, aid in ipairs(plugins) do
+        if not PLUGIN_GOALS[aid] then
+          unknown[#unknown + 1] = { aid = aid, prefix = artifact_to_prefix(aid) }
+        end
+      end
+
+      if #unknown == 0 then
+        PENDING[root] = nil
+        return
+      end
+
+      local dynamic = {}
+      local completed = 0
+      local cmd_base = find_mvn_cmd(root)
+
+      for _, plugin in ipairs(unknown) do
+        local out = {}
+        vim.fn.jobstart(vim.list_extend(vim.deepcopy(cmd_base), { "help:describe", "-Dplugin=" .. plugin.prefix, "-q" }), {
+          cwd = root,
+          stdout_buffered = true,
+          on_stdout = function(_, data)
+            for _, line in ipairs(data) do
+              out[#out + 1] = line
+            end
+          end,
+          on_exit = function(_, exit_code)
+            completed = completed + 1
+            if exit_code == 0 then
+              local goals = parse_describe_output(out)
+              for _, g in ipairs(goals) do
+                dynamic[#dynamic + 1] = g
+              end
+            end
+            if completed == #unknown then
+              DYNAMIC_CACHE[root] = dynamic
+              local cache_key = "mvn_dynamic_goals:" .. root
+              if not utils.cache.data then utils.cache.data = {} end
+              utils.cache.data[cache_key] = dynamic
+              utils.mark_dirty()
+              utils.save_cache()
+              PLUGIN_CACHE[root] = nil
+              PENDING[root] = nil
+            end
+          end,
+        })
+      end
+    end,
+  })
+end
 
 local function artifact_to_prefix(artifact_id)
   local prefix = artifact_id:match("^(.+)%-maven%-plugin$")
@@ -200,15 +316,45 @@ function M.get_plugin_goals(root)
       end
     end
   end
+  -- Merge dynamically discovered goals from cache
+  local dynamic = DYNAMIC_CACHE[root]
+  if not dynamic then
+    local cache_key = "mvn_dynamic_goals:" .. root
+    if utils.cache.data and utils.cache.data[cache_key] then
+      dynamic = utils.cache.data[cache_key]
+      DYNAMIC_CACHE[root] = dynamic
+    end
+  end
+  if dynamic then
+    for _, g in ipairs(dynamic) do
+      if not seen[g] then
+        goals[#goals + 1] = g
+        seen[g] = true
+      end
+    end
+  end
   PLUGIN_CACHE[root] = goals
   return goals
+end
+
+function M.fetch_dynamic_goals(roots)
+  if type(roots) == "string" then roots = { roots } end
+  for _, root in ipairs(roots) do
+    local cache_key = "mvn_dynamic_goals:" .. root
+    local has_cached = DYNAMIC_CACHE[root] or (utils.cache.data and utils.cache.data[cache_key])
+    if not has_cached then
+      fetch_async(root)
+    end
+  end
 end
 
 function M.invalidate_cache(root)
   if root then
     PLUGIN_CACHE[root] = nil
+    DYNAMIC_CACHE[root] = nil
   else
     PLUGIN_CACHE = {}
+    DYNAMIC_CACHE = {}
   end
 end
 

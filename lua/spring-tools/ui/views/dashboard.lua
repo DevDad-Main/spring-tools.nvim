@@ -25,6 +25,7 @@ function M:load_items()
   local projs = state.get_projects()
   local active = project.get_active_project()
   M.items = {}
+  local maven_roots = {}
   for _, proj in ipairs(projs) do
     local be = project.get_backend_for_project(proj)
     local status = be and be:get_status(proj) or "stopped"
@@ -35,6 +36,12 @@ function M:load_items()
       status = status,
       is_active = active and proj.root == active.root,
     }
+    if proj.build_type == "maven" then
+      maven_roots[#maven_roots + 1] = proj.root
+    end
+  end
+  if #maven_roots > 0 then
+    mvn.fetch_dynamic_goals(maven_roots)
   end
 end
 
