@@ -96,6 +96,9 @@ function M.setup()
   vim.api.nvim_create_user_command("SpringSearch", function()
     require("spring-tools.search").open()
   end, { desc = "Search all beans, endpoints, tests, and config properties" })
+  vim.api.nvim_create_user_command("SpringCommands", function()
+    require("spring-tools.command_history").open()
+  end, { desc = "Browse, re-run, and manage saved custom commands" })
 end
 
 function M.open_sidebar(view)

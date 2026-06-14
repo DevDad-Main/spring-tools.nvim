@@ -99,7 +99,8 @@
 - **Sidebar UI** — persistent left sidebar with 5 tabbed views and `?` help float
 - **Output Panel** — bottom split (12 rows, 30% height) for live log streaming
 - **Dashboard** — project list with ★ active marker, ●/○ status dots, auto-selects CWD project
-- **Action Picker** — start, stop, restart, custom run with POM-driven Tab-completion
+- **Nested Action Menu** — Enter on a project opens a structured picker: Recent & default commands, Common commands, Custom run, View logs, Restart/Stop, Open config — recent commands can be deleted inline
+- **Command History** — `:SpringCommands` browses all saved custom commands across projects; re-run, copy, or delete
 - **Custom Run Command** — floating input with omnifunc completion (mvn lifecycle phases, plugin goals, `-D` properties, Gradle tasks), position configurable (`top`/`center`/`bottom`), locked against window navigation
 - **Dynamic Maven Goal Discovery** — auto-discovers plugin goals from `help:effective-pom` and `help:describe` for any Maven plugin, not just 55+ well-known ones; caches across sessions; auto-invalidates on POM changes
 - **Bean Explorer** — collapsible sections by stereotype, nested `@Bean` methods under `@Configuration`
@@ -165,6 +166,7 @@ use {
 | `:SpringRefresh`              | Clear caches and re-index                        |
 | `:SpringClearCache`           | Clear all caches (project cache + dynamic goals) |
 | `:SpringSearch`               | Fuzzy search beans, endpoints, tests, and config |
+| `:SpringCommands`             | Browse and manage saved custom commands          |
 | `:SpringTestClass`            | Run current test class                           |
 | `:SpringTestMethod`           | Run current test method                          |
 | `:SpringConfigSearch <query>` | Search config properties                         |
@@ -178,7 +180,7 @@ use {
 | `j` / `k` | Move selection up/down                |
 | `h` / `l` | Previous/next tab                     |
 | `1`–`5`   | Jump to tab                           |
-| `<CR>`    | Activate (start/stop/open)            |
+| `<CR>`    | Open nested action menu (commands, logs, stop, etc.) |
 | `/`       | Unified search across all views       |
 | `p`       | Preview config value (in Config view) |
 | `d`       | Remove project from cache             |
@@ -202,9 +204,29 @@ Select any entry to jump directly to its definition. Opens natively in Telescope
 
 </details>
 
+<details><summary>Dashboard action menu (Enter on a project)</summary>
+
+Pressing `<CR>` on a project opens a nested picker:
+
+```
+ Recent & default (3)    ← expand for saved + default commands
+ Common commands (112)   ← expand for Maven/Gradle tasks
+  Custom run...           ← opens floating input for a one-off command
+  View logs               ← (running/failed only) opens output panel
+  Restart                 ← (running only) restarts the app
+  Stop                    ← (running only) stops the app
+  Open config             ← opens config file picker
+```
+
+- **Recent commands** prompt Run / Delete before executing
+- **Esc** navigates back to the parent menu
+- **Telescope** overrides the picker when enabled for fuzzy filtering
+
+</details>
+
 <details><summary>Custom Run Command Input</summary>
 
-Press `<CR>` on a stopped project → select **Custom...** → a floating input window appears.
+Press `<CR>` on a stopped project → select ** Custom run...** → a floating input window appears.
 
 - **Tab** triggers omnifunc completion (mvn lifecycle phases, plugin goals, `-D` properties, Gradle tasks)
 - `<C-j>` / `<C-k>` navigate the completion popup
@@ -216,6 +238,18 @@ Press `<CR>` on a stopped project → select **Custom...** → a floating input 
 - `<Esc>` exits insert mode (stays in float)
 - `<Esc>` or `q` in normal mode closes
 - `<C-w/h/j/k/l>`, mouse clicks all blocked
+
+</details>
+
+<details><summary>:SpringCommands — command history management</summary>
+
+Browse all saved custom commands across projects. Each command entry shows the owning project and the full command string.
+
+- **Re-run** — starts the command with the project's backend (Maven/Gradle)
+- **Copy** — copies the command to clipboard
+- **Delete** — removes from history
+
+Open natively in Telescope when available; falls back to `vim.ui.select` otherwise.
 
 </details>
 
@@ -512,6 +546,7 @@ A sample Spring Boot test app is available at `tests/TestApp/`:
 - [x] **Float window lock** — no accidental navigation away (`<C-w/h/j/k/l>` blocked, `BufLeave` fail-safe)
 - [x] **Auto-select active project** — jumps cursor to CWD-matching project on sidebar refresh
 - [x] **Unified fuzzy search** — `:SpringSearch` across beans, endpoints, tests, and config with Telescope-native picker, nerd-font icons, and sidebar `/` keymap
+- [x] **Custom command history management** — `:SpringCommands` to browse, re-run, copy, and delete saved commands
 - [ ] **Gradle build file parsing** — parse `build.gradle`/`build.gradle.kts` for dynamic task discovery
 - [ ] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects
 - [ ] **Custom command history management** — UI to browse, edit, and delete saved custom commands

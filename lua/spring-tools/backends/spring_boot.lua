@@ -77,7 +77,9 @@ end
 
 function SpringBootBackend:get_status(proj)
   local proc = backend.ProcessManager:get(proj)
-  return proc and proc.status or "stopped"
+  if not proc then return "stopped" end
+  if proc.exit_code and proc.exit_code ~= 0 then return "failed" end
+  return proc.status
 end
 
 function SpringBootBackend:get_logs(proj)

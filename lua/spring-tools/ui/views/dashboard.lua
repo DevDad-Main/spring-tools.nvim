@@ -113,224 +113,237 @@ function M:on_activate(idx)
 
   project.set_active_project(proj)
 
-  if item.status == "running" then
-    local actions = {
-      { label = "View logs", action = function() M.show_logs(proj) end },
-      { label = "Stop", action = function() backend.ProcessManager:stop(proj); sidebar.refresh() end },
-      { label = "Restart", action = function()
-        output.show({ "Restarting " .. proj.name .. "..." }, proj.name)
-        backend.ProcessManager:restart(proj, {
-          on_stdout = function(line)
-            backend.ProcessManager:extract_port(proj, line)
-            local logs = be:get_logs(proj)
-            if #logs > 0 then
-              vim.schedule(function()
-                output.update_from_logs(logs, proj.name)
-              end)
-            end
-          end,
-          on_exit = function(exit_code)
-            vim.schedule(function()
-              local log_lines = be:get_logs(proj)
-              local recent = {}
-              local start = math.max(1, #log_lines - 100)
-              for i = start, #log_lines do table.insert(recent, log_lines[i]) end
-              local cause = M.extract_cause(recent)
-              table.insert(recent, "")
-              table.insert(recent, exit_code == 0 and "Restarted successfully" or "Restart failed with code " .. exit_code)
-              local final = {}
-              for _, l in ipairs(cause) do table.insert(final, l) end
-              if #cause > 0 then table.insert(final, "\u{2550}\u{2550}\u{2550} Full output \u{2550}\u{2550}\u{2550}") end
-              for _, l in ipairs(recent) do table.insert(final, l) end
-              if output.win and vim.api.nvim_win_is_valid(output.win) then
-                output.show(final, proj.name .. (exit_code == 0 and "" or " (exit " .. exit_code .. ")"), { footer = true })
-              end
-              if exit_code ~= 0 then
-                utils.notify(proj.name .. " restart failed", vim.log.levels.ERROR)
-              end
-              sidebar.refresh()
-            end)
-          end,
-        })
-      end },
-      { label = "Open config", action = function() M.open_config(proj) end },
-    }
-    M.show_actions(actions)
-  elseif item.status == "failed" then
-    local actions = {
-      { label = "View logs", action = function() M.show_logs(proj) end },
-      { label = "Restart", action = function()
-        output.show({ "Restarting " .. proj.name .. "..." }, proj.name)
-        backend.ProcessManager:restart(proj, {
-          on_stdout = function(line)
-            backend.ProcessManager:extract_port(proj, line)
-            local logs = be:get_logs(proj)
-            if #logs > 0 then
-              vim.schedule(function()
-                output.update_from_logs(logs, proj.name)
-              end)
-            end
-          end,
-          on_exit = function(exit_code)
-            vim.schedule(function()
-              local log_lines = be:get_logs(proj)
-              local recent = {}
-              local start = math.max(1, #log_lines - 100)
-              for i = start, #log_lines do table.insert(recent, log_lines[i]) end
-              local cause = M.extract_cause(recent)
-              table.insert(recent, "")
-              table.insert(recent, exit_code == 0 and "Restarted successfully" or "Restart failed with code " .. exit_code)
-              local final = {}
-              for _, l in ipairs(cause) do table.insert(final, l) end
-              if #cause > 0 then table.insert(final, "\u{2550}\u{2550}\u{2550} Full output \u{2550}\u{2550}\u{2550}") end
-              for _, l in ipairs(recent) do table.insert(final, l) end
-              if output.win and vim.api.nvim_win_is_valid(output.win) then
-                output.show(final, proj.name .. (exit_code == 0 and "" or " (exit " .. exit_code .. ")"), { footer = true })
-              end
-              if exit_code ~= 0 then
-                utils.notify(proj.name .. " restart failed", vim.log.levels.ERROR)
-              end
-              sidebar.refresh()
-            end)
-          end,
-        })
-      end },
-    }
-    M.show_actions(actions)
-  elseif item.status == "stopped" then
-    local default_cmd = be and be:get_run_command(proj)
-    if not default_cmd then utils.notify("No run command available for " .. proj.name, vim.log.levels.WARN) return end
-    local default_str = table.concat(default_cmd, " ")
-    local build_type = proj.build_type or "maven"
-    local cache_key = "recent_cmds:" .. proj.root
-    local recent = (utils.cache.data and utils.cache.data[cache_key]) or {}
-    local suggestions = { default_str }
+  local default_cmd = be and be:get_run_command(proj)
+  local default_str = default_cmd and table.concat(default_cmd, " ") or nil
+  local build_type = proj.build_type or "maven"
+  local cache_key = "recent_cmds:" .. proj.root
+  local recent = (utils.cache.data and utils.cache.data[cache_key]) or {}
+
+  local function run_cmd(cmd)
+    output.show({ "Starting " .. proj.name .. " with: " .. table.concat(cmd, " ") }, proj.name)
+    local ok = require("spring-tools.core.backend").ProcessManager:start(proj, cmd, proj.root, {
+      on_stdout = function(line)
+        require("spring-tools.core.backend").ProcessManager:extract_port(proj, line)
+        local logs = be:get_logs(proj)
+        if #logs > 0 then
+          vim.schedule(function()
+            output.update_from_logs(logs, proj.name)
+          end)
+        end
+      end,
+      on_exit = function(exit_code)
+        vim.schedule(function()
+          local log_lines = be:get_logs(proj)
+          if #log_lines == 0 then log_lines = { "(no output captured)" } end
+          local start = math.max(1, #log_lines - 100)
+          local out = {}
+          for i = start, #log_lines do table.insert(out, log_lines[i]) end
+          local cause = M.extract_cause(out)
+          table.insert(out, "")
+          table.insert(out, exit_code == 0 and "Process exited cleanly" or "Process exited with code " .. exit_code)
+          local final = {}
+          for _, l in ipairs(cause) do table.insert(final, l) end
+          if #cause > 0 then table.insert(final, '═' .. '═' .. '═' .. " Full output " .. '═' .. '═' .. '═') end
+          for _, l in ipairs(out) do table.insert(final, l) end
+          if output.win and vim.api.nvim_win_is_valid(output.win) then
+            output.show(final, proj.name .. " (exit " .. exit_code .. ")", { footer = true })
+          end
+          if exit_code ~= 0 then
+            utils.notify(proj.name .. " exited with code " .. exit_code, vim.log.levels.ERROR)
+          end
+          sidebar.refresh()
+        end)
+      end,
+    })
+    if not ok then
+      utils.notify("Failed to start " .. proj.name, vim.log.levels.ERROR)
+    else
+      sidebar.refresh()
+    end
+  end
+
+  local function save_and_run(input)
+    if input == "" then return end
+    if default_str and input ~= default_str then
+      recent[#recent + 1] = input
+      if #recent > 10 then table.remove(recent, 1) end
+      if not utils.cache.data then utils.cache.data = {} end
+      utils.cache.data[cache_key] = recent
+      utils.mark_dirty()
+      utils.save_cache()
+    end
+    run_cmd(vim.split(input, "%s+"))
+  end
+
+  local function do_restart()
+    output.show({ "Restarting " .. proj.name .. "..." }, proj.name)
+    require("spring-tools.core.backend").ProcessManager:restart(proj, {
+      on_stdout = function(line)
+        require("spring-tools.core.backend").ProcessManager:extract_port(proj, line)
+        local logs = be:get_logs(proj)
+        if #logs > 0 then
+          vim.schedule(function()
+            output.update_from_logs(logs, proj.name)
+          end)
+        end
+      end,
+      on_exit = function(exit_code)
+        vim.schedule(function()
+          local log_lines = be:get_logs(proj)
+          local start = math.max(1, #log_lines - 100)
+          local out = {}
+          for i = start, #log_lines do table.insert(out, log_lines[i]) end
+          local cause = M.extract_cause(out)
+          table.insert(out, "")
+          table.insert(out, exit_code == 0 and "Restarted successfully" or "Restart failed with code " .. exit_code)
+          local final = {}
+          for _, l in ipairs(cause) do table.insert(final, l) end
+          if #cause > 0 then table.insert(final, '═' .. '═' .. '═' .. " Full output " .. '═' .. '═' .. '═') end
+          for _, l in ipairs(out) do table.insert(final, l) end
+          if output.win and vim.api.nvim_win_is_valid(output.win) then
+            output.show(final, proj.name .. (exit_code == 0 and "" or " (exit " .. exit_code .. ")"), { footer = true })
+          end
+          if exit_code ~= 0 then
+            utils.notify(proj.name .. " restart failed", vim.log.levels.ERROR)
+          end
+          sidebar.refresh()
+        end)
+      end,
+    })
+  end
+
+  local menu = {}
+
+  if item.status ~= "running" then
+    local run_items = {}
+    if default_str then
+      run_items[#run_items + 1] = { label = "  " .. default_str, action = function() save_and_run(default_str) end }
+    end
     if #recent > 0 then
-      table.insert(suggestions, "--- recent ---")
-      local counts = {}
-      for _, cmd in ipairs(recent) do
-        counts[cmd] = (counts[cmd] or 0) + 1
-      end
       local seen = {}
       for i = #recent, 1, -1 do
         local cmd = recent[i]
         if not seen[cmd] then
           seen[cmd] = true
-          local count = counts[cmd]
-          if count > 1 then
-            table.insert(suggestions, cmd .. " (x" .. count .. ")")
-          else
-            table.insert(suggestions, cmd)
-          end
+          run_items[#run_items + 1] = { label = "  " .. cmd, action = function() M._run_or_delete(proj, cmd, save_and_run) end }
         end
       end
-      table.insert(suggestions, "--- common ---")
     end
+    menu[#menu + 1] = { label = " Recent & default (" .. #run_items .. ")", submenu = run_items }
+
+    local common_items = {}
     if build_type == "maven" then
       for _, cmd in ipairs({
-        "mvn clean compile",
-        "mvn test",
-        "mvn package -DskipTests",
-        "mvn clean install",
-        "mvn verify",
-        "mvn clean",
-      }) do suggestions[#suggestions + 1] = cmd end
+        "mvn clean compile", "mvn test", "mvn package -DskipTests", "mvn clean install", "mvn verify", "mvn clean",
+      }) do
+        common_items[#common_items + 1] = { label = "  " .. cmd, action = function() save_and_run(cmd) end }
+      end
       local plugin_goals = mvn.get_plugin_goals(proj.root)
       for _, goal in ipairs(plugin_goals) do
         if not goal:match(":$") then
-          suggestions[#suggestions + 1] = "mvn " .. goal
+          common_items[#common_items + 1] = { label = "  mvn " .. goal, action = function() save_and_run("mvn " .. goal) end }
         end
       end
     else
       for _, cmd in ipairs({
-        "gradle build",
-        "gradle test",
-        "gradle clean build",
-        "gradle bootRun",
-        "gradle dependencies",
-        "gradle clean",
-        "gradle compileJava",
-        "gradle check",
-        "gradle assemble",
-        "gradle bootJar",
-        "gradle bootRun --debug",
-        "gradle bootRun --args='--server.port=9090'",
-      }) do suggestions[#suggestions + 1] = cmd end
-    end
-    suggestions[#suggestions + 1] = "Custom..."
-
-    local function run_cmd(cmd)
-      output.show({ "Starting " .. proj.name .. " with: " .. table.concat(cmd, " ") }, proj.name)
-      local ok = backend.ProcessManager:start(proj, cmd, proj.root, {
-        on_stdout = function(line)
-          backend.ProcessManager:extract_port(proj, line)
-          local logs = be:get_logs(proj)
-          if #logs > 0 then
-            vim.schedule(function()
-              output.update_from_logs(logs, proj.name)
-            end)
-          end
-        end,
-        on_exit = function(exit_code)
-          vim.schedule(function()
-            local log_lines = be:get_logs(proj)
-            if #log_lines == 0 then log_lines = { "(no output captured)" } end
-            local start = math.max(1, #log_lines - 100)
-            local recent = {}
-            for i = start, #log_lines do table.insert(recent, log_lines[i]) end
-            local cause = M.extract_cause(recent)
-            table.insert(recent, "")
-            if exit_code == 0 then
-              table.insert(recent, "Process exited cleanly")
-            else
-              table.insert(recent, "Process exited with code " .. exit_code)
-            end
-            local final = {}
-            for _, l in ipairs(cause) do table.insert(final, l) end
-            if #cause > 0 then table.insert(final, "═══ Full output ═══") end
-            for _, l in ipairs(recent) do table.insert(final, l) end
-            if output.win and vim.api.nvim_win_is_valid(output.win) then
-              output.show(final, proj.name .. " (exit " .. exit_code .. ")", { footer = true })
-            end
-            if exit_code ~= 0 then
-              utils.notify(proj.name .. " exited with code " .. exit_code, vim.log.levels.ERROR)
-            end
-            sidebar.refresh()
-          end)
-        end,
-      })
-      if not ok then
-        utils.notify("Failed to start " .. proj.name, vim.log.levels.ERROR)
+        "gradle build", "gradle test", "gradle clean build", "gradle bootRun", "gradle dependencies",
+        "gradle clean", "gradle compileJava", "gradle check", "gradle assemble", "gradle bootJar",
+        "gradle bootRun --debug", "gradle bootRun --args='--server.port=9090'",
+      }) do
+        common_items[#common_items + 1] = { label = "  " .. cmd, action = function() save_and_run(cmd) end }
       end
-      sidebar.refresh()
     end
+    menu[#menu + 1] = { label = " Common commands (" .. #common_items .. ")", submenu = common_items }
+    menu[#menu + 1] = { label = "  Custom run...", action = function()
+      M._show_command_input(proj, "", function(input)
+        save_and_run(input)
+      end)
+    end }
+  end
 
-    local function save_and_run(input)
-      if input == "" then return end
-      if input ~= default_str then
-        recent[#recent + 1] = input
-        if #recent > 10 then table.remove(recent, 1) end
-        if not utils.cache.data then utils.cache.data = {} end
+  if item.status == "running" or item.status == "failed" then
+    menu[#menu + 1] = { label = "  View logs", action = function() M.show_logs(proj) end }
+  end
+  if item.status == "running" then
+    menu[#menu + 1] = { label = "  Restart", action = do_restart }
+    menu[#menu + 1] = { label = "  Stop", action = function() require("spring-tools.core.backend").ProcessManager:stop(proj); sidebar.refresh() end }
+  end
+  if item.status == "failed" then
+    menu[#menu + 1] = { label = "  Restart", action = do_restart }
+  end
+  menu[#menu + 1] = { label = "  Open config", action = function() M._open_config_wrapped(proj, menu) end }
+
+  M.show_actions(menu)
+end
+
+function M._open_config_wrapped(proj, back_menu)
+  local files = {
+    proj.root .. "/src/main/resources/application.properties",
+    proj.root .. "/src/main/resources/application.yml",
+    proj.root .. "/src/main/resources/application.yaml",
+  }
+  local found = {}
+  for _, f in ipairs(files) do
+    if vim.fn.filereadable(f) == 1 then table.insert(found, f) end
+  end
+  if #found == 0 then
+    output.show({ "(no config files found)" }, "Config")
+    M.show_actions(back_menu)
+    return
+  end
+  vim.ui.select(found, { prompt = "Open config:" }, function(path)
+    if not path then
+      M.show_actions(back_menu)
+      return
+    end
+    sidebar.open_in_main(path, 1)
+  end)
+end
+
+function M._run_or_delete(proj, cmd, run_fn)
+  local actions = {
+    { label = "  Run", action = function() run_fn(cmd) end },
+    { label = "  Delete from history", action = function()
+      local cache_key = "recent_cmds:" .. proj.root
+      local recent = utils.cache.data[cache_key]
+      if recent then
+        for i = #recent, 1, -1 do
+          if recent[i] == cmd then table.remove(recent, i) end
+        end
         utils.cache.data[cache_key] = recent
         utils.mark_dirty()
         utils.save_cache()
       end
-      run_cmd(vim.split(input, "%s+"))
-    end
+      utils.notify("Deleted: " .. cmd)
+    end },
+  }
+  vim.ui.select(actions, {
+    prompt = cmd,
+    format_item = function(a) return a.label end,
+  }, function(choice)
+    if choice and choice.action then choice.action() end
+  end)
+end
 
-    vim.ui.select(suggestions, { prompt = "Select a command:" }, function(choice)
-      if not choice then return end
-      if choice:match("^---") then return end
-      if choice == "Custom..." then
-        M._show_command_input(proj, "", function(input)
-          save_and_run(input)
-        end)
-      else
-        local cmd = choice:gsub("%s+%(x%d+%)$", "")
-        save_and_run(cmd)
+function M.show_actions(actions)
+  local parent = nil
+  local function show(items, on_back)
+    vim.ui.select(items, {
+      prompt = "Select action:",
+      format_item = function(item) return item.label end,
+    }, function(choice)
+      if not choice then
+        if on_back then show(on_back[1], on_back[2]) end
+        return
+      end
+      if choice.submenu then
+        show(choice.submenu, { items, on_back })
+      elseif choice.action then
+        choice.action()
       end
     end)
   end
+  show(actions)
 end
 
 function M._omni(findstart, base)
@@ -612,19 +625,6 @@ function M:on_remove(idx)
   else
     utils.notify("Could not remove " .. proj.name .. " (not in cache)", vim.log.levels.WARN)
   end
-end
-
-function M.show_actions(actions)
-  local labels = vim.tbl_map(function(a) return a.label end, actions)
-  local map = {}
-  for _, a in ipairs(actions) do
-    map[a.label] = a.action
-  end
-  vim.ui.select(labels, {
-    prompt = "Select action:",
-  }, function(choice)
-    if choice and map[choice] then map[choice]() end
-  end)
 end
 
 function M.extract_cause(logs)

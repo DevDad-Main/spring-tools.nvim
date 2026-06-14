@@ -260,7 +260,7 @@ function M.show_help()
     { "    1-5     Jump to tab", "" },
     { "", "" },
     { "  Actions", "SpringToolsAccent" },
-    { "    Enter   Activate / start / stop", "" },
+    { "    Enter   Open nested action menu", "" },
     { "    /       Search all artifacts", "" },
     { "    p       Preview value (config)", "" },
     { "    d       Remove from cache", "" },
