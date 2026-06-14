@@ -58,6 +58,23 @@ local function line_passes_filter(line)
   return M.filter[level] ~= false
 end
 
+local function is_at_bottom()
+  if not win_is_valid() then return true end
+  local line_count = vim.api.nvim_buf_line_count(M.buf)
+  local cursor = vim.api.nvim_win_get_cursor(M.win)
+  return cursor[1] >= line_count
+end
+
+local function scroll_to_bottom()
+  if not win_is_valid() then return end
+  pcall(function()
+    local line_count = vim.api.nvim_buf_line_count(M.buf)
+    vim.api.nvim_win_call(M.win, function()
+      vim.api.nvim_win_set_cursor(0, { line_count, 0 })
+    end)
+  end)
+end
+
 function M.open()
   if win_is_valid() then return end
 
@@ -133,23 +150,21 @@ function M.show(lines, title, opts)
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, display)
   vim.bo[M.buf].modifiable = false
   M.highlight_logs()
-
-  pcall(function()
-    vim.api.nvim_win_set_cursor(M.win, { #display, 0 })
-  end)
+  scroll_to_bottom()
 end
 
 function M.append(line)
   if not buf_is_valid() then return end
+  local was_at_bottom = is_at_bottom()
   vim.bo[M.buf].modifiable = true
   local lines = vim.api.nvim_buf_get_lines(M.buf, 0, -1, false)
   table.insert(lines, " " .. tostring(line))
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, lines)
   vim.bo[M.buf].modifiable = false
   M.highlight_logs()
-  pcall(function()
-    vim.api.nvim_win_set_cursor(M.win, { #lines, 0 })
-  end)
+  if was_at_bottom then
+    scroll_to_bottom()
+  end
 end
 
 function M.update_from_logs(all_logs, title)
@@ -188,10 +203,7 @@ function M._render_from_logs(title)
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, display)
   vim.bo[M.buf].modifiable = false
   M.highlight_logs()
-
-  pcall(function()
-    vim.api.nvim_win_set_cursor(M.win, { #display, 0 })
-  end)
+  scroll_to_bottom()
 end
 
 function M._footer_text()

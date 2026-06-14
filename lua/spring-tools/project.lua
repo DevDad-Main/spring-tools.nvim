@@ -4,6 +4,7 @@ local M = {}
 
 M.projects = {}
 M.active_project_root = nil
+M._excluded = {}
 
 function M.cache_path()
   return vim.fn.stdpath("data") .. "/spring-tools/projects.json"
@@ -45,6 +46,7 @@ function M.build_entry(project_root)
 end
 
 function M.add_entry(entry)
+  if M._excluded[entry.root] then return end
   for i, p in ipairs(M.projects) do
     if p.root == entry.root then
       M.projects[i] = entry
@@ -60,6 +62,10 @@ function M.remove_project(root)
   for i, p in ipairs(M.projects) do
     if p.root == root then
       table.remove(M.projects, i)
+      if M.active_project_root == root then
+        M._excluded[root] = true
+        M.active_project_root = nil
+      end
       M.save_cache()
       local state = require("spring-tools.core.state")
       state.set_projects(M.projects)

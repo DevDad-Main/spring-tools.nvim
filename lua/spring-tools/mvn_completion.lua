@@ -205,6 +205,10 @@ end
 
 local function fetch_async(root)
   if PENDING[root] then return end
+  if vim.fn.isdirectory(root) == 0 then
+    PENDING[root] = nil
+    return
+  end
   PENDING[root] = true
 
   local name = vim.fn.fnamemodify(root, ":t")

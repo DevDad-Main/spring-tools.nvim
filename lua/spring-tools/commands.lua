@@ -34,6 +34,8 @@ function M.setup()
     require("spring-tools.utils").invalidate_cache()
     local mvn = require("spring-tools.mvn_completion")
     mvn.invalidate_cache()
+    local project = require("spring-tools.project")
+    project._excluded = {}
     sidebar.refresh()
     local state = require("spring-tools.core.state")
     local maven_roots = {}
@@ -51,6 +53,7 @@ function M.setup()
   vim.api.nvim_create_user_command("SpringClearCache", function()
     utils.invalidate_cache()
     require("spring-tools.mvn_completion").invalidate_cache()
+    require("spring-tools.project")._excluded = {}
     utils.notify("Spring Tools caches cleared")
   end, { desc = "Clear all Spring Tools caches (project cache + dynamic goals)" })
 
