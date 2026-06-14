@@ -1,6 +1,6 @@
 local components = require("spring-tools.ui.components")
+local utils = require("spring-tools.utils")
 local log_patterns = {
-  -- Spring Boot format: " 2024-01-01T00:00:00.000  INFO 12345 ---"
   { pattern = " ERROR ", hl = "SpringToolsLogError" },
   { pattern = " WARN  ", hl = "SpringToolsLogWarn" },
   { pattern = " INFO  ", hl = "SpringToolsLogInfo" },
@@ -8,7 +8,6 @@ local log_patterns = {
   { pattern = " TRACE ", hl = "SpringToolsLogTrace" },
   { pattern = " FATAL ", hl = "SpringToolsLogError" },
   { pattern = " SEVERE ", hl = "SpringToolsLogError" },
-  -- Maven format: "[ERROR]", "[WARNING]", "[INFO]"
   { pattern = "[ERROR]", hl = "SpringToolsLogError" },
   { pattern = "[WARNING]", hl = "SpringToolsLogWarn" },
   { pattern = "[WARN]", hl = "SpringToolsLogWarn" },
@@ -23,6 +22,17 @@ M.buf = nil
 M.win = nil
 M.ns = vim.api.nvim_create_namespace("spring_tools_output")
 M.title = "Output"
+M._stored_logs = {}
+
+M.filter = {
+  error = true,
+  warn = true,
+  info = true,
+  debug = true,
+  trace = true,
+}
+
+local filter_order = { "error", "warn", "info", "debug", "trace" }
 
 local function buf_is_valid()
   return M.buf and vim.api.nvim_buf_is_valid(M.buf)
@@ -30,6 +40,22 @@ end
 
 local function win_is_valid()
   return M.win and vim.api.nvim_win_is_valid(M.win)
+end
+
+local function line_level(line)
+  for _, pat in ipairs(log_patterns) do
+    if line:find(pat.pattern, 1, true) then
+      local name = pat.hl:match("Log(%a+)$")
+      if name then return name:lower() end
+    end
+  end
+  return nil
+end
+
+local function line_passes_filter(line)
+  local level = line_level(line)
+  if not level then return true end
+  return M.filter[level] ~= false
 end
 
 function M.open()
@@ -81,9 +107,10 @@ function M.close()
   end
   M.win = nil
   M.buf = nil
+  M._stored_logs = {}
 end
 
-function M.show(lines, title)
+function M.show(lines, title, opts)
   if not buf_is_valid() then
     M.open()
   end
@@ -96,6 +123,11 @@ function M.show(lines, title)
   local display = { " " .. M.title, " " .. string.rep("─", 60) }
   for _, l in ipairs(lines) do
     table.insert(display, " " .. tostring(l))
+  end
+
+  if opts and opts.footer then
+    table.insert(display, " " .. string.rep("─", 60))
+    table.insert(display, "  " .. M._footer_text())
   end
 
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, display)
@@ -120,11 +152,81 @@ function M.append(line)
   end)
 end
 
+function M.update_from_logs(all_logs, title)
+  M._stored_logs = all_logs
+  M._render_from_logs(title)
+end
+
+function M._render_from_logs(title)
+  if not buf_is_valid() then M.open() end
+  if not buf_is_valid() then return end
+
+  M.title = title or M.title or "Output"
+  local filtered = {}
+  for _, l in ipairs(M._stored_logs) do
+    if line_passes_filter(l) then
+      table.insert(filtered, l)
+    end
+  end
+
+  local start = math.max(1, #filtered - 50)
+  local recent = {}
+  for i = start, #filtered do
+    table.insert(recent, filtered[i])
+  end
+
+  vim.bo[M.buf].modifiable = true
+  vim.api.nvim_buf_clear_namespace(M.buf, M.ns, 0, -1)
+
+  local display = { " " .. M.title, " " .. string.rep("─", 60) }
+  for _, l in ipairs(recent) do
+    table.insert(display, " " .. tostring(l))
+  end
+  table.insert(display, " " .. string.rep("─", 60))
+  table.insert(display, "  " .. M._footer_text())
+
+  vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, display)
+  vim.bo[M.buf].modifiable = false
+  M.highlight_logs()
+
+  pcall(function()
+    vim.api.nvim_win_set_cursor(M.win, { #display, 0 })
+  end)
+end
+
+function M._footer_text()
+  local parts = {}
+  for _, name in ipairs(filter_order) do
+    if M.filter[name] then
+      table.insert(parts, name:sub(1, 1):upper())
+    else
+      table.insert(parts, "·")
+    end
+  end
+  return "Filter: [" .. table.concat(parts, " ") .. "]  (e/w/i/d/t toggle · c copy output)"
+end
+
+function M.toggle_level(name)
+  if M.filter[name] ~= nil then
+    M.filter[name] = not M.filter[name]
+  end
+  if #M._stored_logs > 0 then
+    M._render_from_logs()
+  end
+end
+
+function M.refresh()
+  if #M._stored_logs > 0 then
+    M._render_from_logs()
+  end
+end
+
 function M.clear()
   if not buf_is_valid() then return end
   vim.bo[M.buf].modifiable = true
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, { " " .. M.title, " " .. string.rep("─", 60) })
   vim.bo[M.buf].modifiable = false
+  M._stored_logs = {}
 end
 
 function M.highlight_logs()
@@ -150,6 +252,17 @@ function M.setup_keymaps()
   if not buf_is_valid() then return end
   components.set_keymap(M.buf, "q", function() M.close() end)
   components.set_keymap(M.buf, "<Esc>", function() M.close() end)
+  components.set_keymap(M.buf, "c", function()
+    local lines = vim.api.nvim_buf_get_lines(M.buf, 0, -1, false)
+    local text = table.concat(lines, "\n")
+    vim.fn.setreg("+", text)
+    utils.notify("Output copied to clipboard")
+  end, { desc = "Copy all output to clipboard" })
+  components.set_keymap(M.buf, "e", function() M.toggle_level("error") end, { desc = "Toggle ERROR filter" })
+  components.set_keymap(M.buf, "w", function() M.toggle_level("warn") end, { desc = "Toggle WARN filter" })
+  components.set_keymap(M.buf, "i", function() M.toggle_level("info") end, { desc = "Toggle INFO filter" })
+  components.set_keymap(M.buf, "d", function() M.toggle_level("debug") end, { desc = "Toggle DEBUG filter" })
+  components.set_keymap(M.buf, "t", function() M.toggle_level("trace") end, { desc = "Toggle TRACE filter" })
 end
 
 return M

@@ -124,16 +124,8 @@ function M:on_activate(idx)
             backend.ProcessManager:extract_port(proj, line)
             local logs = be:get_logs(proj)
             if #logs > 0 then
-              local start = math.max(1, #logs - 50)
-              local recent = {}
-              for i = start, #logs do table.insert(recent, logs[i]) end
               vim.schedule(function()
-                if output.win and vim.api.nvim_win_is_valid(output.win) then
-                  vim.bo[output.buf].modifiable = true
-                  vim.api.nvim_buf_set_lines(output.buf, 0, -1, false, recent)
-                  vim.bo[output.buf].modifiable = false
-                  output.highlight_logs()
-                end
+                output.update_from_logs(logs, proj.name)
               end)
             end
           end,
@@ -151,7 +143,7 @@ function M:on_activate(idx)
               if #cause > 0 then table.insert(final, "\u{2550}\u{2550}\u{2550} Full output \u{2550}\u{2550}\u{2550}") end
               for _, l in ipairs(recent) do table.insert(final, l) end
               if output.win and vim.api.nvim_win_is_valid(output.win) then
-                output.show(final, proj.name .. (exit_code == 0 and "" or " (exit " .. exit_code .. ")"))
+                output.show(final, proj.name .. (exit_code == 0 and "" or " (exit " .. exit_code .. ")"), { footer = true })
               end
               if exit_code ~= 0 then
                 utils.notify(proj.name .. " restart failed", vim.log.levels.ERROR)
@@ -174,16 +166,8 @@ function M:on_activate(idx)
             backend.ProcessManager:extract_port(proj, line)
             local logs = be:get_logs(proj)
             if #logs > 0 then
-              local start = math.max(1, #logs - 50)
-              local recent = {}
-              for i = start, #logs do table.insert(recent, logs[i]) end
               vim.schedule(function()
-                if output.win and vim.api.nvim_win_is_valid(output.win) then
-                  vim.bo[output.buf].modifiable = true
-                  vim.api.nvim_buf_set_lines(output.buf, 0, -1, false, recent)
-                  vim.bo[output.buf].modifiable = false
-                  output.highlight_logs()
-                end
+                output.update_from_logs(logs, proj.name)
               end)
             end
           end,
@@ -201,7 +185,7 @@ function M:on_activate(idx)
               if #cause > 0 then table.insert(final, "\u{2550}\u{2550}\u{2550} Full output \u{2550}\u{2550}\u{2550}") end
               for _, l in ipairs(recent) do table.insert(final, l) end
               if output.win and vim.api.nvim_win_is_valid(output.win) then
-                output.show(final, proj.name .. (exit_code == 0 and "" or " (exit " .. exit_code .. ")"))
+                output.show(final, proj.name .. (exit_code == 0 and "" or " (exit " .. exit_code .. ")"), { footer = true })
               end
               if exit_code ~= 0 then
                 utils.notify(proj.name .. " restart failed", vim.log.levels.ERROR)
@@ -223,7 +207,23 @@ function M:on_activate(idx)
     local suggestions = { default_str }
     if #recent > 0 then
       table.insert(suggestions, "--- recent ---")
-      for _, cmd in ipairs(recent) do suggestions[#suggestions + 1] = cmd end
+      local counts = {}
+      for _, cmd in ipairs(recent) do
+        counts[cmd] = (counts[cmd] or 0) + 1
+      end
+      local seen = {}
+      for i = #recent, 1, -1 do
+        local cmd = recent[i]
+        if not seen[cmd] then
+          seen[cmd] = true
+          local count = counts[cmd]
+          if count > 1 then
+            table.insert(suggestions, cmd .. " (x" .. count .. ")")
+          else
+            table.insert(suggestions, cmd)
+          end
+        end
+      end
       table.insert(suggestions, "--- common ---")
     end
     if build_type == "maven" then
@@ -266,16 +266,8 @@ function M:on_activate(idx)
           backend.ProcessManager:extract_port(proj, line)
           local logs = be:get_logs(proj)
           if #logs > 0 then
-            local start = math.max(1, #logs - 50)
-            local recent = {}
-            for i = start, #logs do table.insert(recent, logs[i]) end
             vim.schedule(function()
-              if output.win and vim.api.nvim_win_is_valid(output.win) then
-                vim.bo[output.buf].modifiable = true
-                vim.api.nvim_buf_set_lines(output.buf, 0, -1, false, recent)
-                vim.bo[output.buf].modifiable = false
-                output.highlight_logs()
-              end
+              output.update_from_logs(logs, proj.name)
             end)
           end
         end,
@@ -298,7 +290,7 @@ function M:on_activate(idx)
             if #cause > 0 then table.insert(final, "═══ Full output ═══") end
             for _, l in ipairs(recent) do table.insert(final, l) end
             if output.win and vim.api.nvim_win_is_valid(output.win) then
-              output.show(final, proj.name .. " (exit " .. exit_code .. ")")
+              output.show(final, proj.name .. " (exit " .. exit_code .. ")", { footer = true })
             end
             if exit_code ~= 0 then
               utils.notify(proj.name .. " exited with code " .. exit_code, vim.log.levels.ERROR)
@@ -334,7 +326,8 @@ function M:on_activate(idx)
           save_and_run(input)
         end)
       else
-        save_and_run(choice)
+        local cmd = choice:gsub("%s+%(x%d+%)$", "")
+        save_and_run(cmd)
       end
     end)
   end
@@ -670,7 +663,7 @@ function M.show_logs(proj)
   for _, l in ipairs(recent) do table.insert(final, l) end
   local proc = be and require("spring-tools.core.backend").ProcessManager.get(nil, proj)
   local title = proc and proc.status == "failed" and (proj.name .. " (exit " .. (proc.exit_code or "?") .. ")") or proj.name
-  output.show(final, title)
+  output.show(final, title, { footer = true })
 end
 
 function M.open_config(proj)

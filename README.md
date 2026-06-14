@@ -50,6 +50,10 @@
 
 ![Formatted Output](previews/spring-tools-formatted-output.png)
 
+![Filter Log](previews/plugin_demo_log_highlighting.gif)
+
+![Filter Multiple Logs](previews/plugin_demo_log_highlighting_2.gif)
+
 </details>
 
 ## Features
@@ -111,35 +115,35 @@ use {
 
 <details><summary>Commands</summary>
 
-| Command | Description |
-|---------|-------------|
-| `:SpringTools` | Open sidebar (defaults to Dashboard) |
-| `:SpringBoot` | Open sidebar on Dashboard |
-| `:SpringBeans` | Open sidebar on Beans |
-| `:SpringEndpoints` | Open sidebar on Endpoints |
-| `:SpringTest` | Open sidebar on Tests |
-| `:SpringConfig` | Open sidebar on Config |
-| `:SpringRefresh` | Clear caches and re-index |
-| `:SpringClearCache` | Clear all caches (project cache + dynamic goals) |
-| `:SpringTestClass` | Run current test class |
-| `:SpringTestMethod` | Run current test method |
-| `:SpringConfigSearch <query>` | Search config properties |
+| Command                       | Description                                      |
+| ----------------------------- | ------------------------------------------------ |
+| `:SpringTools`                | Open sidebar (defaults to Dashboard)             |
+| `:SpringBoot`                 | Open sidebar on Dashboard                        |
+| `:SpringBeans`                | Open sidebar on Beans                            |
+| `:SpringEndpoints`            | Open sidebar on Endpoints                        |
+| `:SpringTest`                 | Open sidebar on Tests                            |
+| `:SpringConfig`               | Open sidebar on Config                           |
+| `:SpringRefresh`              | Clear caches and re-index                        |
+| `:SpringClearCache`           | Clear all caches (project cache + dynamic goals) |
+| `:SpringTestClass`            | Run current test class                           |
+| `:SpringTestMethod`           | Run current test method                          |
+| `:SpringConfigSearch <query>` | Search config properties                         |
 
 </details>
 
 <details><summary>Sidebar Navigation (default keymaps)</summary>
 
-| Key | Action |
-|-----|--------|
-| `j` / `k` | Move selection up/down |
-| `h` / `l` | Previous/next tab |
-| `1`–`5` | Jump to tab |
-| `<CR>` | Activate (start/stop/open) |
-| `p` | Preview config value (in Config view) |
-| `d` | Remove project from cache |
-| `R` | Refresh current view |
-| `q` | Close sidebar |
-| `?` | Toggle help floating window |
+| Key       | Action                                |
+| --------- | ------------------------------------- |
+| `j` / `k` | Move selection up/down                |
+| `h` / `l` | Previous/next tab                     |
+| `1`–`5`   | Jump to tab                           |
+| `<CR>`    | Activate (start/stop/open)            |
+| `p`       | Preview config value (in Config view) |
+| `d`       | Remove project from cache             |
+| `R`       | Refresh current view                  |
+| `q`       | Close sidebar                         |
+| `?`       | Toggle help floating window           |
 
 </details>
 
@@ -153,6 +157,7 @@ Press `<CR>` on a stopped project → select **Custom...** → a floating input 
 - Position configurable via `command_input.position` (`"top"`, `"center"`, `"bottom"`)
 
 **Window locked** — can't navigate away:
+
 - `<Esc>` exits insert mode (stays in float)
 - `<Esc>` or `q` in normal mode closes
 - `<C-w/h/j/k/l>`, mouse clicks all blocked
@@ -221,40 +226,40 @@ require("spring-tools").setup({
 
 All highlights derive from your active colorscheme via `nvim_get_hl` at startup:
 
-| Group | Derives from | Description |
-|-------|-------------|-------------|
-| `SpringToolsNormal` | `Normal` | Default text |
-| `SpringToolsSelected` | `Visual` | Selected line |
-| `SpringToolsAccent` | `Special` | ? help window section headers |
-| `SpringToolsMethodHeader` | Inherits `SpringToolsAccent` | Endpoint method section headers (GET, POST) |
-| `SpringToolsBeanHeader` | Inherits `SpringToolsAccent` | Bean type section headers (Controllers, Services) |
-| `SpringToolsBeanName` | Inherits `Normal` | Individual bean names (UserController, UserService) |
-| `SpringToolsBeanMethod` | Inherits `SpringToolsDim` | @Bean method entries (@appName(), @maxConnections()) |
-| `SpringToolsRunning` | `DiagnosticOk` | Running status |
-| `SpringToolsGet` | Inherits `SpringToolsRunning` | GET keyword on endpoint lines |
-| `SpringToolsPost` | Inherits `SpringToolsRunning` | POST keyword on endpoint lines |
-| `SpringToolsPut` | Inherits `SpringToolsRunning` | PUT keyword on endpoint lines |
-| `SpringToolsPatch` | Inherits `SpringToolsRunning` | PATCH keyword on endpoint lines |
-| `SpringToolsDelete` | Inherits `SpringToolsRunning` | DELETE keyword on endpoint lines |
-| `SpringToolsTestRunAll` | Inherits `SpringToolsAccent` | Run all tests header |
-| `SpringToolsTestClass` | Inherits `SpringToolsAccent` | Test class header |
-| `SpringToolsTestMethod` | Inherits `SpringToolsDim` | Test method name |
-| `SpringToolsError` | `ErrorMsg` | Failed status |
-| `SpringToolsKey` | `Special` | Keys in config/key-value views |
-| `SpringToolsValue` | `Normal` | Values in config/key-value views |
-| `SpringToolsConfigSection` | Inherits `SpringToolsAccent` | Config prefix section headers (server:, spring:) |
-| `SpringToolsConfigFile` | Inherits `SpringToolsHeader` | Config file section headers (application.properties) |
-| `SpringToolsConfigKey` | Inherits `SpringToolsKey` | Config property key name |
-| `SpringToolsConfigValue` | Inherits `SpringToolsValue` | Config property value |
-| `SpringToolsDashboardProject` | Inherits `Normal` (bold) | Project name in dashboard |
-| `SpringToolsDashboardStatus` | Inherits `SpringToolsDim` | Status text (stopped/running/failed) |
-| `SpringToolsDashboardBuildType` | Inherits `SpringToolsDim` | Build type (maven/gradle) |
-| `SpringToolsLogError` | `ErrorMsg` | Log ERROR, FATAL, SEVERE levels |
-| `SpringToolsLogWarn` | `Special` | Log WARN, WARNING levels |
-| `SpringToolsLogInfo` | `DiagnosticOk` | Log INFO level |
-| `SpringToolsLogDebug` | `Comment` | Log DEBUG level |
-| `SpringToolsLogTrace` | `Comment` | Log TRACE level |
-| `SpringToolsDim` | `Comment` | Stopped, inactive tab |
+| Group                           | Derives from                  | Description                                          |
+| ------------------------------- | ----------------------------- | ---------------------------------------------------- |
+| `SpringToolsNormal`             | `Normal`                      | Default text                                         |
+| `SpringToolsSelected`           | `Visual`                      | Selected line                                        |
+| `SpringToolsAccent`             | `Special`                     | ? help window section headers                        |
+| `SpringToolsMethodHeader`       | Inherits `SpringToolsAccent`  | Endpoint method section headers (GET, POST)          |
+| `SpringToolsBeanHeader`         | Inherits `SpringToolsAccent`  | Bean type section headers (Controllers, Services)    |
+| `SpringToolsBeanName`           | Inherits `Normal`             | Individual bean names (UserController, UserService)  |
+| `SpringToolsBeanMethod`         | Inherits `SpringToolsDim`     | @Bean method entries (@appName(), @maxConnections()) |
+| `SpringToolsRunning`            | `DiagnosticOk`                | Running status                                       |
+| `SpringToolsGet`                | Inherits `SpringToolsRunning` | GET keyword on endpoint lines                        |
+| `SpringToolsPost`               | Inherits `SpringToolsRunning` | POST keyword on endpoint lines                       |
+| `SpringToolsPut`                | Inherits `SpringToolsRunning` | PUT keyword on endpoint lines                        |
+| `SpringToolsPatch`              | Inherits `SpringToolsRunning` | PATCH keyword on endpoint lines                      |
+| `SpringToolsDelete`             | Inherits `SpringToolsRunning` | DELETE keyword on endpoint lines                     |
+| `SpringToolsTestRunAll`         | Inherits `SpringToolsAccent`  | Run all tests header                                 |
+| `SpringToolsTestClass`          | Inherits `SpringToolsAccent`  | Test class header                                    |
+| `SpringToolsTestMethod`         | Inherits `SpringToolsDim`     | Test method name                                     |
+| `SpringToolsError`              | `ErrorMsg`                    | Failed status                                        |
+| `SpringToolsKey`                | `Special`                     | Keys in config/key-value views                       |
+| `SpringToolsValue`              | `Normal`                      | Values in config/key-value views                     |
+| `SpringToolsConfigSection`      | Inherits `SpringToolsAccent`  | Config prefix section headers (server:, spring:)     |
+| `SpringToolsConfigFile`         | Inherits `SpringToolsHeader`  | Config file section headers (application.properties) |
+| `SpringToolsConfigKey`          | Inherits `SpringToolsKey`     | Config property key name                             |
+| `SpringToolsConfigValue`        | Inherits `SpringToolsValue`   | Config property value                                |
+| `SpringToolsDashboardProject`   | Inherits `Normal` (bold)      | Project name in dashboard                            |
+| `SpringToolsDashboardStatus`    | Inherits `SpringToolsDim`     | Status text (stopped/running/failed)                 |
+| `SpringToolsDashboardBuildType` | Inherits `SpringToolsDim`     | Build type (maven/gradle)                            |
+| `SpringToolsLogError`           | `ErrorMsg`                    | Log ERROR, FATAL, SEVERE levels                      |
+| `SpringToolsLogWarn`            | `Special`                     | Log WARN, WARNING levels                             |
+| `SpringToolsLogInfo`            | `DiagnosticOk`                | Log INFO level                                       |
+| `SpringToolsLogDebug`           | `Comment`                     | Log DEBUG level                                      |
+| `SpringToolsLogTrace`           | `Comment`                     | Log TRACE level                                      |
+| `SpringToolsDim`                | `Comment`                     | Stopped, inactive tab                                |
 
 </details>
 
@@ -321,11 +326,11 @@ require("spring-tools").setup({
 
 A few other plugins also aim to improve the Spring Boot experience in Neovim. Here's how they compare:
 
-| Plugin | Approach | What it does well |
-|--------|----------|-------------------|
-| [`JavaHello/spring-boot.nvim`](https://github.com/JavaHello/spring-boot.nvim) | LSP integration (STS4) | Config completion, bean finding via workspace symbols, code actions — all through the language server |
-| [`elmcgill/springboot-nvim`](https://github.com/elmcgill/springboot-nvim) | Compile & run helpers | Incremental compiling on save, quick bootRun, Java file templates |
-| [`jkeresman01/spring-initializr.nvim`](https://github.com/jkeresman01/spring-initializr.nvim) | Project scaffolding | Spring Initializr UI to generate new projects from within Neovim |
+| Plugin                                                                                        | Approach               | What it does well                                                                                     |
+| --------------------------------------------------------------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| [`JavaHello/spring-boot.nvim`](https://github.com/JavaHello/spring-boot.nvim)                 | LSP integration (STS4) | Config completion, bean finding via workspace symbols, code actions — all through the language server |
+| [`elmcgill/springboot-nvim`](https://github.com/elmcgill/springboot-nvim)                     | Compile & run helpers  | Incremental compiling on save, quick bootRun, Java file templates                                     |
+| [`jkeresman01/spring-initializr.nvim`](https://github.com/jkeresman01/spring-initializr.nvim) | Project scaffolding    | Spring Initializr UI to generate new projects from within Neovim                                      |
 
 I was already using `spring-boot.nvim` for LSP-based config hints and found it useful, but I wanted a more visual sidebar — something closer to what IntelliJ's Spring Boot panel provides. That's what led me to build this plugin: a dedicated UI with tabbed views for projects, beans, endpoints, tests, and config, all sitting alongside the editor in Neovim's own window layout.
 
@@ -389,13 +394,13 @@ lua/spring-tools/
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| No projects detected | Cache has old data — press `R` in sidebar or run `:SpringRefresh` |
-| Compile errors in output | Check the "Root cause" section at the top of the output panel |
-| Port conflict | `fuser -k 9090/tcp` to kill existing process, then restart |
-| Telescope not showing | Check `telescope.enable = true` in config |
-| Tests not running | Ensure Maven/Gradle is on PATH |
+| Problem                  | Solution                                                          |
+| ------------------------ | ----------------------------------------------------------------- |
+| No projects detected     | Cache has old data — press `R` in sidebar or run `:SpringRefresh` |
+| Compile errors in output | Check the "Root cause" section at the top of the output panel     |
+| Port conflict            | `fuser -k 9090/tcp` to kill existing process, then restart        |
+| Telescope not showing    | Check `telescope.enable = true` in config                         |
+| Tests not running        | Ensure Maven/Gradle is on PATH                                    |
 
 ## Testing
 
@@ -405,6 +410,7 @@ nvim --headless -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/init.lu
 ```
 
 A sample Spring Boot test app is available at `tests/TestApp/`:
+
 - Full MVC: models, repositories, services, controllers
 - All HTTP methods (GET, POST, PUT, PATCH, DELETE)
 - `@Configuration` with `@Bean` methods, `@Component` runners
