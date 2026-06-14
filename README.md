@@ -73,9 +73,9 @@
 ```lua
 {
   "DevDad-Main/spring-tools.nvim",
+  -- Telescope is optional — falls back to vim.ui.select
   dependencies = {
     "nvim-telescope/telescope.nvim",
-    "nvim-lua/plenary.nvim",
   },
   config = function()
     require("spring-tools").setup()
@@ -90,9 +90,9 @@
 ```lua
 use {
   'DevDad-Main/spring-tools.nvim',
+  -- Telescope is optional — falls back to vim.ui.select
   requires = {
     'nvim-telescope/telescope.nvim',
-    'nvim-lua/plenary.nvim',
   },
   config = function()
     require('spring-tools').setup()
@@ -396,8 +396,8 @@ A sample Spring Boot test app is available at `tests/TestApp/`:
 ## Requirements
 
 - Neovim 0.10+
-- Telescope.nvim (recommended, optional)
-- plenary.nvim (for tests)
+- Telescope.nvim (optional — enhances pickers, falls back to `vim.ui.select`)
+- plenary.nvim (optional — only needed for running tests)
 - Maven or Gradle (for running apps/tests)
 
 ## Limitations
