@@ -30,6 +30,7 @@ M.defaults = {
       tab_next = "l",
       tab_prev = "h",
       show_help = "?",
+      search = "/",
     },
   },
   keymaps = {
@@ -39,6 +40,7 @@ M.defaults = {
     endpoints = "<leader>se",
     tests = "<leader>st",
     config = "<leader>sc",
+    search = "<leader>ss",
   },
   telescope = {
     enable = true,
@@ -48,6 +50,16 @@ M.defaults = {
   },
   command_input = {
     position = "center",  -- "top", "center", or "bottom"
+  },
+  search = {
+    icons = {
+      bean = "",              -- bean class
+      bean_method = "",       -- @Bean method
+      endpoint = "",          -- REST endpoint
+      test_class = "",        -- test class
+      test_method = "",       -- test method
+      config = "",            -- config property
+    },
   },
   auto_refresh = true,
   log_level = vim.log.levels.INFO,

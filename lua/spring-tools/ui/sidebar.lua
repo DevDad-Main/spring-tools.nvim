@@ -240,6 +240,9 @@ function M.setup_keymaps()
     bmap(km.show_help, [[:lua require('spring-tools.ui.sidebar').show_help()<CR>]])
   end
   bmap("p", [[:lua require('spring-tools.ui.sidebar').preview_value()<CR>]])
+  if km.search then
+    bmap(km.search, [[:lua require('spring-tools.search').open()<CR>]])
+  end
 end
 
 function M.show_help()
@@ -258,10 +261,14 @@ function M.show_help()
     { "", "" },
     { "  Actions", "SpringToolsAccent" },
     { "    Enter   Activate / start / stop", "" },
+    { "    /       Search all artifacts", "" },
     { "    p       Preview value (config)", "" },
     { "    d       Remove from cache", "" },
     { "    R       Refresh", "" },
     { "    q       Close sidebar", "" },
+    { "", "" },
+    { "  Global", "SpringToolsAccent" },
+    { "    :SpringSearch  Unified fuzzy search", "" },
     { "", "" },
     { "  Custom Run", "SpringToolsAccent" },
     { "    Enter on stopped -> picker", "" },

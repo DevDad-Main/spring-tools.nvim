@@ -108,6 +108,7 @@
 - **Config Explorer** — browse application.properties/YAML, file-grouped, preview values with `p`, Enter jumps to exact line
 - **Process Manager** — unbuffered I/O, port extraction, exit code tracking
 - **Project Cache** — persistent JSON at `~/.local/share/nvim/spring-tools/projects.json`
+- **Unified Search** — `:SpringSearch` opens a fuzzy picker across all beans, endpoints, tests, and config properties with nerd-font icons — jumps directly to the definition on selection
 
 <br>
 
@@ -163,6 +164,7 @@ use {
 | `:SpringConfig`               | Open sidebar on Config                           |
 | `:SpringRefresh`              | Clear caches and re-index                        |
 | `:SpringClearCache`           | Clear all caches (project cache + dynamic goals) |
+| `:SpringSearch`               | Fuzzy search beans, endpoints, tests, and config |
 | `:SpringTestClass`            | Run current test class                           |
 | `:SpringTestMethod`           | Run current test method                          |
 | `:SpringConfigSearch <query>` | Search config properties                         |
@@ -177,11 +179,26 @@ use {
 | `h` / `l` | Previous/next tab                     |
 | `1`–`5`   | Jump to tab                           |
 | `<CR>`    | Activate (start/stop/open)            |
+| `/`       | Unified search across all views       |
 | `p`       | Preview config value (in Config view) |
 | `d`       | Remove project from cache             |
 | `R`       | Refresh current view                  |
 | `q`       | Close sidebar                         |
 | `?`       | Toggle help floating window           |
+
+</details>
+
+<details><summary>:SpringSearch — unified fuzzy picker</summary>
+
+Presents a single searchable list of all Spring artifacts in the current project:
+
+- **Beans** (coffee icon) — class name with stereotype type
+- **@Bean methods** (branch icon) — method name with parent `@Configuration` class
+- **Endpoints** (globe icon) — HTTP method + path + controller method name
+- **Tests** (flask icon) — class and method names
+- **Config** (gear icon) — property key + value + source file
+
+Select any entry to jump directly to its definition. Opens natively in Telescope when available; falls back to `vim.ui.select` otherwise. Press `/` in the sidebar to open.
 
 </details>
 
@@ -238,6 +255,7 @@ require("spring-tools").setup({
       tab_next = "l",
       tab_prev = "h",
       show_help = "?",
+      search = "/",
     },
   },
   highlights = {
@@ -245,11 +263,30 @@ require("spring-tools").setup({
     -- SpringToolsNormal = { link = "Normal" },
     -- SpringToolsSelected = { bg = "#334455" },
   },
+  keymaps = {
+    enable = true,             -- enable global keymaps
+    boot = "<leader>sb",
+    beans = "<leader>be",
+    endpoints = "<leader>se",
+    tests = "<leader>st",
+    config = "<leader>sc",
+    search = "<leader>ss",
+  },
   telescope = {
     enable = true,             -- enable Telescope-based pickers
   },
   command_input = {
     position = "center",       -- "top", "center", or "bottom"
+  },
+  search = {
+    icons = {
+      bean = " ",              -- bean class
+      bean_method = " ",       -- @Bean method
+      endpoint = " ",          -- REST endpoint
+      test_class = " ",        -- test class
+      test_method = " ",       -- test method
+      config = " ",            -- config property
+    },
   },
 })
 ```
@@ -474,6 +511,7 @@ A sample Spring Boot test app is available at `tests/TestApp/`:
 - [x] **Configurable float position** — `command_input.position` accepts `"top"`, `"center"`, or `"bottom"`
 - [x] **Float window lock** — no accidental navigation away (`<C-w/h/j/k/l>` blocked, `BufLeave` fail-safe)
 - [x] **Auto-select active project** — jumps cursor to CWD-matching project on sidebar refresh
+- [x] **Unified fuzzy search** — `:SpringSearch` across beans, endpoints, tests, and config with Telescope-native picker, nerd-font icons, and sidebar `/` keymap
 - [ ] **Gradle build file parsing** — parse `build.gradle`/`build.gradle.kts` for dynamic task discovery
 - [ ] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects
 - [ ] **Custom command history management** — UI to browse, edit, and delete saved custom commands

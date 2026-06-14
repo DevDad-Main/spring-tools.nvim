@@ -93,6 +93,9 @@ function M.setup()
       if prop.file then vim.cmd("edit " .. prop.file) end
     end)
   end, { nargs = 1, desc = "Search configuration properties" })
+  vim.api.nvim_create_user_command("SpringSearch", function()
+    require("spring-tools.search").open()
+  end, { desc = "Search all beans, endpoints, tests, and config properties" })
 end
 
 function M.open_sidebar(view)
@@ -123,6 +126,9 @@ function M.setup_keymaps()
   end
   if km.config and km.config ~= "" then
     vim.keymap.set("n", km.config, function() M.open_sidebar("config") end, { desc = "Spring Config Explorer" })
+  end
+  if km.search and km.search ~= "" then
+    vim.keymap.set("n", km.search, function() require("spring-tools.search").open() end, { desc = "Spring Search" })
   end
 end
 
