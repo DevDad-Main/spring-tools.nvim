@@ -10,9 +10,9 @@
 <h1 align="center">spring-tools.nvim</h1>
 
 <p align="center">
-  IntelliJ-like Spring Boot development features inside Neovim.
-  <br>
-  Sidebar UI, live log streaming, configurable backends.
+    Spring Boot Dashboard for Neovim.
+<br>
+    Manage applications, browse endpoints and beans, run tests, inspect configuration, and stream logs from a single sidebar.
 </p>
 
 <p align="center">
