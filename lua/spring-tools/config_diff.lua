@@ -179,7 +179,7 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     table.insert(parts, "  [" .. name_a .. " ↔ " .. name_b .. "]")
     table.insert(parts, string.rep(" ", 4))
     table.insert(parts, "c:changed  l:left  r:right  s:same  a:all  q:close")
-    local text = "%#SpringToolsAccent#" .. table.concat(parts, " ")
+    local text = "%#Title#═══ %*%#SpringToolsDashboardProject#" .. table.concat(parts, " ") .. " %*%#Title#════"
     if win_a and vim.api.nvim_win_is_valid(win_a) then vim.wo[win_a].winbar = text end
     if win_b and vim.api.nvim_win_is_valid(win_b) and win_b ~= win_a then vim.wo[win_b].winbar = text end
   end
