@@ -22,6 +22,11 @@ local function get_log_patterns()
   local all = {}
   for _, p in ipairs(builtin_patterns) do all[#all + 1] = p end
   for _, p in ipairs(custom) do all[#all + 1] = p end
+  -- Include the single toggleable custom pattern
+  local cp = config.options.log and config.options.log.custom
+  if cp and cp.pattern and cp.hl then
+    all[#all + 1] = { pattern = cp.pattern, hl = cp.hl, is_custom = true }
+  end
   return all
 end
 
@@ -44,6 +49,15 @@ M.filter = {
 
 local filter_order = { "error", "warn", "info", "debug", "trace" }
 
+-- Extend with custom toggleable pattern from config
+local cp = config.options.log and config.options.log.custom
+if cp and cp.pattern and cp.hl and cp.key then
+  M._custom_key = cp.key
+  M._custom_pattern = cp.pattern
+  M.filter[cp.key] = true
+  filter_order[#filter_order + 1] = cp.key
+end
+
 local function buf_is_valid()
   return M.buf and vim.api.nvim_buf_is_valid(M.buf)
 end
@@ -55,6 +69,7 @@ end
 local function line_level(line)
   for _, pat in ipairs(get_log_patterns()) do
     if line:find(pat.pattern, 1, true) then
+      if pat.is_custom then return M._custom_key end
       local name = pat.hl:match("Log(%a+)$")
       if name then return name:lower() end
     end
@@ -252,7 +267,9 @@ function M._footer_text()
       table.insert(parts, "·")
     end
   end
-  return "Filter: [" .. table.concat(parts, " ") .. "]  (e/w/i/d/t toggle · c copy output)"
+  local keys = "e/w/i/d/t toggle"
+  if M._custom_key then keys = keys .. " · " .. M._custom_key .. " custom" end
+  return "Filter: [" .. table.concat(parts, " ") .. "]  (" .. keys .. " · c copy output)"
 end
 
 function M.toggle_level(name)
@@ -315,6 +332,11 @@ function M.setup_keymaps()
   components.set_keymap(M.buf, km.filter_info, function() M.toggle_level("info") end, { desc = "Toggle INFO filter" })
   components.set_keymap(M.buf, km.filter_debug, function() M.toggle_level("debug") end, { desc = "Toggle DEBUG filter" })
   components.set_keymap(M.buf, km.filter_trace, function() M.toggle_level("trace") end, { desc = "Toggle TRACE filter" })
+  if M._custom_key then
+    local cp = config.options.log and config.options.log.custom
+    local desc = cp and cp.pattern and ("Toggle '" .. cp.pattern .. "' filter") or "Toggle custom filter"
+    components.set_keymap(M.buf, M._custom_key, function() M.toggle_level(M._custom_key) end, { desc = desc })
+  end
 end
 
 return M

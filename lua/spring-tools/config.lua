@@ -60,7 +60,9 @@ M.defaults = {
     },
   },
   log = {
-    levels = {},  -- custom log patterns: { pattern = "[AUDIT]", hl = "SpringToolsLogWarn" }
+    levels = {},   -- extra patterns: { pattern = "[AUDIT]", hl = "SpringToolsLogWarn" }
+    custom = {},   -- one toggleable: { pattern = "[AUDIT]", hl = "SpringToolsLogWarn", key = "a" }
+                   --   pick a key not already used (not e, w, i, d, t, c)
   },
   diff = {
     highlights = {
