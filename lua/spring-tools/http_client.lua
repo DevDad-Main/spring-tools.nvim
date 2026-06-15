@@ -268,7 +268,7 @@ function M._send_resolved(endpoint, extra_args, path)
 
   local url = "http://localhost:" .. port .. path
   local cmd = string.format(
-    "curl -w '\\n\\n--- RESPONSE ---\\nHTTP_CODE:%%{http_code}\\nTIME:%%{time_total}s\\nSIZE:%%{size_download} bytes' %s -X %s '%s' 2>&1",
+    "curl -s -w '\\n\\n--- RESPONSE ---\\nHTTP_CODE:%%{http_code}\\nTIME:%%{time_total}s\\nSIZE:%%{size_download} bytes' %s -X %s '%s' 2>&1",
     extra_args, endpoint.method, url
   )
 
