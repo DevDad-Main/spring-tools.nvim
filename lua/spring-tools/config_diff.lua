@@ -166,10 +166,12 @@ function M.show_diff(file_a, file_b, name_a, name_b)
   local hl_b = rebuild(buf_b, orig_b, diff_b)
   apply_highlights(buf_b, hl_b)
 
-  -- Winbar
-  local win_a = vim.fn.win_getid(vim.fn.bufwinnr(buf_a))
-  local win_b = vim.fn.win_getid(vim.fn.bufwinnr(buf_b))
-  local function update_winbar()
+  -- Shared floating toolbar (replaces duplicate winbars)
+  local toolbar_buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[toolbar_buf].buftype = "nofile"
+  vim.bo[toolbar_buf].modifiable = true
+
+  local function update_toolbar()
     local parts = {}
     local function f(label, key, count)
       if filter[key] then table.insert(parts, label .. ":" .. count) else table.insert(parts, "·:" .. count) end
@@ -177,13 +179,36 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     f("C", "changed", changed); f("L", "left_only", left_only)
     f("R", "right_only", right_only); f("S", "same", same)
     table.insert(parts, "  " .. name_a .. " ↔ " .. name_b)
-    local text = "%#Title#%= %*%#SpringToolsDashboardProject#" .. table.concat(parts, " ") .. " %*%#Title#%="
-    if win_a and vim.api.nvim_win_is_valid(win_a) then vim.wo[win_a].winbar = text end
-    if win_b and vim.api.nvim_win_is_valid(win_b) and win_b ~= win_a then vim.wo[win_b].winbar = text end
+    local status = table.concat(parts, " ")
+    local kb = "(c:changed  l:left  r:right  s:same  a:all  ?:help  q:close)"
+    vim.api.nvim_buf_set_lines(toolbar_buf, 0, -1, false, { status, kb })
+    vim.bo[toolbar_buf].modifiable = false
   end
-  update_winbar()
+  update_toolbar()
+
+  local toolbar_width = 72
+  local toolbar_win = vim.api.nvim_open_win(toolbar_buf, false, {
+    relative = "editor",
+    width = toolbar_width,
+    height = 2,
+    row = 0,
+    col = math.floor((vim.o.columns - toolbar_width) / 2),
+    style = "minimal",
+    border = "rounded",
+    title = " Config Diff ",
+    title_pos = "center",
+    noautocmd = true,
+  })
+  vim.wo[toolbar_win].winhl = "Normal:SpringToolsNormal,FloatBorder:SpringToolsAccent"
+
+  -- Highlights on toolbar lines
+  local tns = vim.api.nvim_create_namespace("spring_tools_toolbar")
+  vim.api.nvim_buf_add_highlight(toolbar_buf, tns, "SpringToolsDashboardProject", 0, 0, -1)
+  vim.api.nvim_buf_add_highlight(toolbar_buf, tns, "SpringToolsDim", 1, 0, -1)
 
   local function close()
+    pcall(vim.api.nvim_win_close, toolbar_win, true)
+    pcall(vim.api.nvim_buf_delete, toolbar_buf, { force = true })
     pcall(vim.api.nvim_buf_delete, buf_a, { force = true })
     pcall(vim.api.nvim_buf_delete, buf_b, { force = true })
   end
@@ -224,7 +249,7 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     hl_b = rebuild(buf_b, orig_b, diff_b)
     apply_highlights(buf_a, hl_a)
     apply_highlights(buf_b, hl_b)
-    update_winbar()
+    update_toolbar()
   end
 
   for _, b in ipairs({ buf_a, buf_b }) do
@@ -238,7 +263,7 @@ function M.show_diff(file_a, file_b, name_a, name_b)
       filter.changed = true; filter.left_only = true; filter.right_only = true; filter.same = true
       hl_a = rebuild(buf_a, orig_a, diff_a); hl_b = rebuild(buf_b, orig_b, diff_b)
       apply_highlights(buf_a, hl_a); apply_highlights(buf_b, hl_b)
-      update_winbar()
+      update_toolbar()
     end, { buffer = b, silent = true, nowait = true })
     vim.keymap.set("n", "?", show_help, { buffer = b, silent = true, nowait = true })
   end
