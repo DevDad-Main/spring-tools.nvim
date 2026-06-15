@@ -109,6 +109,7 @@
 - **Test Runner** — discover/run JUnit 5 tests, per-method results from surefire XML
 - **Config Explorer** — browse application.properties/YAML, file-grouped, preview values with `p`, Enter jumps to exact line
 - **Config Diff** — `:SpringConfigDiff` or `D` in sidebar opens two config files side-by-side with explicit color-coded highlights (green same, amber changed, red one-sided) and filter toggles via a floating toolbar
+- **HTTP Client** — `t` on an endpoint sends a curl request; auto-detects port from running process; supports custom headers/args; pretty-prints JSON responses with syntax highlighting
 - **Process Manager** — unbuffered I/O, port extraction, exit code tracking
 - **Project Cache** — persistent JSON at `~/.local/share/nvim/spring-tools/projects.json`
 - **Unified Search** — `:SpringSearch` opens a fuzzy picker across all beans, endpoints, tests, and config properties with nerd-font icons — jumps directly to the definition on selection
@@ -190,6 +191,7 @@ use {
 | `p`       | Preview config value (in Config view) |
 | `d`       | Remove project from cache             |
 | `D`       | Open Config Diff viewer               |
+| `t`       | Test endpoint (send curl request)     |
 | `R`       | Refresh current view                  |
 | `q`       | Close sidebar                         |
 | `?`       | Toggle help floating window           |
@@ -614,6 +616,7 @@ A sample Spring Boot test app is available at `tests/TestApp/` (Maven) and `test
 - [x] **Auto-restart on save** — debounced restart on file save with per-project toggle and `↻` indicator
 - [x] **Gradle task discovery** — parse `build.gradle` and query `gradle tasks --all` for dynamic task completion
 - [x] **Config diff viewer** — `:SpringConfigDiff` side-by-side comparison of config files
+- [x] **HTTP test client** — `t` on an endpoint sends curl requests with custom args, shows JSON response
 - [ ] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects
 - [ ] **Profile picker** — select active Spring profiles when starting an app
 

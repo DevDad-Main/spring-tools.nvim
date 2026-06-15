@@ -247,6 +247,7 @@ function M.setup_keymaps()
     bmap(km.toggle_output, [[:lua require('spring-tools.ui.output').toggle()<CR>]])
   end
   bmap("D", [[:lua require('spring-tools.config_diff').open()<CR>]])
+  bmap("t", [[:lua require('spring-tools.ui.sidebar').test_endpoint()<CR>]])
 end
 
 function M.show_help()
@@ -270,6 +271,7 @@ function M.show_help()
     { "    p       Preview value (config)", "" },
     { "    d       Remove from cache", "" },
     { "    D       Config diff viewer", "" },
+    { "    t       Test endpoint (curl)", "" },
     { "    R       Refresh", "" },
     { "    q       Close sidebar", "" },
     { "", "" },
@@ -352,6 +354,11 @@ end
 function M.preview_value()
   local view = M.get_view()
   if view and view.toggle_preview then view:toggle_preview(M.selected) end
+end
+
+function M.test_endpoint()
+  local view = M.get_view()
+  if view and view.test_endpoint then view:test_endpoint(M.selected) end
 end
 
 function M.move_down()

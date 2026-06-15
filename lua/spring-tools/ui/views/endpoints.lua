@@ -3,6 +3,7 @@ local sidebar = require("spring-tools.ui.sidebar")
 local utils = require("spring-tools.utils")
 local project = require("spring-tools.project")
 local sections = require("spring-tools.ui.sections").new("endpoints")
+local http = require("spring-tools.http_client")
 
 local M = {}
 
@@ -90,12 +91,19 @@ function M:on_activate(idx)
       sidebar.open_in_main(ep.file, ep.line)
     end },
     { label = "Copy curl", fn = function()
-      local curl = "curl -X " .. ep.method .. " http://localhost:8080" .. ep.path
+      local port = M._get_port()
+      local curl = "curl -X " .. ep.method .. " http://localhost:" .. port .. ep.path
       vim.fn.setreg("+", curl)
       utils.notify("Curl copied")
     end },
+    { label = "Send request", fn = function()
+      vim.ui.input({ prompt = ep.method .. " " .. ep.path .. " — extra curl args (e.g. -H 'Auth: xxx'): " }, function(input)
+        http.send(ep, input or "")
+      end)
+    end },
     { label = "Open in browser", fn = function()
-      local url = "http://localhost:8080" .. ep.path
+      local port = M._get_port()
+      local url = "http://localhost:" .. port .. ep.path
       if vim.fn.has("mac") == 1 then vim.fn.system({ "open", url })
       elseif vim.fn.has("unix") == 1 then vim.fn.system({ "xdg-open", url }) end
     end },
@@ -111,6 +119,27 @@ function M:on_activate(idx)
     prompt = ep.method .. " " .. ep.path .. ":",
   }, function(choice)
     if choice and map[choice] then map[choice]() end
+  end)
+end
+
+function M._get_port()
+  local proj = project.get_active_project()
+  if proj then
+    local be = project.get_backend_for_project(proj)
+    if be and be.get_port then
+      local p = be:get_port(proj)
+      if p and p ~= "" then return p end
+    end
+  end
+  return "8080"
+end
+
+function M:test_endpoint(idx)
+  local item = M.items[idx]
+  if not item or item.type ~= "endpoint" then return end
+  local ep = item.endpoint
+  vim.ui.input({ prompt = ep.method .. " " .. ep.path .. " — extra curl args: " }, function(input)
+    http.send(ep, input or "")
   end)
 end
 
