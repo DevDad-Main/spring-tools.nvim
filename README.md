@@ -542,7 +542,8 @@ lua/spring-tools/
 - **`render()` vs `refresh()`** — j/k uses lightweight `render()` (no re-scan), tab-switch/Enter/R uses full `refresh()` (re-scan + render)
 - **`p` keymap** — global in sidebar, dispatches to view's `toggle_preview` for config value preview
 - **Custom command float** — `buftype = "prompt"` buffer with `omnifunc`, `TextChangedI` auto-trigger, `<C-j>`/`<C-k>` popup nav, `winfixbuf`, `BufLeave` fail-safe
-- **Maven completion** — POM parser for `<plugin>` blocks, dynamic discovery via `help:effective-pom` + `help:describe` for unknown plugins, 55+ well-known plugins, 76 default goals, 26 lifecycle phases, 31 `-D` properties, 45 Gradle tasks, per-project cached with POM mtime invalidation
+- **Maven completion** — POM parser for `<plugin>` blocks, dynamic discovery via `help:effective-pom` + `help:describe` for unknown plugins, 55+ well-known plugins, 76 default goals, 26 lifecycle phases, 31 `-D` properties, per-project cached with POM mtime invalidation
+- **Gradle completion** — dynamic task discovery via `gradle tasks --all`, 45 hardcoded tasks as base set, per-project cached with `build.gradle` mtime invalidation; wrapper auto-detection
 - **Segments-based rendering** — dashboard items use separate highlight groups per element (project name, status text, build type tag)
 - **Expanded props persistence** — config view's `M.expanded_props` survives `load_items()` rebuild
 - **Dashboard auto-select** — sidebar `refresh()` searches for `is_active` and jumps `M.selected` to the CWD-matching project
@@ -560,6 +561,7 @@ lua/spring-tools/
 | Port conflict            | `fuser -k 9090/tcp` to kill existing process, then restart        |
 | Telescope not showing    | Check `telescope.enable = true` in config                         |
 | Tests not running        | Ensure Maven/Gradle is on PATH                                    |
+| Gradle build fails        | Stop stale daemons: `./gradlew --stop` in the project root       |
 
 ## Testing
 
@@ -568,12 +570,13 @@ lua/spring-tools/
 nvim --headless -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/init.lua'}" -c "q"
 ```
 
-A sample Spring Boot test app is available at `tests/TestApp/`:
+A sample Spring Boot test app is available at `tests/TestApp/` (Maven) and `tests/TestApp-Gradle/` (Gradle):
 
 - Full MVC: models, repositories, services, controllers
 - All HTTP methods (GET, POST, PUT, PATCH, DELETE)
 - `@Configuration` with `@Bean` methods, `@Component` runners
 - 5 test classes (11 methods), 30+ config properties with dev profile
+- Same source code across both projects to verify parity
 
 ## Requirements
 
