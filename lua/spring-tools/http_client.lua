@@ -41,14 +41,6 @@ function M._show_curl_input(endpoint, default_text, on_submit)
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { default_text or "" })
 
-  -- Prompt callback submits on Enter
-  vim.fn.prompt_setcallback(buf, function(text)
-    vim.schedule(function()
-      cleanup()
-      on_submit(text)
-    end)
-  end)
-
   local closing = false
   local function cleanup()
     if closing then return end
@@ -57,19 +49,15 @@ function M._show_curl_input(endpoint, default_text, on_submit)
     pcall(vim.api.nvim_buf_delete, buf, { force = true })
   end
 
-  -- Esc / q closes without submitting
-  vim.keymap.set("i", "<Esc>", function() cleanup() end, { buffer = buf, silent = true, nowait = true })
-  vim.keymap.set("n", "q", function() cleanup() end, { buffer = buf, silent = true, nowait = true })
-  vim.keymap.set("n", "<Esc>", function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+  -- Prompt callback submits on Enter
+  vim.fn.prompt_setcallback(buf, function(text)
+    vim.schedule(function()
+      cleanup()
+      on_submit(text)
+    end)
+  end)
 
-  -- Block window navigation
-  vim.keymap.set("n", "<C-w>", "<Nop>", { buffer = buf, silent = true })
-  vim.keymap.set("n", "<C-h>", "<Nop>", { buffer = buf, silent = true })
-  vim.keymap.set("n", "<C-j>", "<Nop>", { buffer = buf, silent = true })
-  vim.keymap.set("n", "<C-k>", "<Nop>", { buffer = buf, silent = true })
-  vim.keymap.set("n", "<C-l>", "<Nop>", { buffer = buf, silent = true })
-
-  -- Set up omnifunc for curl completion
+  -- Setup omnifunc
   if not M._omni_reg then
     M._omni_reg = true
     vim.cmd([[
@@ -81,8 +69,51 @@ function M._show_curl_input(endpoint, default_text, on_submit)
   vim.bo[buf].omnifunc = "SpringToolsCurlOmni"
   vim.bo[buf].complete = "."
 
-  -- Tab triggers completion
-  vim.keymap.set("i", "<Tab>", "<C-x><C-o>", { buffer = buf, silent = true })
+  -- Tab: trigger or cycle completion
+  vim.keymap.set("i", "<Tab>", function()
+    if vim.fn.pumvisible() == 1 then
+      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
+    else
+      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-x><C-o>", true, false, true), "n")
+    end
+  end, { buffer = buf, silent = true })
+
+  -- Ctrl+j/k navigate popup
+  vim.keymap.set("i", "<C-j>", function()
+    if vim.fn.pumvisible() == 1 then
+      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
+    end
+  end, { buffer = buf, silent = true })
+
+  vim.keymap.set("i", "<C-k>", function()
+    if vim.fn.pumvisible() == 1 then
+      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-p>", true, false, true), "n")
+    end
+  end, { buffer = buf, silent = true })
+
+  -- Escape / q close
+  vim.keymap.set("i", "<Esc>", function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+  vim.keymap.set("n", "q", function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+  vim.keymap.set("n", "<Esc>", function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+
+  -- Block window navigation in normal mode
+  vim.keymap.set("n", "<C-w>", "<Nop>", { buffer = buf, silent = true })
+  vim.keymap.set("n", "<C-h>", "<Nop>", { buffer = buf, silent = true })
+  vim.keymap.set("n", "<C-j>", "<Nop>", { buffer = buf, silent = true })
+  vim.keymap.set("n", "<C-k>", "<Nop>", { buffer = buf, silent = true })
+  vim.keymap.set("n", "<C-l>", "<Nop>", { buffer = buf, silent = true })
+
+  -- Close when focus leaves
+  vim.api.nvim_create_autocmd("BufLeave", {
+    buffer = buf,
+    callback = function()
+      if closing then return end
+      vim.schedule(function()
+        local ok, _ = pcall(vim.api.nvim_win_is_valid, win)
+        if ok then cleanup() end
+      end)
+    end,
+  })
 
   vim.cmd("startinsert!")
 end
