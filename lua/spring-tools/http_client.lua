@@ -268,12 +268,13 @@ function M._send_resolved(endpoint, extra_args, path)
 
   local url = "http://localhost:" .. port .. path
   local cmd = string.format(
-    "curl -s -w '\\n\\n--- RESPONSE ---\\nHTTP_CODE:%%{http_code}\\nTIME:%%{time_total}s\\nSIZE:%%{size_download} bytes' %s -X %s '%s' 2>&1",
+    "curl -s -w '\\n\\n--- RESPONSE ---\\nHTTP_CODE:%%{http_code}\\nTIME:%%{time_total}s\\nSIZE:%%{size_download} bytes' %s -X %s '%s'",
     extra_args, endpoint.method, url
   )
 
   local use_jq = vim.fn.executable("jq") == 1
 
+  local stderr_lines = {}
   vim.fn.jobstart({ "sh", "-c", cmd }, {
     stdout_buffered = true,
     stderr_buffered = true,
@@ -287,17 +288,15 @@ function M._send_resolved(endpoint, extra_args, path)
           if #jq_out > 0 then response_body = table.concat(jq_out, "\n") end
         end
 
-        M._show_response(endpoint, port, response_body, meta, extra_args, path)
+        local verbose = table.concat(stderr_lines, "\n")
+        M._show_response(endpoint, port, response_body, meta, extra_args, path, verbose)
         utils.notify(endpoint.method .. " " .. endpoint.path .. " → done", vim.log.levels.INFO)
       end)
     end,
     on_stderr = function(_, data)
-      vim.schedule(function()
-        local err = table.concat(data or {}, "\n")
-        if err ~= "" then
-          utils.notify("Request error: " .. err, vim.log.levels.WARN)
-        end
-      end)
+      for _, line in ipairs(data or {}) do
+        if line ~= "" then stderr_lines[#stderr_lines + 1] = line end
+      end
     end,
   })
 end
@@ -316,8 +315,9 @@ function M._split_response(raw)
   return body, meta
 end
 
-function M._show_response(endpoint, port, body, meta, extra_args, resolved_path)
+function M._show_response(endpoint, port, body, meta, extra_args, resolved_path, verbose_out)
   resolved_path = resolved_path or endpoint.path
+  verbose_out = verbose_out or ""
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].buftype = "nofile"
   vim.bo[buf].bufhidden = "wipe"
@@ -352,6 +352,15 @@ function M._show_response(endpoint, port, body, meta, extra_args, resolved_path)
     end
   else
     table.insert(lines, "  (empty response)")
+  end
+
+  if verbose_out ~= "" then
+    table.insert(lines, "")
+    table.insert(lines, string.rep("─", 60))
+    table.insert(lines, "  Verbose:")
+    for line in verbose_out:gmatch("[^\n]+") do
+      table.insert(lines, line)
+    end
   end
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
