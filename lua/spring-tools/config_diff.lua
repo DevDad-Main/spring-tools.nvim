@@ -5,6 +5,11 @@ local config = require("spring-tools.config")
 
 local M = {}
 
+local parse_file
+local pad_right
+local truncate
+local count_type
+
 function M.open()
   local proj = project.get_active_project()
   local root = proj and proj.root or vim.fn.getcwd()
@@ -160,7 +165,7 @@ function M.show_diff(file_a, file_b, name_a, name_b)
   utils.notify(string.format("Diff: %s ↔ %s (%d props)", name_a, name_b, #all_keys))
 end
 
-local function parse_file(file_path)
+parse_file = function(file_path)
   if file_path:match("%.ya?ml$") then
     local ok, lines = pcall(vim.fn.readfile, file_path)
     if not ok or not lines then return {} end
@@ -172,17 +177,17 @@ local function parse_file(file_path)
   end
 end
 
-local function pad_right(str, len)
+pad_right = function(str, len)
   if #str >= len then return str:sub(1, len) end
   return str .. string.rep(" ", len - #str)
 end
 
-local function truncate(str, len)
+truncate = function(str, len)
   if #str <= len then return str end
   return str:sub(1, len - 3) .. "..."
 end
 
-local function count_type(highlights, t)
+count_type = function(highlights, t)
   local count = 0
   for _, h in ipairs(highlights) do
     if h and h.diff_type == t then count = count + 1 end
