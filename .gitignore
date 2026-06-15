@@ -2,6 +2,11 @@ tests/TestApp/target/
 tests/TestApp/.classpath
 tests/TestApp/.project
 tests/TestApp/.settings/
+tests/TestApp/bin/
 tests/TestApp/demo.cast
 tests/TestApp-Gradle/.gradle/
 tests/TestApp-Gradle/build/
+tests/TestApp-Gradle/.classpath
+tests/TestApp-Gradle/.project
+tests/TestApp-Gradle/.settings/
+tests/TestApp-Gradle/bin/
