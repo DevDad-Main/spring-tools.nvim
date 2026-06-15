@@ -291,12 +291,13 @@ function M:on_activate(idx)
     end }
   end
 
-  if item.status == "running" or item.status == "failed" then
+  if item.status == "failed" then
     menu[#menu + 1] = { label = "  View logs", action = function() M.show_logs(proj) end }
   end
   if item.status == "running" then
-    menu[#menu + 1] = { label = "  Restart", action = do_restart }
     menu[#menu + 1] = { label = "  Stop", action = function() require("spring-tools.core.backend").ProcessManager:stop(proj); sidebar.refresh() end }
+    menu[#menu + 1] = { label = "  View logs", action = function() M.show_logs(proj) end }
+    menu[#menu + 1] = { label = "  Restart", action = do_restart }
     local ar_on = M._auto_restart[proj.root]
     menu[#menu + 1] = { label = (ar_on and "↻  Auto-restart: on" or "↻  Auto-restart: off"), action = function()
       M._auto_restart[proj.root] = not ar_on
