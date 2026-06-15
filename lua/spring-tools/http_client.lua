@@ -30,10 +30,8 @@ function M._show_prompt(title, on_submit)
   end
 
   vim.fn.prompt_setcallback(buf, function(text)
-    vim.schedule(function()
-      cleanup()
-      on_submit(text)
-    end)
+    cleanup()
+    on_submit(text)
   end)
 
   local km = config.options.command_input.keymaps
