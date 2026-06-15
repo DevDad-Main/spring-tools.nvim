@@ -246,6 +246,7 @@ function M.setup_keymaps()
   if km.toggle_output then
     bmap(km.toggle_output, [[:lua require('spring-tools.ui.output').toggle()<CR>]])
   end
+  bmap("D", [[:lua require('spring-tools.config_diff').open()<CR>]])
 end
 
 function M.show_help()
