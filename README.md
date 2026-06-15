@@ -108,6 +108,7 @@
 - **Endpoint Explorer** — routes grouped by HTTP method (GET/POST/PUT/PATCH/DELETE), collapsible
 - **Test Runner** — discover/run JUnit 5 tests, per-method results from surefire XML
 - **Config Explorer** — browse application.properties/YAML, file-grouped, preview values with `p`, Enter jumps to exact line
+- **Config Diff** — `:SpringConfigDiff` side-by-side comparison of two config files with color-coded highlights (same, changed, left-only, right-only)
 - **Process Manager** — unbuffered I/O, port extraction, exit code tracking
 - **Project Cache** — persistent JSON at `~/.local/share/nvim/spring-tools/projects.json`
 - **Unified Search** — `:SpringSearch` opens a fuzzy picker across all beans, endpoints, tests, and config properties with nerd-font icons — jumps directly to the definition on selection
@@ -167,6 +168,7 @@ use {
 | `:SpringConfig`               | Open sidebar on Config                           |
 | `:SpringRefresh`              | Clear caches and re-index                        |
 | `:SpringClearCache`           | Clear all caches (project cache + dynamic goals) |
+| `:SpringConfigDiff`           | Diff two config files side-by-side             |
 | `:SpringSearch`               | Fuzzy search beans, endpoints, tests, and config |
 | `:SpringCommands`             | Browse and manage saved custom commands          |
 | `:SpringTestClass`            | Run current test class                           |
@@ -602,6 +604,7 @@ A sample Spring Boot test app is available at `tests/TestApp/` (Maven) and `test
 - [x] **Custom command history management** — `:SpringCommands` to browse, re-run, copy, and delete saved commands
 - [x] **Auto-restart on save** — debounced restart on file save with per-project toggle and `↻` indicator
 - [x] **Gradle task discovery** — parse `build.gradle` and query `gradle tasks --all` for dynamic task completion
+- [x] **Config diff viewer** — `:SpringConfigDiff` side-by-side comparison of config files
 - [ ] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects
 - [ ] **Config diff view** — side-by-side comparison of config properties between profiles
 - [ ] **Profile picker** — select active Spring profiles when starting an app
