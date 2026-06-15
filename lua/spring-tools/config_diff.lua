@@ -176,10 +176,8 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     end
     f("C", "changed", changed); f("L", "left_only", left_only)
     f("R", "right_only", right_only); f("S", "same", same)
-    table.insert(parts, "  [" .. name_a .. " ↔ " .. name_b .. "]")
-    table.insert(parts, string.rep(" ", 4))
-    table.insert(parts, "c:changed  l:left  r:right  s:same  a:all  q:close")
-    local text = "%#Title#═══ %*%#SpringToolsDashboardProject#" .. table.concat(parts, " ") .. " %*%#Title#════"
+    table.insert(parts, "  " .. name_a .. " ↔ " .. name_b)
+    local text = "%#Title#%= %*%#SpringToolsDashboardProject#" .. table.concat(parts, " ") .. " %*%#Title#%="
     if win_a and vim.api.nvim_win_is_valid(win_a) then vim.wo[win_a].winbar = text end
     if win_b and vim.api.nvim_win_is_valid(win_b) and win_b ~= win_a then vim.wo[win_b].winbar = text end
   end
@@ -188,6 +186,36 @@ function M.show_diff(file_a, file_b, name_a, name_b)
   local function close()
     pcall(vim.api.nvim_buf_delete, buf_a, { force = true })
     pcall(vim.api.nvim_buf_delete, buf_b, { force = true })
+  end
+
+  local function show_help()
+    local lines = {
+      "  Config Diff",
+      "  ───────────",
+      "",
+      "  c  Toggle changed lines (different values)",
+      "  l  Toggle left-only lines",
+      "  r  Toggle right-only lines",
+      "  s  Toggle same lines (identical)",
+      "  a  Show all lines",
+      "",
+      "  q / Esc  Close",
+    }
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.bo[buf].buftype = "nofile"
+    vim.bo[buf].modifiable = true
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    vim.bo[buf].modifiable = false
+    local w = vim.api.nvim_open_win(buf, true, {
+      relative = "editor",
+      width = 40, height = #lines, style = "minimal",
+      border = "rounded", title = " Keybinds ", title_pos = "center",
+      row = math.floor((vim.o.lines - #lines) / 2),
+      col = math.floor((vim.o.columns - 40) / 2),
+    })
+    vim.keymap.set("n", "?", function() pcall(vim.api.nvim_win_close, w, true) end, { buffer = buf, silent = true })
+    vim.keymap.set("n", "q", function() pcall(vim.api.nvim_win_close, w, true) end, { buffer = buf, silent = true })
+    vim.keymap.set("n", "<Esc>", function() pcall(vim.api.nvim_win_close, w, true) end, { buffer = buf, silent = true })
   end
 
   local function toggle_filter(key)
@@ -212,6 +240,7 @@ function M.show_diff(file_a, file_b, name_a, name_b)
       apply_highlights(buf_a, hl_a); apply_highlights(buf_b, hl_b)
       update_winbar()
     end, { buffer = b, silent = true, nowait = true })
+    vim.keymap.set("n", "?", show_help, { buffer = b, silent = true, nowait = true })
   end
 end
 
