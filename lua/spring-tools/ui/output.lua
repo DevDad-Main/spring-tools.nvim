@@ -38,15 +38,17 @@ end
 
 local function get_log_patterns()
   ensure_custom_init()
-  local custom = config.options.log and config.options.log.levels or {}
   local all = {}
-  for _, p in ipairs(builtin_patterns) do all[#all + 1] = p end
-  for _, p in ipairs(custom) do all[#all + 1] = p end
-  -- Include the single toggleable custom pattern
+  -- Custom toggleable pattern checked FIRST
   local cp = config.options.log and config.options.log.custom
   if cp and cp.pattern and cp.hl then
     all[#all + 1] = { pattern = cp.pattern, hl = cp.hl, is_custom = true }
   end
+  -- Then extra patterns from config
+  local custom = config.options.log and config.options.log.levels or {}
+  for _, p in ipairs(custom) do all[#all + 1] = p end
+  -- Then built-in patterns
+  for _, p in ipairs(builtin_patterns) do all[#all + 1] = p end
   return all
 end
 

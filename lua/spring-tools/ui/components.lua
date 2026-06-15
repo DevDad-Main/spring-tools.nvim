@@ -134,7 +134,7 @@ end
 
 function M.set_keymap(buf, key, callback, opts)
   opts = vim.tbl_extend("force", { silent = true, nowait = true, expr = false }, opts or {})
-  vim.keymap.set("n", key, callback, vim.tbl_extend("force", opts, { buffer = buf }))
+  vim.keymap.set("n", key, callback, vim.tbl_extend("force", opts, { buffer = buf, nowait = true }))
 end
 
 return M
