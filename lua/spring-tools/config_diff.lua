@@ -181,6 +181,7 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     table.insert(parts, "  " .. name_a .. " ↔ " .. name_b)
     local status = table.concat(parts, " ")
     local kb = "(c:changed  l:left  r:right  s:same  a:all  ?:help  q:close)"
+    vim.bo[toolbar_buf].modifiable = true
     vim.api.nvim_buf_set_lines(toolbar_buf, 0, -1, false, { status, kb })
     vim.bo[toolbar_buf].modifiable = false
   end
