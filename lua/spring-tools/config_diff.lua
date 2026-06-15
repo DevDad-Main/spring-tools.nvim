@@ -226,10 +226,10 @@ function M.show_diff(file_a, file_b, name_a, name_b)
       "  Config Diff",
       "  ───────────",
       "",
-      "  c  Toggle changed lines (different values)",
-      "  l  Toggle left-only lines",
-      "  r  Toggle right-only lines",
-      "  s  Toggle same lines (identical)",
+      "  c  Changed values (same key, different value)",
+      "  l  Left-only (only in this file)",
+      "  r  Right-only (only in other file)",
+      "  s  Same values (identical in both)",
       "  a  Show all lines",
       "",
       "  q / Esc  Close",
@@ -241,10 +241,10 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     vim.bo[buf].modifiable = false
     local w = vim.api.nvim_open_win(buf, true, {
       relative = "editor",
-      width = 40, height = #lines, style = "minimal",
+      width = 48, height = #lines, style = "minimal",
       border = "rounded", title = " Keybinds ", title_pos = "center",
       row = math.floor((vim.o.lines - #lines) / 2),
-      col = math.floor((vim.o.columns - 40) / 2),
+      col = math.floor((vim.o.columns - 48) / 2),
     })
     vim.keymap.set("n", "?", function() pcall(vim.api.nvim_win_close, w, true) end, { buffer = buf, silent = true })
     vim.keymap.set("n", "q", function() pcall(vim.api.nvim_win_close, w, true) end, { buffer = buf, silent = true })
