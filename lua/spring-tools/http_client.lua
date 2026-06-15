@@ -26,7 +26,11 @@ function M._show_curl_input(endpoint, default_text, on_submit)
 
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].buftype = "prompt"
-  vim.bo[buf].filetype = "springtools-curl-input"
+  pcall(vim.fn.prompt_setprompt, buf, "")
+  vim.bo[buf].complete = ""
+  vim.b[buf].cmp_enabled = false
+  vim.b[buf].cmp_disable = true
+  vim.b[buf].blink_cmp_disable = true
 
   local win = vim.api.nvim_open_win(buf, true, {
     relative = "editor",
@@ -69,12 +73,10 @@ function M._show_curl_input(endpoint, default_text, on_submit)
     ]])
   end
   vim.bo[buf].omnifunc = "SpringToolsCurlOmni"
-  vim.b[buf].cmp_enabled = false
-  vim.b[buf].blink_cmp_disable = true
 
   local km = config.options.command_input.keymaps
 
-  -- Tab: trigger completion
+  -- Tab: cycle popup or trigger completion
   vim.keymap.set("i", km.complete, function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
@@ -83,30 +85,46 @@ function M._show_curl_input(endpoint, default_text, on_submit)
     end
   end, { buffer = buf, silent = true })
 
-  -- Popup navigation
+  -- Popup nav
   vim.keymap.set("i", km.popup_next, function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
     end
   end, { buffer = buf, silent = true })
-
   vim.keymap.set("i", km.popup_prev, function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-p>", true, false, true), "n")
     end
   end, { buffer = buf, silent = true })
 
-  -- Close keymaps
+  -- Close
   vim.keymap.set("i", km.close, function() cleanup() end, { buffer = buf, silent = true, nowait = true })
   vim.keymap.set("n", km.close_alt, function() cleanup() end, { buffer = buf, silent = true, nowait = true })
   vim.keymap.set("n", km.close, function() cleanup() end, { buffer = buf, silent = true, nowait = true })
 
-  -- Block window navigation in normal mode
+  -- Block window nav
   vim.keymap.set("n", "<C-w>", "<Nop>", { buffer = buf, silent = true })
   vim.keymap.set("n", "<C-h>", "<Nop>", { buffer = buf, silent = true })
   vim.keymap.set("n", "<C-j>", "<Nop>", { buffer = buf, silent = true })
   vim.keymap.set("n", "<C-k>", "<Nop>", { buffer = buf, silent = true })
   vim.keymap.set("n", "<C-l>", "<Nop>", { buffer = buf, silent = true })
+
+  -- Auto-trigger completion as user types
+  vim.api.nvim_create_autocmd("TextChangedI", {
+    buffer = buf,
+    callback = function()
+      if vim.fn.pumvisible() == 1 then return end
+      local col = vim.api.nvim_win_get_cursor(0)[2]
+      if col < 2 then return end
+      local line = vim.api.nvim_get_current_line()
+      local char = line:sub(col, col)
+      if not char:match("[%w:_%-.@/]") then return end
+      vim.schedule(function()
+        if vim.fn.mode() ~= "i" then return end
+        vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-x><C-o>", true, false, true), "n")
+      end)
+    end,
+  })
 
   -- Close when focus leaves
   vim.api.nvim_create_autocmd("BufLeave", {
@@ -120,9 +138,10 @@ function M._show_curl_input(endpoint, default_text, on_submit)
     end,
   })
 
+  vim.bo[buf].filetype = "springtools-curl-input"
   vim.cmd("startinsert!")
+  vim.api.nvim_win_set_cursor(win, { 1, #default_text })
 end
-
 function M._curl_omni(findstart, base)
   if findstart == 1 then
     local line = vim.api.nvim_get_current_line()
