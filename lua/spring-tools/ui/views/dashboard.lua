@@ -600,6 +600,7 @@ function M._omni(findstart, base)
 end
 
 function M._show_command_input(proj, default_text, on_submit)
+  local km_input = config.options.command_input.keymaps
   local width = math.min(80, vim.o.columns - 4)
   local height = 1
   local pos = config.options.command_input and config.options.command_input.position or "center"
@@ -707,7 +708,7 @@ function M._show_command_input(proj, default_text, on_submit)
     on_submit(text)
   end, { buffer = buf, silent = true })
 
-  vim.keymap.set("i", "<Tab>", function()
+  vim.keymap.set("i", km_input.complete, function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
     else
@@ -715,20 +716,20 @@ function M._show_command_input(proj, default_text, on_submit)
     end
   end, { buffer = buf, silent = true })
 
-  vim.keymap.set("i", "<C-j>", function()
+  vim.keymap.set("i", km_input.popup_next, function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
     end
   end, { buffer = buf, silent = true })
 
-  vim.keymap.set("i", "<C-k>", function()
+  vim.keymap.set("i", km_input.popup_prev, function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-p>", true, false, true), "n")
     end
   end, { buffer = buf, silent = true })
 
-  vim.keymap.set("n", "<Esc>", cleanup, { buffer = buf, silent = true })
-  vim.keymap.set("n", "q", cleanup, { buffer = buf, silent = true })
+  vim.keymap.set("n", km_input.close, cleanup, { buffer = buf, silent = true })
+  vim.keymap.set("n", km_input.close_alt, cleanup, { buffer = buf, silent = true })
   vim.keymap.set("n", "<CR>", function()
     local text = vim.api.nvim_get_current_line()
     cleanup()

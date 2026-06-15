@@ -72,6 +72,13 @@ M.defaults = {
   },
   command_input = {
     position = "center",  -- "top", "center", or "bottom"
+    keymaps = {
+      complete = "<Tab>",
+      popup_next = "<C-j>",
+      popup_prev = "<C-k>",
+      close = "<Esc>",
+      close_alt = "q",
+    },
   },
   search = {
     icons = {

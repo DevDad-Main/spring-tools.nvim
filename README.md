@@ -367,6 +367,13 @@ require("spring-tools").setup({
   },
   command_input = {
     position = "center",       -- "top", "center", or "bottom"
+    keymaps = {
+      complete = "<Tab>",
+      popup_next = "<C-j>",
+      popup_prev = "<C-k>",
+      close = "<Esc>",
+      close_alt = "q",
+    },
   },
   auto_restart = {
     enable = true,             -- master switch (off = disabled for all)

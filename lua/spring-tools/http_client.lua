@@ -1,5 +1,6 @@
 local project = require("spring-tools.project")
 local utils = require("spring-tools.utils")
+local config = require("spring-tools.config")
 
 local M = {}
 
@@ -69,8 +70,10 @@ function M._show_curl_input(endpoint, default_text, on_submit)
   vim.bo[buf].omnifunc = "SpringToolsCurlOmni"
   vim.bo[buf].complete = "."
 
+  local km = config.options.command_input.keymaps
+
   -- Tab: trigger or cycle completion
-  vim.keymap.set("i", "<Tab>", function()
+  vim.keymap.set("i", km.complete, function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
     else
@@ -78,23 +81,23 @@ function M._show_curl_input(endpoint, default_text, on_submit)
     end
   end, { buffer = buf, silent = true })
 
-  -- Ctrl+j/k navigate popup
-  vim.keymap.set("i", "<C-j>", function()
+  -- Popup navigation
+  vim.keymap.set("i", km.popup_next, function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
     end
   end, { buffer = buf, silent = true })
 
-  vim.keymap.set("i", "<C-k>", function()
+  vim.keymap.set("i", km.popup_prev, function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-p>", true, false, true), "n")
     end
   end, { buffer = buf, silent = true })
 
-  -- Escape / q close
-  vim.keymap.set("i", "<Esc>", function() cleanup() end, { buffer = buf, silent = true, nowait = true })
-  vim.keymap.set("n", "q", function() cleanup() end, { buffer = buf, silent = true, nowait = true })
-  vim.keymap.set("n", "<Esc>", function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+  -- Close keymaps
+  vim.keymap.set("i", km.close, function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+  vim.keymap.set("n", km.close_alt, function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+  vim.keymap.set("n", km.close, function() cleanup() end, { buffer = buf, silent = true, nowait = true })
 
   -- Block window navigation in normal mode
   vim.keymap.set("n", "<C-w>", "<Nop>", { buffer = buf, silent = true })
