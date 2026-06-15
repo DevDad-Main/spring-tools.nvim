@@ -63,12 +63,11 @@ function M._show_curl_input(endpoint, default_text, on_submit)
     M._omni_reg = true
     vim.cmd([[
       function! SpringToolsCurlOmni(findstart, base)
-        return v:lua.require'spring-tools.http_client'._curl_omni(a:findstart, a:base)
+        return luaeval("require('spring-tools.http_client')._curl_omni(_A[1], _A[2])", [a:findstart, a:base])
       endfunction
     ]])
   end
   vim.bo[buf].omnifunc = "SpringToolsCurlOmni"
-  vim.bo[buf].complete = "."
 
   local km = config.options.command_input.keymaps
 
