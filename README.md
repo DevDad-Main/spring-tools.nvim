@@ -122,6 +122,22 @@ log = {
   <img src="previews/plugin_demo_log_highlighting_2.gif" width="900" />
 </p>
 
+<h4 align="center">HTTP Client &mdash; curl requests from endpoints with JSON responses, live log streaming</h4>
+<p align="center">
+  <img src="previews/curl-request-json-filtered-logs.png" width="900" />
+</p>
+
+> **Tip**: Press `t` on an endpoint, fill path variables, add curl args with `Tab` completions. Responses open in a formatted buffer with headers, status, timing.
+
+```lua
+-- Customizable curl completions
+command_input = {
+  curl_suggestions = {
+    { word = "-H \"X-API-Key: \"", menu = "API key header" },
+  },
+}
+```
+
 <h4 align="center">Full Walkthrough &mdash; sidebar navigation, command input, output panel</h4>
 <p align="center">
   <img src="previews/plugin_demo.gif" width="900" />
@@ -129,17 +145,17 @@ log = {
 
 <h4 align="center">Keybindings Reference</h4>
 <p align="center">
-  <img src="previews/spring-tools-keybinds.png" width="650" />
+  <img src="previews/spring-tools-keybinds.png" width="900" />
 </p>
 
 <h4 align="center">Commands Reference</h4>
 <p align="center">
-  <img src="previews/spring-tools-cmds.png" width="650" />
+  <img src="previews/spring-tools-cmds.png" width="900" />
 </p>
 
 <h4 align="center">Formatted Output &mdash; compile errors, root cause extraction</h4>
 <p align="center">
-  <img src="previews/spring-tools-formatted-output.png" width="650" />
+  <img src="previews/spring-tools-formatted-output.png" width="900" />
 </p>
 
 </details>
