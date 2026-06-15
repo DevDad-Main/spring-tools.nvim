@@ -149,9 +149,18 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     end
   end
 
-  -- Open in vertical split
-  vim.cmd("belowright vsplit")
-  local win = vim.api.nvim_get_current_win()
+  -- Open as fullscreen tab
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = math.min(92, vim.o.columns - 2),
+    height = math.min(#lines + 2, vim.o.lines - 2),
+    row = math.max(0, math.floor((vim.o.lines - math.min(#lines + 2, vim.o.lines - 2)) / 2)),
+    col = math.max(0, math.floor((vim.o.columns - math.min(92, vim.o.columns - 2)) / 2)),
+    style = "minimal",
+    border = "rounded",
+    title = " Config Diff ",
+    title_pos = "center",
+  })
   vim.api.nvim_win_set_buf(win, buf)
   vim.api.nvim_win_set_width(win, 90)
   vim.wo[win].winfixwidth = true
