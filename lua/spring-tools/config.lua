@@ -74,6 +74,7 @@ M.defaults = {
     position = "center",  -- "top", "center", or "bottom"
     keymaps = {
       complete = "<Tab>",
+      trigger = "<C-Space>",
       popup_next = "<C-j>",
       popup_prev = "<C-k>",
       close = "<Esc>",

@@ -716,6 +716,10 @@ function M._show_command_input(proj, default_text, on_submit)
     end
   end, { buffer = buf, silent = true })
 
+  vim.keymap.set("i", km_input.trigger, function()
+    vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-x><C-o>", true, false, true), "n")
+  end, { buffer = buf, silent = true })
+
   vim.keymap.set("i", km_input.popup_next, function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
@@ -757,9 +761,9 @@ function M._show_command_input(proj, default_text, on_submit)
     callback = function()
       if vim.fn.pumvisible() == 1 then return end
       local col = vim.api.nvim_win_get_cursor(0)[2]
-      if col < 2 then return end
+      if col < 1 then return end
       local line = vim.api.nvim_get_current_line()
-      local char = line:sub(col, col)
+      local char = line:sub(col + 1, col + 1)
       if not char:match("[%w:_%-.@/]") then return end
       vim.schedule(function()
         if vim.fn.mode() ~= "i" then return end
