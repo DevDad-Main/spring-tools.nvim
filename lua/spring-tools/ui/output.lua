@@ -18,6 +18,8 @@ local builtin_patterns = {
 }
 
 
+local M
+
 local filter_order = { "error", "warn", "info", "debug", "trace" }
 
 -- Lazy-init custom toggleable pattern (config may not be set at module load)
@@ -48,7 +50,7 @@ local function get_log_patterns()
   return all
 end
 
-local M = {}
+M = {}
 
 M.buf = nil
 M.win = nil
