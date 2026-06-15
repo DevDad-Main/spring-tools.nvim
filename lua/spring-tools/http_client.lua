@@ -62,12 +62,9 @@ function M._show_curl_input(endpoint, default_text, on_submit)
   -- Setup omnifunc
   if not M._omni_reg then
     M._omni_reg = true
-    _G._spring_curl_omni = function(fs, base)
-      return M._curl_omni(fs, base)
-    end
-    vim.cmd([[
+    pcall(vim.cmd, [[
       function! SpringToolsCurlOmni(findstart, base)
-        return v:lua._spring_curl_omni(a:findstart, a:base)
+        return luaeval("require('spring-tools.http_client')._curl_omni(_A[1], _A[2])", [a:findstart, a:base])
       endfunction
     ]])
   end
