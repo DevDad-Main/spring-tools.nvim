@@ -5,6 +5,12 @@ local utils = require("spring-tools.utils")
 
 local M = {}
 
+-- Explicit highlight groups with fixed colors (survive colorscheme changes)
+vim.api.nvim_set_hl(0, "SpringToolsDiffSame", { fg = "#98c379", default = true })
+vim.api.nvim_set_hl(0, "SpringToolsDiffChanged", { fg = "#e5c07b", default = true })
+vim.api.nvim_set_hl(0, "SpringToolsDiffRemoved", { fg = "#e06c75", default = true })
+vim.api.nvim_set_hl(0, "SpringToolsDiffAdded", { fg = "#98c379", default = true })
+
 function M.open()
   local proj = project.get_active_project()
   local root = proj and proj.root or vim.fn.getcwd()
@@ -104,10 +110,10 @@ function M.show_diff(file_a, file_b, name_a, name_b)
 
   local function hl_group_for(diff_type, none_ok)
     local hls = config.options.diff.highlights
-    if diff_type == "same" then return hls.same or "SpringToolsRunning"
-    elseif diff_type == "changed" then return hls.changed or "SpringToolsLogWarn"
-    elseif diff_type == "left_only" then return hls.left_only or "SpringToolsError"
-    elseif diff_type == "right_only" then return hls.right_only or "SpringToolsError"
+    if diff_type == "same" then return hls.same or "SpringToolsDiffSame"
+    elseif diff_type == "changed" then return hls.changed or "SpringToolsDiffChanged"
+    elseif diff_type == "left_only" then return hls.left_only or "SpringToolsDiffRemoved"
+    elseif diff_type == "right_only" then return hls.right_only or "SpringToolsDiffAdded"
     end
   end
 
