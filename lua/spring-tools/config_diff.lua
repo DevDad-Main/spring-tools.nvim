@@ -149,7 +149,22 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     end
   end
 
-  -- Open as fullscreen buffer
+  -- Open in main editor — find a non-sidebar, non-output window
+  local sidebar_mod = require("spring-tools.ui.sidebar")
+  local target_win = nil
+  for _, w in ipairs(vim.api.nvim_list_wins()) do
+    if w ~= sidebar_mod.win then
+      local buf = vim.api.nvim_win_get_buf(w)
+      local ft = vim.bo[buf].filetype
+      if ft ~= "springtools-output" then
+        target_win = w
+        break
+      end
+    end
+  end
+  if target_win then
+    vim.api.nvim_set_current_win(target_win)
+  end
   vim.api.nvim_set_current_buf(buf)
   vim.bo[buf].bufhidden = "wipe"
 
