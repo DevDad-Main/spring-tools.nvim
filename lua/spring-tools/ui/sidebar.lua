@@ -269,6 +269,7 @@ function M.show_help()
     { "    /       Search all artifacts", "" },
     { "    p       Preview value (config)", "" },
     { "    d       Remove from cache", "" },
+    { "    D       Config diff viewer", "" },
     { "    R       Refresh", "" },
     { "    q       Close sidebar", "" },
     { "", "" },

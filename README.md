@@ -108,7 +108,7 @@
 - **Endpoint Explorer** — routes grouped by HTTP method (GET/POST/PUT/PATCH/DELETE), collapsible
 - **Test Runner** — discover/run JUnit 5 tests, per-method results from surefire XML
 - **Config Explorer** — browse application.properties/YAML, file-grouped, preview values with `p`, Enter jumps to exact line
-- **Config Diff** — `:SpringConfigDiff` side-by-side comparison of two config files with color-coded highlights (same, changed, left-only, right-only)
+- **Config Diff** — `:SpringConfigDiff` or `D` in sidebar opens two config files side-by-side with explicit color-coded highlights (green same, amber changed, red one-sided) and filter toggles via a floating toolbar
 - **Process Manager** — unbuffered I/O, port extraction, exit code tracking
 - **Project Cache** — persistent JSON at `~/.local/share/nvim/spring-tools/projects.json`
 - **Unified Search** — `:SpringSearch` opens a fuzzy picker across all beans, endpoints, tests, and config properties with nerd-font icons — jumps directly to the definition on selection
@@ -189,6 +189,7 @@ use {
 | `/`       | Unified search across all views              |
 | `p`       | Preview config value (in Config view) |
 | `d`       | Remove project from cache             |
+| `D`       | Open Config Diff viewer               |
 | `R`       | Refresh current view                  |
 | `q`       | Close sidebar                         |
 | `?`       | Toggle help floating window           |
