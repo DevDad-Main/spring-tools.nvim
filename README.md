@@ -24,6 +24,8 @@
   <a href="#troubleshooting">Troubleshooting</a>
 </p>
 
+<video src="previews/plugin_demo.mp4" controls autoplay loop muted width="100%"></video>
+
 <br>
 
 ## Previews
@@ -169,7 +171,7 @@ use {
 | `:SpringConfig`               | Open sidebar on Config                           |
 | `:SpringRefresh`              | Clear caches and re-index                        |
 | `:SpringClearCache`           | Clear all caches (project cache + dynamic goals) |
-| `:SpringConfigDiff`           | Diff two config files side-by-side             |
+| `:SpringConfigDiff`           | Diff two config files side-by-side               |
 | `:SpringSearch`               | Fuzzy search beans, endpoints, tests, and config |
 | `:SpringCommands`             | Browse and manage saved custom commands          |
 | `:SpringTestClass`            | Run current test class                           |
@@ -180,21 +182,21 @@ use {
 
 <details><summary>Sidebar Navigation (default keymaps)</summary>
 
-| Key       | Action                                |
-| --------- | ------------------------------------- |
-| `j` / `k` | Move selection up/down                |
-| `h` / `l` | Previous/next tab                     |
-| `1`–`5`   | Jump to tab                           |
+| Key       | Action                                               |
+| --------- | ---------------------------------------------------- |
+| `j` / `k` | Move selection up/down                               |
+| `h` / `l` | Previous/next tab                                    |
+| `1`–`5`   | Jump to tab                                          |
 | `<CR>`    | Open nested action menu (commands, logs, stop, etc.) |
-| `o`       | Toggle output panel                          |
-| `/`       | Unified search across all views              |
-| `p`       | Preview config value (in Config view) |
-| `d`       | Remove project from cache             |
-| `D`       | Open Config Diff viewer               |
-| `t`       | Test endpoint (send curl request)     |
-| `R`       | Refresh current view                  |
-| `q`       | Close sidebar                         |
-| `?`       | Toggle help floating window           |
+| `o`       | Toggle output panel                                  |
+| `/`       | Unified search across all views                      |
+| `p`       | Preview config value (in Config view)                |
+| `d`       | Remove project from cache                            |
+| `D`       | Open Config Diff viewer                              |
+| `t`       | Test endpoint (send curl request)                    |
+| `R`       | Refresh current view                                 |
+| `q`       | Close sidebar                                        |
+| `?`       | Toggle help floating window                          |
 
 </details>
 
@@ -274,14 +276,14 @@ When enabled, saving a `.java` or build file automatically restarts the running 
 
 Benchmarked on a small Spring Boot app (TestApp, ~15 classes, embedded H2):
 
-| | Auto-restart | DevTools |
-|---|---|---|
-| Restart time | ~4.2s (full JVM restart) | ~1–2s (class reload) |
-| Speed vs DevTools | ~2–4x slower | — |
-| Dependencies | None | `spring-boot-devtools` in pom.xml |
-| Config changes | Yes | Only via restart |
-| Bean wiring changes | Yes | Limited |
-| Works with any build | Yes | Maven/Gradle only |
+|                      | Auto-restart             | DevTools                          |
+| -------------------- | ------------------------ | --------------------------------- |
+| Restart time         | ~4.2s (full JVM restart) | ~1–2s (class reload)              |
+| Speed vs DevTools    | ~2–4x slower             | —                                 |
+| Dependencies         | None                     | `spring-boot-devtools` in pom.xml |
+| Config changes       | Yes                      | Only via restart                  |
+| Bean wiring changes  | Yes                      | Limited                           |
+| Works with any build | Yes                      | Maven/Gradle only                 |
 
 Times vary by hardware, JVM warm-up, and project size — larger projects will see longer restart times. Auto-restart is a zero-dependency convenience feature that works out of the box. DevTools is faster for pure code changes but requires the dependency and has limitations with configuration and bean wiring changes. Use both together — DevTools for live-coding, auto-restart as a fallback for projects where DevTools isn't set up.
 
@@ -582,7 +584,7 @@ lua/spring-tools/
 | Port conflict            | `fuser -k 9090/tcp` to kill existing process, then restart        |
 | Telescope not showing    | Check `telescope.enable = true` in config                         |
 | Tests not running        | Ensure Maven/Gradle is on PATH                                    |
-| Gradle build fails        | Stop stale daemons: `./gradlew --stop` in the project root       |
+| Gradle build fails       | Stop stale daemons: `./gradlew --stop` in the project root        |
 
 ## Testing
 
