@@ -97,9 +97,7 @@ function M:on_activate(idx)
       utils.notify("Curl copied")
     end },
     { label = "Send request", fn = function()
-      http._show_curl_input(ep, "", function(input)
-        http.send(ep, input or "")
-      end)
+      M._resolve_and_send(ep)
     end },
     { label = "Open in browser", fn = function()
       local port = M._get_port()
@@ -137,9 +135,10 @@ end
 function M:test_endpoint(idx)
   local item = M.items[idx]
   if not item or item.type ~= "endpoint" then return end
-  local ep = item.endpoint
+  M._resolve_and_send(item.endpoint)
+end
 
-  -- Resolve path variables (e.g., /products/{id})
+function M._resolve_and_send(ep)
   local path = ep.path
   local vars = {}
   for var in path:gmatch("{(%w+)}") do
@@ -153,7 +152,6 @@ function M:test_endpoint(idx)
   end
 
   if #vars > 0 then
-    -- Prompt for first variable
     local function ask_var(i)
       if i > #vars then
         show_input(path)
