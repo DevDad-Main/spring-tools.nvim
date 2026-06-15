@@ -268,7 +268,7 @@ function M._send_resolved(endpoint, extra_args, path)
 
   local url = "http://localhost:" .. port .. path
   local cmd = string.format(
-    "curl -s -w '\\n\\n--- RESPONSE ---\\nHTTP_CODE:%%{http_code}\\nTIME:%%{time_total}s\\nSIZE:%%{size_download} bytes' %s -X %s '%s'",
+    "curl -s --connect-timeout 5 --max-time 30 -w '\\n\\n--- RESPONSE ---\\nHTTP_CODE:%%{http_code}\\nTIME:%%{time_total}s\\nSIZE:%%{size_download} bytes' %s -X %s '%s'",
     extra_args, endpoint.method, url
   )
 
@@ -296,6 +296,16 @@ function M._send_resolved(endpoint, extra_args, path)
     on_stderr = function(_, data)
       for _, line in ipairs(data or {}) do
         if line ~= "" then stderr_lines[#stderr_lines + 1] = line end
+      end
+    end,
+    on_exit = function(_, code)
+      if code ~= 0 then
+        vim.schedule(function()
+          local verbose = table.concat(stderr_lines, "\n")
+          if verbose == "" then verbose = "curl exited with code " .. code end
+          M._show_response(endpoint, port, "", { HTTP_CODE = "ERR" }, extra_args, path, verbose)
+          utils.notify("Request failed (exit " .. code .. ")", vim.log.levels.WARN)
+        end)
       end
     end,
   })
