@@ -149,24 +149,14 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     end
   end
 
-  -- Open as fullscreen tab
-  local win = vim.api.nvim_open_win(buf, true, {
-    relative = "editor",
-    width = math.min(92, vim.o.columns - 2),
-    height = math.min(#lines + 2, vim.o.lines - 2),
-    row = math.max(0, math.floor((vim.o.lines - math.min(#lines + 2, vim.o.lines - 2)) / 2)),
-    col = math.max(0, math.floor((vim.o.columns - math.min(92, vim.o.columns - 2)) / 2)),
-    style = "minimal",
-    border = "rounded",
-    title = " Config Diff ",
-    title_pos = "center",
-  })
-  vim.api.nvim_win_set_buf(win, buf)
-  vim.api.nvim_win_set_width(win, 90)
-  vim.wo[win].winfixwidth = true
+  -- Open as fullscreen buffer
+  vim.api.nvim_set_current_buf(buf)
+  vim.bo[buf].bufhidden = "wipe"
 
   local function close()
-    pcall(vim.api.nvim_win_close, win, true)
+    if vim.api.nvim_buf_is_valid(buf) then
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end
   end
   vim.keymap.set("n", "q", close, { buffer = buf, silent = true, nowait = true })
   vim.keymap.set("n", "<Esc>", close, { buffer = buf, silent = true, nowait = true })
