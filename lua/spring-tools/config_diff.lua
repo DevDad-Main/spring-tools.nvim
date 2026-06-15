@@ -153,16 +153,23 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     end
   end
   if main_win then vim.api.nvim_set_current_win(main_win) end
-  vim.cmd("edit " .. vim.fn.fnameescape(file_a))
-  local buf_a = vim.api.nvim_get_current_buf()
+
+  -- Create scratch buffers (never touch real files)
+  local buf_a = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_set_current_buf(buf_a)
+  vim.bo[buf_a].buftype = "nofile"
   vim.bo[buf_a].bufhidden = "wipe"
+  vim.bo[buf_a].filetype = vim.filetype.match({ filename = file_a }) or "properties"
   local hl_a = rebuild(buf_a, orig_a, diff_a)
   apply_highlights(buf_a, hl_a)
 
-  -- Open file B in vertical split
-  vim.cmd("belowright vsplit " .. vim.fn.fnameescape(file_b))
-  local buf_b = vim.api.nvim_get_current_buf()
+  -- File B in vertical split
+  vim.cmd("belowright vsplit")
+  local buf_b = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_set_current_buf(buf_b)
+  vim.bo[buf_b].buftype = "nofile"
   vim.bo[buf_b].bufhidden = "wipe"
+  vim.bo[buf_b].filetype = vim.filetype.match({ filename = file_b }) or "properties"
   local hl_b = rebuild(buf_b, orig_b, diff_b)
   apply_highlights(buf_b, hl_b)
 
