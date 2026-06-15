@@ -187,10 +187,10 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     f("C", "changed", changed); f("L", "left_only", left_only)
     f("R", "right_only", right_only); f("S", "same", same)
     local counts = table.concat(parts, " ")
-    local files = string.format("%-28s │ %s", name_a, name_b)
+    local files = "  " .. name_a .. "  ↔  " .. name_b
     local kb = "(c:changed  l:left  r:right  s:same  a:all  ?:help  q:close)"
     vim.bo[toolbar_buf].modifiable = true
-    vim.api.nvim_buf_set_lines(toolbar_buf, 0, -1, false, { "  " .. files, "  " .. counts, "  " .. kb })
+    vim.api.nvim_buf_set_lines(toolbar_buf, 0, -1, false, { files, "  " .. counts, "  " .. kb })
     vim.bo[toolbar_buf].modifiable = false
   end
   update_toolbar()
