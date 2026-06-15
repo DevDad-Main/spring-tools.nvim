@@ -3,3 +3,5 @@ tests/TestApp/.classpath
 tests/TestApp/.project
 tests/TestApp/.settings/
 tests/TestApp/demo.cast
+tests/TestApp-Gradle/.gradle/
+tests/TestApp-Gradle/build/
