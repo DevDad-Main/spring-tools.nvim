@@ -24,7 +24,9 @@
   <a href="#troubleshooting">Troubleshooting</a>
 </p>
 
-<video src="previews/plugin_demo.mp4" controls autoplay loop muted width="100%"></video>
+<p align="center">
+  <a href="previews/plugin_demo.mp4">🎬 Watch the demo</a>
+</p>
 
 <br>
 
