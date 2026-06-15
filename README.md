@@ -96,8 +96,8 @@
 
 ## Features
 
-- **Sidebar UI** — persistent left sidebar with 5 tabbed views and `?` help float
-- **Output Panel** — bottom split (12 rows, 30% height) for live log streaming
+- **Sidebar UI** — persistent sidebar with 5 tabbed views and `?` help float; position configurable (`left`/`right`)
+- **Output Panel** — bottom split (12 rows, 30% height) for live log streaming; toggle with `o`
 - **Dashboard** — project list with ★ active marker, ●/○ status dots, auto-selects CWD project
 - **Nested Action Menu** — Enter on a project opens a structured picker: Recent & default commands, Common commands, Custom run, View logs, Restart/Stop, Open config — recent commands can be deleted inline
 - **Command History** — `:SpringCommands` browses all saved custom commands across projects; re-run, copy, or delete
@@ -522,7 +522,7 @@ lua/spring-tools/
 ├── endpoints.lua          -- REST endpoint discovery
 ├── tests.lua              -- JUnit test discovery and runner
 ├── config_explorer.lua    -- properties/YAML parser
-├── mvn_completion.lua     — POM parser with dynamic goal discovery via effective-pom and help:describe
+├── mvn_completion.lua     — Maven & Gradle task discovery via effective-pom, help:describe, and gradle tasks --all
 ├── backends/
 │   ├── init.lua           -- Backend registry
 │   ├── spring_boot.lua    -- Maven/Gradle backend
@@ -615,7 +615,6 @@ A sample Spring Boot test app is available at `tests/TestApp/` (Maven) and `test
 - [x] **Gradle task discovery** — parse `build.gradle` and query `gradle tasks --all` for dynamic task completion
 - [x] **Config diff viewer** — `:SpringConfigDiff` side-by-side comparison of config files
 - [ ] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects
-- [ ] **Config diff view** — side-by-side comparison of config properties between profiles
 - [ ] **Profile picker** — select active Spring profiles when starting an app
 
 ## License
