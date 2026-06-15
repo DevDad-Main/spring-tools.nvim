@@ -4,18 +4,19 @@ local config = require("spring-tools.config")
 
 local M = {}
 
-local curl_suggestions = {
-  "-H \"Content-Type: application/json\"",
-  "-H \"Authorization: Bearer \"",
-  "-H \"Accept: application/json\"",
-  "-d '{}'",
-  "-d '{\"key\": \"value\"}'",
-  "-v",
-  "-i",
-  "-s",
-  "-L",
-  "-o /dev/null",
-  "-w '\\n%{http_code}'",
+local default_suggestions = {
+  { word = "-H \"Content-Type: application/json\"", menu = "set JSON content type" },
+  { word = "-H \"Authorization: Bearer \"", menu = "auth bearer token" },
+  { word = "-H \"Accept: application/json\"", menu = "accept JSON response" },
+  { word = "-H \"X-API-Key: \"", menu = "custom API key header" },
+  { word = "-d '{}'", menu = "empty JSON body" },
+  { word = "-d '{\"key\": \"value\"}'", menu = "JSON body with data" },
+  { word = "-v", menu = "verbose output" },
+  { word = "-i", menu = "include response headers" },
+  { word = "-s", menu = "silent mode (no progress)" },
+  { word = "-L", menu = "follow redirects" },
+  { word = "-o /dev/null", menu = "discard response body" },
+  { word = "-w '\\n%{http_code}'", menu = "print HTTP status code" },
 }
 
 function M._show_curl_input(endpoint, default_text, on_submit)
@@ -132,16 +133,42 @@ function M._curl_omni(findstart, base)
   end
 
   local results = {}
-  for _, s in ipairs(curl_suggestions) do
-    if s:lower():find(base:lower(), 1, true) then
-      results[#results + 1] = { word = s, menu = "curl" }
+  local suggestions = config.options.command_input.curl_suggestions or default_suggestions
+  for _, s in ipairs(suggestions) do
+    if s.word:lower():find(base:lower(), 1, true) then
+      results[#results + 1] = s
     end
   end
+
+  -- Include history
+  local cache_key = "curl_args_history"
+  local history = (utils.cache.data and utils.cache.data[cache_key]) or {}
+  local seen = {}
+  for i = #history, 1, -1 do
+    local cmd = history[i]
+    if cmd:lower():find(base:lower(), 1, true) and not seen[cmd] then
+      seen[cmd] = true
+      results[#results + 1] = { word = cmd, menu = "history" }
+    end
+  end
+
   return results
 end
 
 function M.send(endpoint, extra_args)
   extra_args = extra_args or ""
+
+  -- Save to history (non-empty, unique args)
+  if extra_args ~= "" then
+    local cache_key = "curl_args_history"
+    if not utils.cache.data then utils.cache.data = {} end
+    local history = utils.cache.data[cache_key] or {}
+    history[#history + 1] = extra_args
+    if #history > 20 then table.remove(history, 1) end
+    utils.cache.data[cache_key] = history
+    utils.mark_dirty()
+    utils.save_cache()
+  end
 
   -- Auto-detect port from running process
   local port = "8080"
