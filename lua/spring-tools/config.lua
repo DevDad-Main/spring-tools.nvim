@@ -31,6 +31,8 @@ M.defaults = {
       tab_prev = "h",
       show_help = "?",
       search = "/",
+      preview = "p",
+      toggle_output = "o",
     },
   },
   keymaps = {
@@ -44,6 +46,18 @@ M.defaults = {
   },
   telescope = {
     enable = true,
+  },
+  output = {
+    keymaps = {
+      close = "q",
+      close_alt = "<Esc>",
+      copy = "c",
+      filter_error = "e",
+      filter_warn = "w",
+      filter_info = "i",
+      filter_debug = "d",
+      filter_trace = "t",
+    },
   },
   jdtls = {
     enable = false,

@@ -418,6 +418,8 @@ function M.auto_restart(file_path)
   M._restart_timers[proj.root] = vim.fn.timer_start(delay, function()
     M._restart_timers[proj.root] = nil
     vim.schedule(function()
+      local output_was_open = output.win and vim.api.nvim_win_is_valid(output.win)
+      if not output_was_open then output._suppress_open = true end
       utils.notify("Auto-restarting " .. proj.name .. "...", vim.log.levels.INFO)
       local restart_done = false
       local per_clean = M._auto_clean[proj.root]
@@ -427,21 +429,23 @@ function M.auto_restart(file_path)
         require("spring-tools.core.backend").ProcessManager:restart(proj, {
         on_stdout = function(line)
           require("spring-tools.core.backend").ProcessManager:extract_port(proj, line)
-          if not restart_done then
-            local logs = be:get_logs(proj)
-            if #logs > 0 then
+          local logs = be:get_logs(proj)
+          if #logs > 0 then
+            output.store_logs(logs)
+            if output.win and vim.api.nvim_win_is_valid(output.win) then
               vim.schedule(function()
                 output.update_from_logs(logs, proj.name)
               end)
             end
           end
-          if line:find("Started .+ in %d+") then
+          if not restart_done and line:find("Started .+ in %d+") then
             restart_done = true
             local started_time = line:match(" in ([%d.]+) seconds?")
             vim.schedule(function()
               local proc = require("spring-tools.core.backend").ProcessManager.get(nil, proj)
               local port_str = (proc and proc.port) and (":" .. proc.port) or ""
               M._last_restart[proj.root] = os.time() * 1000
+              output._suppress_open = false
               if output.buf and vim.api.nvim_buf_is_valid(output.buf) then
                 output.append("")
                 output.append("✓  Auto-restarted — " .. proj.name .. " " .. port_str .. " · " .. (started_time and (started_time .. "s") or "ready") .. " · " .. changed_file)
@@ -452,6 +456,7 @@ function M.auto_restart(file_path)
         end,
         on_exit = function(exit_code)
           vim.schedule(function()
+            output._suppress_open = false
             if exit_code ~= 0 and exit_code ~= 143 then
               local log_lines = be:get_logs(proj)
               local start = math.max(1, #log_lines - 100)

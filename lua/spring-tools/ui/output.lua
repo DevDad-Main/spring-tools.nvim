@@ -1,5 +1,6 @@
 local components = require("spring-tools.ui.components")
 local utils = require("spring-tools.utils")
+local config = require("spring-tools.config")
 local log_patterns = {
   { pattern = " ERROR ", hl = "SpringToolsLogError" },
   { pattern = " WARN  ", hl = "SpringToolsLogWarn" },
@@ -23,6 +24,7 @@ M.win = nil
 M.ns = vim.api.nvim_create_namespace("spring_tools_output")
 M.title = "Output"
 M._stored_logs = {}
+M._suppress_open = false
 
 M.filter = {
   error = true,
@@ -112,7 +114,11 @@ function M.open()
   vim.bo[M.buf].filetype = "springtools-output"
 
   M.setup_keymaps()
-  M.show({ "Output panel ready" })
+  if #M._stored_logs > 0 then
+    M._render_from_logs()
+  else
+    M.show({ "Output panel ready" })
+  end
 end
 
 function M.close()
@@ -124,11 +130,19 @@ function M.close()
   end
   M.win = nil
   M.buf = nil
-  M._stored_logs = {}
+end
+
+function M.toggle()
+  if win_is_valid() then
+    M.close()
+  else
+    M.open()
+  end
 end
 
 function M.show(lines, title, opts)
   if not buf_is_valid() then
+    if M._suppress_open then return end
     M.open()
   end
   if not buf_is_valid() then return end
@@ -153,6 +167,10 @@ function M.show(lines, title, opts)
   scroll_to_bottom()
 end
 
+function M.store_logs(all_logs)
+  M._stored_logs = all_logs
+end
+
 function M.append(line)
   if not buf_is_valid() then return end
   local was_at_bottom = is_at_bottom()
@@ -169,11 +187,22 @@ end
 
 function M.update_from_logs(all_logs, title)
   M._stored_logs = all_logs
-  M._render_from_logs(title)
+  M._pending_title = title or M._pending_title
+  if not M._render_scheduled then
+    M._render_scheduled = true
+    vim.defer_fn(function()
+      M._render_scheduled = false
+      M._render_from_logs(M._pending_title)
+      M._pending_title = nil
+    end, 30)
+  end
 end
 
 function M._render_from_logs(title)
-  if not buf_is_valid() then M.open() end
+  if not buf_is_valid() then
+    if M._suppress_open then return end
+    M.open()
+  end
   if not buf_is_valid() then return end
 
   M.title = title or M.title or "Output"
@@ -262,19 +291,22 @@ end
 
 function M.setup_keymaps()
   if not buf_is_valid() then return end
-  components.set_keymap(M.buf, "q", function() M.close() end)
-  components.set_keymap(M.buf, "<Esc>", function() M.close() end)
-  components.set_keymap(M.buf, "c", function()
+  local km = config.options.output.keymaps
+  components.set_keymap(M.buf, km.close, function() M.close() end)
+  if km.close_alt then
+    components.set_keymap(M.buf, km.close_alt, function() M.close() end)
+  end
+  components.set_keymap(M.buf, km.copy, function()
     local lines = vim.api.nvim_buf_get_lines(M.buf, 0, -1, false)
     local text = table.concat(lines, "\n")
     vim.fn.setreg("+", text)
     utils.notify("Output copied to clipboard")
   end, { desc = "Copy all output to clipboard" })
-  components.set_keymap(M.buf, "e", function() M.toggle_level("error") end, { desc = "Toggle ERROR filter" })
-  components.set_keymap(M.buf, "w", function() M.toggle_level("warn") end, { desc = "Toggle WARN filter" })
-  components.set_keymap(M.buf, "i", function() M.toggle_level("info") end, { desc = "Toggle INFO filter" })
-  components.set_keymap(M.buf, "d", function() M.toggle_level("debug") end, { desc = "Toggle DEBUG filter" })
-  components.set_keymap(M.buf, "t", function() M.toggle_level("trace") end, { desc = "Toggle TRACE filter" })
+  components.set_keymap(M.buf, km.filter_error, function() M.toggle_level("error") end, { desc = "Toggle ERROR filter" })
+  components.set_keymap(M.buf, km.filter_warn, function() M.toggle_level("warn") end, { desc = "Toggle WARN filter" })
+  components.set_keymap(M.buf, km.filter_info, function() M.toggle_level("info") end, { desc = "Toggle INFO filter" })
+  components.set_keymap(M.buf, km.filter_debug, function() M.toggle_level("debug") end, { desc = "Toggle DEBUG filter" })
+  components.set_keymap(M.buf, km.filter_trace, function() M.toggle_level("trace") end, { desc = "Toggle TRACE filter" })
 end
 
 return M

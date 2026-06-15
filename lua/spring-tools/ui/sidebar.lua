@@ -239,9 +239,12 @@ function M.setup_keymaps()
   if km.show_help then
     bmap(km.show_help, [[:lua require('spring-tools.ui.sidebar').show_help()<CR>]])
   end
-  bmap("p", [[:lua require('spring-tools.ui.sidebar').preview_value()<CR>]])
+  bmap(km.preview, [[:lua require('spring-tools.ui.sidebar').preview_value()<CR>]])
   if km.search then
     bmap(km.search, [[:lua require('spring-tools.search').open()<CR>]])
+  end
+  if km.toggle_output then
+    bmap(km.toggle_output, [[:lua require('spring-tools.ui.output').toggle()<CR>]])
   end
 end
 
@@ -261,6 +264,7 @@ function M.show_help()
     { "", "" },
     { "  Actions", "SpringToolsAccent" },
     { "    Enter   Open nested action menu", "" },
+    { "    o       Toggle output panel", "" },
     { "    /       Search all artifacts", "" },
     { "    p       Preview value (config)", "" },
     { "    d       Remove from cache", "" },

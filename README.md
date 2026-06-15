@@ -182,7 +182,8 @@ use {
 | `h` / `l` | Previous/next tab                     |
 | `1`–`5`   | Jump to tab                           |
 | `<CR>`    | Open nested action menu (commands, logs, stop, etc.) |
-| `/`       | Unified search across all views       |
+| `o`       | Toggle output panel                          |
+| `/`       | Unified search across all views              |
 | `p`       | Preview config value (in Config view) |
 | `d`       | Remove project from cache             |
 | `R`       | Refresh current view                  |
@@ -317,6 +318,8 @@ require("spring-tools").setup({
       tab_prev = "h",
       show_help = "?",
       search = "/",
+      preview = "p",
+      toggle_output = "o",
     },
   },
   highlights = {
@@ -335,6 +338,18 @@ require("spring-tools").setup({
   },
   telescope = {
     enable = true,             -- enable Telescope-based pickers
+  },
+  output = {
+    keymaps = {
+      close = "q",
+      close_alt = "<Esc>",
+      copy = "c",
+      filter_error = "e",
+      filter_warn = "w",
+      filter_info = "i",
+      filter_debug = "d",
+      filter_trace = "t",
+    },
   },
   command_input = {
     position = "center",       -- "top", "center", or "bottom"
