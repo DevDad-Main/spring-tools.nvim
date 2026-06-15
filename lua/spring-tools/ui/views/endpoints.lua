@@ -158,7 +158,7 @@ function M._resolve_and_send(ep)
         return
       end
       local var = vars[i]
-      vim.ui.input({ prompt = "{" .. var .. "}: " }, function(value)
+      http._show_prompt("{" .. var .. "} value", function(value)
         if not value or value == "" then return end
         path = path:gsub("{" .. var .. "}", value, 1)
         ask_var(i + 1)

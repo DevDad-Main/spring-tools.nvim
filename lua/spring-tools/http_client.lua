@@ -4,6 +4,47 @@ local config = require("spring-tools.config")
 
 local M = {}
 
+function M._show_prompt(title, on_submit)
+  local width = math.min(64, vim.o.columns - 4)
+  local row = math.floor((vim.o.lines - 3) / 2)
+  local col = math.floor((vim.o.columns - width) / 2)
+
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[buf].buftype = "prompt"
+  pcall(vim.fn.prompt_setprompt, buf, "")
+  vim.bo[buf].complete = ""
+
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor", width = width, height = 1,
+    row = row, col = col, style = "minimal",
+    border = "rounded", title = " " .. title .. " ", title_pos = "center",
+  })
+  vim.wo[win].winfixbuf = true
+
+  local closing = false
+  local function cleanup()
+    if closing then return end
+    closing = true
+    pcall(vim.api.nvim_win_close, win, true)
+    pcall(vim.api.nvim_buf_delete, buf, { force = true })
+  end
+
+  vim.fn.prompt_setcallback(buf, function(text)
+    vim.schedule(function()
+      cleanup()
+      on_submit(text)
+    end)
+  end)
+
+  local km = config.options.command_input.keymaps
+  vim.keymap.set("i", km.close, function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+  vim.keymap.set("n", km.close, function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+  vim.keymap.set("n", km.close_alt, function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+  vim.keymap.set("n", km.popup_next, "<Nop>", { buffer = buf, silent = true })
+  vim.keymap.set("n", km.popup_prev, "<Nop>", { buffer = buf, silent = true })
+  vim.cmd("startinsert!")
+end
+
 local default_suggestions = {
   { word = "-H \"Content-Type: application/json\"", menu = "set JSON content type" },
   { word = "-H \"Authorization: Bearer \"", menu = "auth bearer token" },
