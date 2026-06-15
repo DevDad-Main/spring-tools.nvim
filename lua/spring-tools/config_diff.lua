@@ -104,9 +104,9 @@ function M.show_diff(file_a, file_b, name_a, name_b)
 
   local function hl_group_for(diff_type)
     local hls = config.options.diff.highlights
-    if diff_type == "changed" then return hls.changed or "SpringToolsLogInfo"
+    if diff_type == "changed" then return hls.changed or "SpringToolsLogWarn"
     elseif diff_type == "left_only" then return hls.left_only or "SpringToolsError"
-    elseif diff_type == "right_only" then return hls.right_only or "SpringToolsRunning"
+    elseif diff_type == "right_only" then return hls.right_only or "SpringToolsLogInfo"
     end
   end
 
