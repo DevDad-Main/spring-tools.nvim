@@ -34,9 +34,11 @@ end
 function SpringBootBackend:get_build_command(proj)
   if not proj or not proj.build_type then return nil end
   if proj.build_type == "maven" then
-    return vim.fn.executable("./mvnw") == 1 and { "./mvnw" } or { "mvn" }
+    local mvnw = (proj.root or ".") .. "/mvnw"
+    return vim.fn.executable(mvnw) == 1 and { "./mvnw" } or { "mvn" }
   elseif proj.build_type == "gradle" then
-    return vim.fn.executable("./gradlew") == 1 and { "./gradlew" } or { "gradle" }
+    local gradlew = (proj.root or ".") .. "/gradlew"
+    return vim.fn.executable(gradlew) == 1 and { "./gradlew" } or { "gradle" }
   end
   return nil
 end
