@@ -357,8 +357,9 @@ require("spring-tools").setup({
   diff = {
     highlights = {
       changed = "SpringToolsLogWarn",
+      same = "SpringToolsRunning",
       left_only = "SpringToolsError",
-      right_only = "SpringToolsLogInfo",
+      right_only = "SpringToolsError",
     },
   },
   command_input = {

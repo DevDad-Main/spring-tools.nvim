@@ -102,11 +102,12 @@ function M.show_diff(file_a, file_b, name_a, name_b)
   local filter = { changed = true, left_only = true, right_only = true, same = true }
   local ns = vim.api.nvim_create_namespace("spring_tools_diff")
 
-  local function hl_group_for(diff_type)
+  local function hl_group_for(diff_type, none_ok)
     local hls = config.options.diff.highlights
-    if diff_type == "changed" then return hls.changed or "SpringToolsLogWarn"
+    if diff_type == "same" then return hls.same or "SpringToolsRunning"
+    elseif diff_type == "changed" then return hls.changed or "SpringToolsLogWarn"
     elseif diff_type == "left_only" then return hls.left_only or "SpringToolsError"
-    elseif diff_type == "right_only" then return hls.right_only or "SpringToolsLogInfo"
+    elseif diff_type == "right_only" then return hls.right_only or "SpringToolsError"
     end
   end
 
@@ -121,7 +122,7 @@ function M.show_diff(file_a, file_b, name_a, name_b)
       local dt = diff_map[i] or "other"
       if dt == "other" or filter[dt] then
         filtered[#filtered + 1] = line
-        if dt ~= "other" and dt ~= "same" then
+        if dt ~= "other" then
           new_hl[new_line] = dt
         end
         new_line = new_line + 1
@@ -185,11 +186,11 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     end
     f("C", "changed", changed); f("L", "left_only", left_only)
     f("R", "right_only", right_only); f("S", "same", same)
-    table.insert(parts, "  " .. name_a .. " ↔ " .. name_b)
-    local status = table.concat(parts, " ")
+    local counts = table.concat(parts, " ")
+    local files = string.format("%-28s │ %s", name_a, name_b)
     local kb = "(c:changed  l:left  r:right  s:same  a:all  ?:help  q:close)"
     vim.bo[toolbar_buf].modifiable = true
-    vim.api.nvim_buf_set_lines(toolbar_buf, 0, -1, false, { status, kb })
+    vim.api.nvim_buf_set_lines(toolbar_buf, 0, -1, false, { "  " .. files, "  " .. counts, "  " .. kb })
     vim.bo[toolbar_buf].modifiable = false
   end
   update_toolbar()
@@ -198,8 +199,8 @@ function M.show_diff(file_a, file_b, name_a, name_b)
   local toolbar_win = vim.api.nvim_open_win(toolbar_buf, false, {
     relative = "editor",
     width = toolbar_width,
-    height = 2,
-    row = math.max(0, vim.o.lines - 4),
+    height = 3,
+    row = math.max(0, vim.o.lines - 5),
     col = math.floor((vim.o.columns - toolbar_width) / 2),
     style = "minimal",
     border = "rounded",
