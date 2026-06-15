@@ -93,6 +93,10 @@ function M.detect_projects(start_path)
     end
   end
   M.add_entry(entry)
+  -- Auto-select the CWD project as active on first load or when CWD changes
+  if not M.active_project_root or M.active_project_root ~= project_root then
+    M.active_project_root = project_root
+  end
   local state = require("spring-tools.core.state")
   state.set_projects(M.projects)
   return M.projects
