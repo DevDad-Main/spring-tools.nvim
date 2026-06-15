@@ -69,6 +69,8 @@ function M._show_curl_input(endpoint, default_text, on_submit)
     ]])
   end
   vim.bo[buf].omnifunc = "SpringToolsCurlOmni"
+  vim.b[buf].cmp_enabled = false
+  vim.b[buf].blink_cmp_disable = true
 
   local km = config.options.command_input.keymaps
 
