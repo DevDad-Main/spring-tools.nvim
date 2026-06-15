@@ -32,8 +32,8 @@ function M.setup()
 
   vim.api.nvim_create_user_command("SpringRefresh", function()
     require("spring-tools.utils").invalidate_cache()
-    local mvn = require("spring-tools.mvn_completion")
-    mvn.invalidate_cache()
+    local build = require("spring-tools.build_completion")
+    build.invalidate_cache()
     local project = require("spring-tools.project")
     project._excluded = {}
     sidebar.refresh()
@@ -48,17 +48,17 @@ function M.setup()
       end
     end
     if #maven_roots > 0 then
-      mvn.fetch_dynamic_goals(maven_roots)
+      build.fetch_dynamic_goals(maven_roots)
     end
     if #gradle_roots > 0 then
-      mvn.fetch_gradle_tasks(gradle_roots)
+      build.fetch_gradle_tasks(gradle_roots)
     end
     utils.notify("Spring Tools indexes refreshed")
   end, { desc = "Refresh all Spring Tools indexes" })
 
   vim.api.nvim_create_user_command("SpringClearCache", function()
     utils.invalidate_cache()
-    require("spring-tools.mvn_completion").invalidate_cache()
+    require("spring-tools.build_completion").invalidate_cache()
     require("spring-tools.project")._excluded = {}
     utils.notify("Spring Tools caches cleared")
   end, { desc = "Clear all Spring Tools caches (project cache + dynamic goals)" })

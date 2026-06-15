@@ -5,7 +5,7 @@ local state = require("spring-tools.core.state")
 local sidebar = require("spring-tools.ui.sidebar")
 local output = require("spring-tools.ui.output")
 local utils = require("spring-tools.utils")
-local mvn = require("spring-tools.mvn_completion")
+local build = require("spring-tools.build_completion")
 
 local M = {}
 
@@ -24,7 +24,7 @@ M._last_restart = {}
 M._auto_clean = {}
 
 function M:load_items()
-  mvn.invalidate_cache()
+  build.invalidate_cache()
   state.set_projects(project.detect_projects())
   local projs = state.get_projects()
   local active = project.get_active_project()
@@ -63,10 +63,10 @@ function M:load_items()
     end
   end
   if #maven_roots > 0 then
-    mvn.fetch_dynamic_goals(maven_roots)
+    build.fetch_dynamic_goals(maven_roots)
   end
   if #gradle_roots > 0 then
-    mvn.fetch_gradle_tasks(gradle_roots)
+    build.fetch_gradle_tasks(gradle_roots)
   end
 end
 
@@ -264,7 +264,7 @@ function M:on_activate(idx)
       }) do
         common_items[#common_items + 1] = { label = "  " .. cmd, action = function() save_and_run(cmd) end }
       end
-      local plugin_goals = mvn.get_plugin_goals(proj.root)
+      local plugin_goals = build.get_plugin_goals(proj.root)
       for _, goal in ipairs(plugin_goals) do
         if not goal:match(":$") then
           common_items[#common_items + 1] = { label = "  mvn " .. goal, action = function() save_and_run("mvn " .. goal) end }
@@ -278,7 +278,7 @@ function M:on_activate(idx)
       }) do
         common_items[#common_items + 1] = { label = "  " .. cmd, action = function() save_and_run(cmd) end }
       end
-      local gradle_tasks = mvn.get_gradle_tasks(proj.root)
+      local gradle_tasks = build.get_gradle_tasks(proj.root)
       for _, task in ipairs(gradle_tasks) do
         common_items[#common_items + 1] = { label = "  gradle " .. task, action = function() save_and_run("gradle " .. task) end }
       end
@@ -647,10 +647,10 @@ function M._show_command_input(proj, default_text, on_submit)
     pcall(vim.api.nvim_buf_delete, buf, { force = true })
   end
 
-  local plugin_goals = mvn.get_plugin_goals(proj.root)
+  local plugin_goals = build.get_plugin_goals(proj.root)
 
   M._omni_data = M._omni_data or {}
-  M._omni_data[buf] = { goals = plugin_goals, phases = mvn.phases, dprops = mvn.d_properties, gprops = mvn.gradle_d_properties, gtasks = mvn.gradle_tasks,
+  M._omni_data[buf] = { goals = plugin_goals, phases = build.phases, dprops = build.d_properties, gprops = build.gradle_d_properties, gtasks = build.gradle_tasks,
     saved_complete = saved_complete, saved_omnifunc = saved_omnifunc, saved_buftype = saved_buftype }
 
   vim.bo[buf].omnifunc = "SpringToolsOmni"

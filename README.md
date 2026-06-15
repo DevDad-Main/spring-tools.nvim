@@ -522,7 +522,7 @@ lua/spring-tools/
 ├── endpoints.lua          -- REST endpoint discovery
 ├── tests.lua              -- JUnit test discovery and runner
 ├── config_explorer.lua    -- properties/YAML parser
-├── mvn_completion.lua     — Maven & Gradle task discovery via effective-pom, help:describe, and gradle tasks --all
+├── build_completion.lua  — Maven & Gradle task discovery via effective-pom, help:describe, and gradle tasks --all
 ├── backends/
 │   ├── init.lua           -- Backend registry
 │   ├── spring_boot.lua    -- Maven/Gradle backend
