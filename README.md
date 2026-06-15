@@ -41,15 +41,47 @@
   <img src="previews/plugin_demo_dashboard.gif" width="900" />
 </p>
 
+> **Tip**: Press `<CR>` on a project for the nested action menu, `o` to toggle the output panel, `D` for config diff.
+
 <h4 align="center">Beans Explorer &mdash; collapsible type sections, nested <code>@Bean</code> methods</h4>
 <p align="center">
   <img src="previews/plugin_demo_beans.gif" width="900" />
 </p>
 
-<h4 align="center">Endpoints Explorer &mdash; routes grouped by HTTP method</h4>
+<h4 align="center">Endpoints Explorer &mdash; routes grouped by HTTP method, curl test client</h4>
 <p align="center">
-  <img src="previews/plugin_demo_endpoints.gif" width="900" />
+  <img src="previews/plugin_demo_endpoints_2.gif" width="900" />
 </p>
+
+> **Tip**: Press `t` on any endpoint to send a curl request. Add headers like `-H "Authorization: Bearer xxx"`. Press `Tab` for completions.
+
+```lua
+-- Custom curl flags for Tab completion
+command_input = {
+  curl_suggestions = {
+    { word = "-H \"X-API-Key: \"", menu = "API key header" },
+  },
+}
+```
+
+<h4 align="center">Config Diff &mdash; side-by-side comparison with color-coded highlights</h4>
+<p align="center">
+  <img src="previews/plugin_demo_config_diff.gif" width="900" />
+</p>
+
+> **Tip**: Press `c`/`l`/`r`/`s` to filter by diff type. `a` to show all. `?` for help.
+
+```lua
+-- Customize diff highlight colors
+diff = {
+  highlights = {
+    changed = "DiagnosticWarn",    -- amber
+    same = "DiagnosticOk",         -- green
+    left_only = "DiagnosticError", -- red
+    right_only = "DiagnosticError",
+  },
+}
+```
 
 <h4 align="center">Test Runner &mdash; discover and run JUnit 5 tests, per-method results</h4>
 <p align="center">
@@ -70,6 +102,20 @@
 <p align="center">
   <img src="previews/plugin_demo_log_highlighting.gif" width="900" />
 </p>
+
+> **Tip**: Press `e`/`w`/`i`/`d`/`t` to toggle log levels. `c` copies all output.
+
+```lua
+-- Add custom log highlight patterns
+log = {
+  levels = {
+    { pattern = "[AUDIT]", hl = "SpringToolsLogWarn" },
+  },
+  custom = {
+    pattern = "[DEMO]", hl = "SpringToolsLogWarn", key = "x",
+  },
+}
+```
 
 <h4 align="center">Log Filtering (multiple projects) &mdash; switch between project logs while filtering</h4>
 <p align="center">
