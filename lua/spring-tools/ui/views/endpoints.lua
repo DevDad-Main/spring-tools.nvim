@@ -97,7 +97,7 @@ function M:on_activate(idx)
       utils.notify("Curl copied")
     end },
     { label = "Send request", fn = function()
-      vim.ui.input({ prompt = ep.method .. " " .. ep.path .. " — extra curl args (e.g. -H 'Auth: xxx'): " }, function(input)
+      http._show_curl_input(ep, "", function(input)
         http.send(ep, input or "")
       end)
     end },
@@ -138,7 +138,7 @@ function M:test_endpoint(idx)
   local item = M.items[idx]
   if not item or item.type ~= "endpoint" then return end
   local ep = item.endpoint
-  vim.ui.input({ prompt = ep.method .. " " .. ep.path .. " — extra curl args: " }, function(input)
+  http._show_curl_input(ep, "", function(input)
     http.send(ep, input or "")
   end)
 end

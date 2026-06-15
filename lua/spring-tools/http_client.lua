@@ -3,6 +3,99 @@ local utils = require("spring-tools.utils")
 
 local M = {}
 
+local curl_suggestions = {
+  "-H \"Content-Type: application/json\"",
+  "-H \"Authorization: Bearer \"",
+  "-H \"Accept: application/json\"",
+  "-d '{}'",
+  "-d '{\"key\": \"value\"}'",
+  "-v",
+  "-i",
+  "-s",
+  "-L",
+  "-o /dev/null",
+  "-w '\\n%{http_code}'",
+}
+
+function M._show_curl_input(endpoint, default_text, on_submit)
+  local width = math.min(80, vim.o.columns - 4)
+  local row = math.floor((vim.o.lines - 3) / 2)
+  local col = math.floor((vim.o.columns - width) / 2)
+
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[buf].buftype = "prompt"
+  vim.bo[buf].filetype = "springtools-curl-input"
+
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = width,
+    height = 1,
+    row = row,
+    col = col,
+    style = "minimal",
+    border = "rounded",
+    title = " curl args for " .. endpoint.method .. " " .. endpoint.path .. " ",
+    title_pos = "center",
+  })
+  vim.wo[win].winfixbuf = true
+
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { default_text or "" })
+
+  -- Prompt callback submits on Enter
+  vim.fn.prompt_setcallback(buf, function(text)
+    vim.schedule(function()
+      cleanup()
+      on_submit(text)
+    end)
+  end)
+
+  local closing = false
+  local function cleanup()
+    if closing then return end
+    closing = true
+    pcall(vim.api.nvim_win_close, win, true)
+    pcall(vim.api.nvim_buf_delete, buf, { force = true })
+  end
+
+  -- Esc / q closes without submitting
+  vim.keymap.set("i", "<Esc>", function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+  vim.keymap.set("n", "q", function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+  vim.keymap.set("n", "<Esc>", function() cleanup() end, { buffer = buf, silent = true, nowait = true })
+
+  -- Block window navigation
+  vim.keymap.set("n", "<C-w>", "<Nop>", { buffer = buf, silent = true })
+  vim.keymap.set("n", "<C-h>", "<Nop>", { buffer = buf, silent = true })
+  vim.keymap.set("n", "<C-j>", "<Nop>", { buffer = buf, silent = true })
+  vim.keymap.set("n", "<C-k>", "<Nop>", { buffer = buf, silent = true })
+  vim.keymap.set("n", "<C-l>", "<Nop>", { buffer = buf, silent = true })
+
+  -- Set up omnifunc for curl completion
+  vim.bo[buf].omnifunc = "v:lua.require'spring-tools.http_client'._curl_omni"
+  vim.bo[buf].complete = "."
+
+  vim.cmd("startinsert!")
+end
+
+function M._curl_omni(findstart, base)
+  if findstart == 1 then
+    local line = vim.api.nvim_get_current_line()
+    local col = vim.api.nvim_win_get_cursor(0)[2]
+    local start = col
+    while start > 0 and line:sub(start, start):match("[^%s]") do
+      start = start - 1
+    end
+    return start
+  end
+
+  local results = {}
+  for _, s in ipairs(curl_suggestions) do
+    if s:lower():find(base:lower(), 1, true) then
+      results[#results + 1] = { word = s, menu = "curl" }
+    end
+  end
+  return results
+end
+
 function M.send(endpoint, extra_args)
   extra_args = extra_args or ""
 
@@ -23,7 +116,6 @@ function M.send(endpoint, extra_args)
     extra_args, endpoint.method, url
   )
 
-  -- Try to pretty-print JSON if jq is available
   local use_jq = vim.fn.executable("jq") == 1
 
   vim.fn.jobstart({ "sh", "-c", cmd }, {
@@ -34,7 +126,6 @@ function M.send(endpoint, extra_args)
         local result = table.concat(data or {}, "\n")
         local response_body, meta = M._split_response(result)
 
-        -- Pretty-print body if JSON
         if use_jq and response_body ~= "" then
           local jq_out = vim.fn.systemlist("echo " .. vim.fn.shellescape(response_body) .. " | jq . 2>/dev/null")
           if #jq_out > 0 then response_body = table.concat(jq_out, "\n") end
@@ -86,7 +177,6 @@ function M._show_response(endpoint, port, body, meta, extra_args)
   table.insert(lines, string.rep("─", 60))
   table.insert(lines, "")
 
-  -- Metadata
   if meta.HTTP_CODE then
     table.insert(lines, "  Status: " .. meta.HTTP_CODE)
   end
@@ -98,7 +188,6 @@ function M._show_response(endpoint, port, body, meta, extra_args)
   end
   table.insert(lines, "")
 
-  -- Response body
   if body ~= "" then
     table.insert(lines, "  Response:")
     for line in body:gmatch("[^\n]+") do
@@ -111,12 +200,10 @@ function M._show_response(endpoint, port, body, meta, extra_args)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.bo[buf].modifiable = false
 
-  -- Detect if response is JSON and apply syntax
   if body:match('^%s*[{[]') then
     vim.bo[buf].filetype = "json"
   end
 
-  -- Open in main editor
   local sidebar_mod = require("spring-tools.ui.sidebar")
   local main_win = nil
   for _, w in ipairs(vim.api.nvim_list_wins()) do
@@ -136,9 +223,10 @@ function M._show_response(endpoint, port, body, meta, extra_args)
   vim.keymap.set("n", "q", close, { buffer = buf, silent = true, nowait = true })
   vim.keymap.set("n", "<Esc>", close, { buffer = buf, silent = true, nowait = true })
 
-  -- Add "t" to re-send
   vim.keymap.set("n", "t", function()
-    M.send(endpoint, extra_args)
+    M._show_curl_input(endpoint, extra_args, function(input)
+      M.send(endpoint, input)
+    end)
   end, { buffer = buf, silent = true, nowait = true, desc = "Re-send request" })
 end
 
