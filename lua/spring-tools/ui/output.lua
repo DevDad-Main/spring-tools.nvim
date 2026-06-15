@@ -18,6 +18,7 @@ local builtin_patterns = {
 }
 
 local function get_log_patterns()
+  ensure_custom_init()
   local custom = config.options.log and config.options.log.levels or {}
   local all = {}
   for _, p in ipairs(builtin_patterns) do all[#all + 1] = p end
@@ -49,13 +50,18 @@ M.filter = {
 
 local filter_order = { "error", "warn", "info", "debug", "trace" }
 
--- Extend with custom toggleable pattern from config
-local cp = config.options.log and config.options.log.custom
-if cp and cp.pattern and cp.hl and cp.key then
-  M._custom_key = cp.key
-  M._custom_pattern = cp.pattern
-  M.filter[cp.key] = true
-  filter_order[#filter_order + 1] = cp.key
+-- Lazy-init custom toggleable pattern (config may not be set at module load)
+local custom_inited = false
+local function ensure_custom_init()
+  if custom_inited then return end
+  custom_inited = true
+  local cp = config.options.log and config.options.log.custom
+  if cp and cp.pattern and cp.hl and cp.key then
+    M._custom_key = cp.key
+    M._custom_pattern = cp.pattern
+    M.filter[cp.key] = true
+    filter_order[#filter_order + 1] = cp.key
+  end
 end
 
 local function buf_is_valid()
@@ -259,6 +265,7 @@ function M._render_from_logs(title)
 end
 
 function M._footer_text()
+  ensure_custom_init()
   local parts = {}
   for _, name in ipairs(filter_order) do
     if M.filter[name] then
@@ -315,6 +322,7 @@ function M.highlight_logs()
 end
 
 function M.setup_keymaps()
+  ensure_custom_init()
   if not buf_is_valid() then return end
   local km = config.options.output.keymaps
   components.set_keymap(M.buf, km.close, function() M.close() end)
