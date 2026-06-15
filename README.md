@@ -354,6 +354,13 @@ require("spring-tools").setup({
       filter_trace = "t",
     },
   },
+  diff = {
+    highlights = {
+      changed = "SpringToolsLogInfo",
+      left_only = "SpringToolsLogWarn",
+      right_only = "SpringToolsLogWarn",
+    },
+  },
   command_input = {
     position = "center",       -- "top", "center", or "bottom"
   },

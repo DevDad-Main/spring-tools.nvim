@@ -59,6 +59,13 @@ M.defaults = {
       filter_trace = "t",
     },
   },
+  diff = {
+    highlights = {
+      changed = "SpringToolsLogInfo",
+      left_only = "SpringToolsLogWarn",
+      right_only = "SpringToolsLogWarn",
+    },
+  },
   jdtls = {
     enable = false,
   },

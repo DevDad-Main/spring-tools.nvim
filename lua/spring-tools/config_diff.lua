@@ -1,8 +1,11 @@
 local config_mod = require("spring-tools.config_explorer")
+local config = require("spring-tools.config")
 local project = require("spring-tools.project")
 local utils = require("spring-tools.utils")
 
 local M = {}
+
+M._filter = { changed = true, left_only = true, right_only = true }
 
 function M.open()
   local proj = project.get_active_project()
@@ -70,20 +73,15 @@ function M.show_diff(file_a, file_b, name_a, name_b)
   local map_b = {}
   for _, p in ipairs(props_b) do map_b[p.key] = p end
 
-  -- Compute diff highlights per file
-  -- For file A: highlight lines that are changed or left-only
-  -- For file B: highlight lines that are changed or right-only
   local hl_a, hl_b = {}, {}
   local same, changed, left_only, right_only = 0, 0, 0, 0
 
   for _, pa in ipairs(props_a) do
     local pb = map_b[pa.key]
     if not pb then
-      hl_a[pa.line] = "left_only"
-      left_only = left_only + 1
+      hl_a[pa.line] = "left_only"; left_only = left_only + 1
     elseif pa.value ~= pb.value then
-      hl_a[pa.line] = "changed"
-      hl_b[pb.line] = "changed"
+      hl_a[pa.line] = "changed"; hl_b[pb.line] = "changed"
       changed = changed + 1
     else
       same = same + 1
@@ -96,25 +94,43 @@ function M.show_diff(file_a, file_b, name_a, name_b)
         if pa.key == pb.key then found = true; break end
       end
       if not found then
-        hl_b[pb.line] = "right_only"
-        right_only = right_only + 1
+        hl_b[pb.line] = "right_only"; right_only = right_only + 1
       end
     end
   end
 
+  local filter = { changed = true, left_only = true, right_only = true }
+  local ns = vim.api.nvim_create_namespace("spring_tools_diff")
+
+  local function hl_group_for(diff_type)
+    local hls = config.options.diff.highlights
+    if diff_type == "changed" then return hls.changed or "SpringToolsLogInfo"
+    elseif diff_type == "left_only" then return hls.left_only or "SpringToolsLogWarn"
+    elseif diff_type == "right_only" then return hls.right_only or "SpringToolsLogWarn"
+    end
+  end
+
   local function apply_highlights(buf, highlights)
-    local ns = vim.api.nvim_create_namespace("spring_tools_diff")
+    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
     for line_num, diff_type in pairs(highlights) do
-      local hl_group
-      if diff_type == "changed" then
-        hl_group = "SpringToolsLogInfo"
-      elseif diff_type == "left_only" or diff_type == "right_only" then
-        hl_group = "SpringToolsLogWarn"
-      end
-      if hl_group then
-        vim.api.nvim_buf_add_highlight(buf, ns, hl_group, line_num - 1, 0, -1)
+      if filter[diff_type] then
+        local hl_group = hl_group_for(diff_type)
+        if hl_group then
+          vim.api.nvim_buf_add_highlight(buf, ns, hl_group, line_num - 1, 0, -1)
+        end
       end
     end
+  end
+
+  local counts = { same = same, changed = changed, left_only = left_only, right_only = right_only }
+  local function echo_summary()
+    local parts = {}
+    table.insert(parts, " ")
+    table.insert(parts, (filter.changed and "C:" or "·:") .. changed)
+    table.insert(parts, (filter.left_only and " L:" or " ·:") .. left_only)
+    table.insert(parts, (filter.right_only and " R:" or " ·:") .. right_only)
+    table.insert(parts, "  s:same " .. same .. "  " .. name_a .. " ↔ " .. name_b)
+    vim.api.nvim_echo({{ table.concat(parts, " "), "SpringToolsAccent" }}, false, {})
   end
 
   -- Open file A
@@ -133,26 +149,40 @@ function M.show_diff(file_a, file_b, name_a, name_b)
   vim.bo[buf_a].modifiable = false
   apply_highlights(buf_a, hl_a)
 
-  -- Open file B in vertical split
+  -- Open file B
   vim.cmd("belowright vsplit " .. vim.fn.fnameescape(file_b))
   local buf_b = vim.api.nvim_get_current_buf()
   vim.bo[buf_b].bufhidden = "wipe"
   vim.bo[buf_b].modifiable = false
   apply_highlights(buf_b, hl_b)
 
-  -- Summary echo
-  local summary = string.format(" %d same  %d changed  %d " .. name_a .. "-only  %d " .. name_b .. "-only",
-    same, changed, left_only, right_only)
-  vim.api.nvim_echo({{ summary, "SpringToolsAccent" }}, false, {})
+  echo_summary()
 
-  -- q/Esc closes both
+  -- Filter keymaps + close
   local function close()
     pcall(vim.api.nvim_buf_delete, buf_a, { force = true })
     pcall(vim.api.nvim_buf_delete, buf_b, { force = true })
   end
+
+  local function toggle_filter(key)
+    filter[key] = not filter[key]
+    apply_highlights(buf_a, hl_a)
+    apply_highlights(buf_b, hl_b)
+    echo_summary()
+  end
+
   for _, b in ipairs({ buf_a, buf_b }) do
     vim.keymap.set("n", "q", close, { buffer = b, silent = true, nowait = true })
     vim.keymap.set("n", "<Esc>", close, { buffer = b, silent = true, nowait = true })
+    vim.keymap.set("n", "c", function() toggle_filter("changed") end, { buffer = b, silent = true, nowait = true, desc = "Toggle changed lines" })
+    vim.keymap.set("n", "l", function() toggle_filter("left_only") end, { buffer = b, silent = true, nowait = true, desc = "Toggle left-only lines" })
+    vim.keymap.set("n", "r", function() toggle_filter("right_only") end, { buffer = b, silent = true, nowait = true, desc = "Toggle right-only lines" })
+    vim.keymap.set("n", "a", function()
+      filter.changed = true; filter.left_only = true; filter.right_only = true
+      apply_highlights(buf_a, hl_a)
+      apply_highlights(buf_b, hl_b)
+      echo_summary()
+    end, { buffer = b, silent = true, nowait = true, desc = "Show all highlights" })
   end
 end
 
