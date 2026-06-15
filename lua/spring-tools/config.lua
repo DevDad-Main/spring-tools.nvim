@@ -59,6 +59,9 @@ M.defaults = {
       filter_trace = "t",
     },
   },
+  log = {
+    levels = {},  -- custom log patterns: { pattern = "[AUDIT]", hl = "SpringToolsLogWarn" }
+  },
   diff = {
     highlights = {
       changed = "SpringToolsDiffChanged",

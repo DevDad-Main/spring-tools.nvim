@@ -1,7 +1,7 @@
 local components = require("spring-tools.ui.components")
 local utils = require("spring-tools.utils")
 local config = require("spring-tools.config")
-local log_patterns = {
+local builtin_patterns = {
   { pattern = " ERROR ", hl = "SpringToolsLogError" },
   { pattern = " WARN  ", hl = "SpringToolsLogWarn" },
   { pattern = " INFO  ", hl = "SpringToolsLogInfo" },
@@ -16,6 +16,14 @@ local log_patterns = {
   { pattern = "[DEBUG]", hl = "SpringToolsLogDebug" },
   { pattern = "[TRACE]", hl = "SpringToolsLogTrace" },
 }
+
+local function get_log_patterns()
+  local custom = config.options.log and config.options.log.levels or {}
+  local all = {}
+  for _, p in ipairs(builtin_patterns) do all[#all + 1] = p end
+  for _, p in ipairs(custom) do all[#all + 1] = p end
+  return all
+end
 
 local M = {}
 
@@ -45,7 +53,7 @@ local function win_is_valid()
 end
 
 local function line_level(line)
-  for _, pat in ipairs(log_patterns) do
+  for _, pat in ipairs(get_log_patterns()) do
     if line:find(pat.pattern, 1, true) then
       local name = pat.hl:match("Log(%a+)$")
       if name then return name:lower() end
@@ -275,7 +283,7 @@ function M.highlight_logs()
   vim.api.nvim_buf_clear_namespace(M.buf, M.ns, 0, -1)
   local lines = vim.api.nvim_buf_get_lines(M.buf, 0, -1, false)
   for line_idx, line in ipairs(lines) do
-    for _, lp in ipairs(log_patterns) do
+    for _, lp in ipairs(get_log_patterns()) do
       local s, e = line:find(lp.pattern, 1, true)
       if s then
         vim.api.nvim_buf_set_extmark(M.buf, M.ns, line_idx - 1, s - 1, {
