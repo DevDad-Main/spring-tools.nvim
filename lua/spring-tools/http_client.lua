@@ -70,8 +70,19 @@ function M._show_curl_input(endpoint, default_text, on_submit)
   vim.keymap.set("n", "<C-l>", "<Nop>", { buffer = buf, silent = true })
 
   -- Set up omnifunc for curl completion
-  vim.bo[buf].omnifunc = "v:lua.require'spring-tools.http_client'._curl_omni"
+  if not M._omni_reg then
+    M._omni_reg = true
+    vim.cmd([[
+      function! SpringToolsCurlOmni(findstart, base)
+        return v:lua.require'spring-tools.http_client'._curl_omni(a:findstart, a:base)
+      endfunction
+    ]])
+  end
+  vim.bo[buf].omnifunc = "SpringToolsCurlOmni"
   vim.bo[buf].complete = "."
+
+  -- Tab triggers completion
+  vim.keymap.set("i", "<Tab>", "<C-x><C-o>", { buffer = buf, silent = true })
 
   vim.cmd("startinsert!")
 end
