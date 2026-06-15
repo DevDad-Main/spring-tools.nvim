@@ -27,8 +27,7 @@ function M.open()
       if name == choice_a then a_idx = i; break end
     end
 
-    local remaining = {}
-    local remaining_paths = {}
+    local remaining, remaining_paths = {}, {}
     for i, name in ipairs(display_names) do
       if i ~= a_idx then
         remaining[#remaining + 1] = name
@@ -52,25 +51,13 @@ function M.open()
 end
 
 local function parse_file(file_path)
+  local ok, lines = pcall(vim.fn.readfile, file_path)
+  if not ok or not lines then return {} end
+  local name = vim.fn.fnamemodify(file_path, ":t")
   if file_path:match("%.ya?ml$") then
-    local ok, lines = pcall(vim.fn.readfile, file_path)
-    if not ok or not lines then return {} end
     return config_mod.parse_yaml(lines, file_path)
-  else
-    local ok, lines = pcall(vim.fn.readfile, file_path)
-    if not ok or not lines then return {} end
-    return config_mod.parse_properties(lines, vim.fn.fnamemodify(file_path, ":t"))
   end
-end
-
-local function pad_right(str, len)
-  if #str >= len then return str:sub(1, len) end
-  return str .. string.rep(" ", len - #str)
-end
-
-local function truncate(str, len)
-  if #str <= len then return str end
-  return str:sub(1, len - 1) .. "\u{2026}"
+  return config_mod.parse_properties(lines, name)
 end
 
 function M.show_diff(file_a, file_b, name_a, name_b)
@@ -80,110 +67,93 @@ function M.show_diff(file_a, file_b, name_a, name_b)
   local props_a = parse_file(file_a)
   local props_b = parse_file(file_b)
 
-  local all_keys = {}
-  local seen = {}
-  for _, p in ipairs(props_a) do
-    if not seen[p.key] then seen[p.key] = true; all_keys[#all_keys + 1] = p.key end
-  end
-  for _, p in ipairs(props_b) do
-    if not seen[p.key] then seen[p.key] = true; all_keys[#all_keys + 1] = p.key end
-  end
-  table.sort(all_keys)
-
-  local map_a, map_b = {}, {}
-  for _, p in ipairs(props_a) do map_a[p.key] = p end
+  local map_b = {}
   for _, p in ipairs(props_b) do map_b[p.key] = p end
 
-  local ns = vim.api.nvim_create_namespace("spring_tools_diff")
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.bo[buf].buftype = "nofile"
-  vim.bo[buf].modifiable = true
-  vim.bo[buf].filetype = "springtools-diff"
-  vim.bo[buf].bufhidden = "wipe"
-
-  local lines = {}
-  local highlights = {}
-  local left_width = 45
-
-  table.insert(lines, "")
-  table.insert(lines, "  " .. name_a .. string.rep(" ", 38) .. " │ " .. name_b)
-  table.insert(lines, "  " .. string.rep("─", left_width) .. "─┼─" .. string.rep("─", left_width))
-  table.insert(highlights, nil); table.insert(highlights, nil); table.insert(highlights, nil)
-
+  -- Compute diff highlights per file
+  -- For file A: highlight lines that are changed or left-only
+  -- For file B: highlight lines that are changed or right-only
+  local hl_a, hl_b = {}, {}
   local same, changed, left_only, right_only = 0, 0, 0, 0
 
-  for _, key in ipairs(all_keys) do
-    local pa, pb = map_a[key], map_b[key]
-    local va = pa and pa.value or "\u{2014}"
-    local vb = pb and pb.value or "\u{2014}"
-
-    local diff_type
-    if not pa then
-      diff_type = "right_only"; right_only = right_only + 1
-    elseif not pb then
-      diff_type = "left_only"; left_only = left_only + 1
-    elseif va ~= vb then
-      diff_type = "changed"; changed = changed + 1
+  for _, pa in ipairs(props_a) do
+    local pb = map_b[pa.key]
+    if not pb then
+      hl_a[pa.line] = "left_only"
+      left_only = left_only + 1
+    elseif pa.value ~= pb.value then
+      hl_a[pa.line] = "changed"
+      hl_b[pb.line] = "changed"
+      changed = changed + 1
     else
-      diff_type = "same"; same = same + 1
+      same = same + 1
     end
-
-    local left_col = pad_right("  " .. key .. " = " .. truncate(va, 28), left_width)
-    local right_col = key .. " = " .. truncate(vb, 28)
-    local line = left_col .. " │ " .. right_col
-    table.insert(lines, line)
-    table.insert(highlights, { diff_type = diff_type })
+  end
+  for _, pb in ipairs(props_b) do
+    if not hl_b[pb.line] then
+      local found = false
+      for _, pa in ipairs(props_a) do
+        if pa.key == pb.key then found = true; break end
+      end
+      if not found then
+        hl_b[pb.line] = "right_only"
+        right_only = right_only + 1
+      end
+    end
   end
 
-  table.insert(lines, "  " .. string.rep("─", left_width) .. "─┴─" .. string.rep("─", left_width))
-  table.insert(highlights, nil)
-  local summary = string.format("  %d same  %d changed  %d " .. name_a .. "-only  %d " .. name_b .. "-only",
-    same, changed, left_only, right_only)
-  table.insert(lines, summary)
-  table.insert(highlights, nil)
-
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-
-  for line_idx, h in ipairs(highlights) do
-    if h then
+  local function apply_highlights(buf, highlights)
+    local ns = vim.api.nvim_create_namespace("spring_tools_diff")
+    for line_num, diff_type in pairs(highlights) do
       local hl_group
-      if h.diff_type == "changed" then
+      if diff_type == "changed" then
         hl_group = "SpringToolsLogInfo"
-      elseif h.diff_type == "left_only" then
+      elseif diff_type == "left_only" or diff_type == "right_only" then
         hl_group = "SpringToolsLogWarn"
-      elseif h.diff_type == "right_only" then
-        hl_group = "SpringToolsAccent"
       end
-      -- Only highlight changed/different lines, leave "same" with no highlight
       if hl_group then
-        vim.api.nvim_buf_add_highlight(buf, ns, hl_group, line_idx - 1, 0, -1)
+        vim.api.nvim_buf_add_highlight(buf, ns, hl_group, line_num - 1, 0, -1)
       end
     end
   end
 
-  vim.bo[buf].modifiable = false
-
-  -- Open in main editor window
+  -- Open file A
   local sidebar_mod = require("spring-tools.ui.sidebar")
-  local target_win = nil
+  local main_win = nil
   for _, w in ipairs(vim.api.nvim_list_wins()) do
     if w ~= sidebar_mod.win then
       local b = vim.api.nvim_win_get_buf(w)
-      if vim.bo[b].filetype ~= "springtools-output" then
-        target_win = w; break
-      end
+      if vim.bo[b].filetype ~= "springtools-output" then main_win = w; break end
     end
   end
-  if target_win then vim.api.nvim_set_current_win(target_win) end
-  vim.api.nvim_set_current_buf(buf)
+  if main_win then vim.api.nvim_set_current_win(main_win) end
+  vim.cmd("edit " .. vim.fn.fnameescape(file_a))
+  local buf_a = vim.api.nvim_get_current_buf()
+  vim.bo[buf_a].bufhidden = "wipe"
+  vim.bo[buf_a].modifiable = false
+  apply_highlights(buf_a, hl_a)
 
+  -- Open file B in vertical split
+  vim.cmd("belowright vsplit " .. vim.fn.fnameescape(file_b))
+  local buf_b = vim.api.nvim_get_current_buf()
+  vim.bo[buf_b].bufhidden = "wipe"
+  vim.bo[buf_b].modifiable = false
+  apply_highlights(buf_b, hl_b)
+
+  -- Summary echo
+  local summary = string.format(" %d same  %d changed  %d " .. name_a .. "-only  %d " .. name_b .. "-only",
+    same, changed, left_only, right_only)
+  vim.api.nvim_echo({{ summary, "SpringToolsAccent" }}, false, {})
+
+  -- q/Esc closes both
   local function close()
-    if vim.api.nvim_buf_is_valid(buf) then
-      vim.api.nvim_buf_delete(buf, { force = true })
-    end
+    pcall(vim.api.nvim_buf_delete, buf_a, { force = true })
+    pcall(vim.api.nvim_buf_delete, buf_b, { force = true })
   end
-  vim.keymap.set("n", "q", close, { buffer = buf, silent = true, nowait = true })
-  vim.keymap.set("n", "<Esc>", close, { buffer = buf, silent = true, nowait = true })
+  for _, b in ipairs({ buf_a, buf_b }) do
+    vim.keymap.set("n", "q", close, { buffer = b, silent = true, nowait = true })
+    vim.keymap.set("n", "<Esc>", close, { buffer = b, silent = true, nowait = true })
+  end
 end
 
 return M
