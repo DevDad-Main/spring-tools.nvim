@@ -59,7 +59,7 @@ public class ProductController {
 
     @GetMapping("/catalog")
     public ResponseEntity<Map<String, Object>> catalog() {
-        log.info("Catalog requested — returning full store catalog");
+        log.info("[DEMO] Catalog requested — returning full store catalog");
         return ResponseEntity.ok(Map.of(
             "store", "TestApp Store",
             "version", "1.0.0",
