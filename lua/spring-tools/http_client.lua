@@ -203,21 +203,26 @@ function M._send_resolved(endpoint, extra_args, path)
 
   -- Auto-detect port from any running process
   local port = "8080"
-  local proj = project.get_active_project()
-  local state = require("spring-tools.core.state")
   local backend = require("spring-tools.core.backend")
   local all_procs = backend.ProcessManager.get_all()
-  for root, proc in pairs(all_procs) do
+  for _, proc in pairs(all_procs) do
     if proc.status == "running" and proc.port then
       port = proc.port
       break
     end
   end
-  if not port and proj then
-    local be = project.get_backend_for_project(proj)
-    if be and be.get_port then
-      local p = be:get_port(proj)
-      if p and p ~= "" then port = p end
+  -- Fallback: read server.port from active project's properties
+  if port == "8080" then
+    local proj = project.get_active_project()
+    if proj then
+      local prop_path = proj.root .. "/src/main/resources/application.properties"
+      local ok, lines = pcall(vim.fn.readfile, prop_path)
+      if ok and lines then
+        for _, line in ipairs(lines) do
+          local p = line:match("^server%.port%s*=%s*(%d+)")
+          if p then port = p; break end
+        end
+      end
     end
   end
 
