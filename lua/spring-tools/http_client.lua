@@ -72,12 +72,18 @@ function M._show_curl_input(endpoint, default_text, on_submit)
 
   local km = config.options.command_input.keymaps
 
-  -- Tab: trigger or cycle completion
+  -- Tab: trigger completion
   vim.keymap.set("i", km.complete, function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
-    else
-      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-x><C-o>", true, false, true), "n")
+      return
+    end
+    local line = vim.api.nvim_get_current_line()
+    local col = vim.api.nvim_win_get_cursor(0)[2]
+    local base = line:sub(0, col)
+    local results = M._curl_omni(0, base)
+    if #results > 0 then
+      vim.fn.complete(col + 1, results)
     end
   end, { buffer = buf, silent = true })
 
