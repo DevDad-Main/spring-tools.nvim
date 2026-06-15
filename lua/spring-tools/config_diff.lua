@@ -9,7 +9,7 @@ local M = {}
 vim.api.nvim_set_hl(0, "SpringToolsDiffSame", { fg = "#98c379", default = true })
 vim.api.nvim_set_hl(0, "SpringToolsDiffChanged", { fg = "#e5c07b", default = true })
 vim.api.nvim_set_hl(0, "SpringToolsDiffRemoved", { fg = "#e06c75", default = true })
-vim.api.nvim_set_hl(0, "SpringToolsDiffAdded", { fg = "#98c379", default = true })
+vim.api.nvim_set_hl(0, "SpringToolsDiffAdded", { fg = "#e06c75", default = true })
 
 function M.open()
   local proj = project.get_active_project()
