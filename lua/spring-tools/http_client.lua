@@ -184,6 +184,23 @@ end
 function M.send(endpoint, extra_args)
   extra_args = extra_args or ""
 
+  -- Resolve path variables (e.g., /api/products/{id} → prompt user)
+  local path = endpoint.path
+  for var in path:gmatch("{(%w+)}") do
+    local saved = path
+    vim.ui.input({ prompt = "Enter value for {" .. var .. "}: " }, function(input)
+      path = path:gsub("{" .. var .. "}", input or var)
+      if path == saved then return end
+      M._send_resolved(endpoint, extra_args, path)
+    end)
+    return
+  end
+
+  M._send_resolved(endpoint, extra_args, path)
+end
+
+function M._send_resolved(endpoint, extra_args, path)
+
   -- Save to history (non-empty, unique args)
   if extra_args ~= "" then
     local cache_key = "curl_args_history"
@@ -207,7 +224,7 @@ function M.send(endpoint, extra_args)
     end
   end
 
-  local url = "http://localhost:" .. port .. endpoint.path
+  local url = "http://localhost:" .. port .. path
   local cmd = string.format(
     "curl -s -w '\\n\\n--- RESPONSE ---\\nHTTP_CODE:%%{http_code}\\nTIME:%%{time_total}s\\nSIZE:%%{size_download} bytes' %s -X %s '%s'",
     extra_args, endpoint.method, url
@@ -228,7 +245,7 @@ function M.send(endpoint, extra_args)
           if #jq_out > 0 then response_body = table.concat(jq_out, "\n") end
         end
 
-        M._show_response(endpoint, port, response_body, meta, extra_args)
+        M._show_response(endpoint, port, response_body, meta, extra_args, path)
         utils.notify(endpoint.method .. " " .. endpoint.path .. " → done", vim.log.levels.INFO)
       end)
     end,
@@ -257,14 +274,15 @@ function M._split_response(raw)
   return body, meta
 end
 
-function M._show_response(endpoint, port, body, meta, extra_args)
+function M._show_response(endpoint, port, body, meta, extra_args, resolved_path)
+  resolved_path = resolved_path or endpoint.path
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].buftype = "nofile"
   vim.bo[buf].bufhidden = "wipe"
   vim.bo[buf].modifiable = true
 
   local lines = {}
-  local url = "http://localhost:" .. port .. endpoint.path
+  local url = "http://localhost:" .. port .. resolved_path
 
   table.insert(lines, string.rep("─", 60))
   table.insert(lines, "  " .. endpoint.method .. " " .. url)
