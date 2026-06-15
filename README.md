@@ -103,6 +103,7 @@
 - **Command History** — `:SpringCommands` browses all saved custom commands across projects; re-run, copy, or delete
 - **Custom Run Command** — floating input with omnifunc completion (mvn lifecycle phases, plugin goals, `-D` properties, Gradle tasks), position configurable (`top`/`center`/`bottom`), locked against window navigation
 - **Dynamic Maven Goal Discovery** — auto-discovers plugin goals from `help:effective-pom` and `help:describe` for any Maven plugin, not just 55+ well-known ones; caches across sessions; auto-invalidates on POM changes
+- **Dynamic Gradle Task Discovery** — auto-discovers Gradle tasks via `gradle tasks --all` for any Gradle project; caches across sessions; auto-invalidates on `build.gradle` changes
 - **Bean Explorer** — collapsible sections by stereotype, nested `@Bean` methods under `@Configuration`
 - **Endpoint Explorer** — routes grouped by HTTP method (GET/POST/PUT/PATCH/DELETE), collapsible
 - **Test Runner** — discover/run JUnit 5 tests, per-method results from surefire XML
@@ -597,7 +598,7 @@ A sample Spring Boot test app is available at `tests/TestApp/`:
 - [x] **Unified fuzzy search** — `:SpringSearch` across beans, endpoints, tests, and config with Telescope-native picker, nerd-font icons, and sidebar `/` keymap
 - [x] **Custom command history management** — `:SpringCommands` to browse, re-run, copy, and delete saved commands
 - [x] **Auto-restart on save** — debounced restart on file save with per-project toggle and `↻` indicator
-- [ ] **Gradle build file parsing** — parse `build.gradle`/`build.gradle.kts` for dynamic task discovery
+- [x] **Gradle task discovery** — parse `build.gradle` and query `gradle tasks --all` for dynamic task completion
 - [ ] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects
 - [ ] **Config diff view** — side-by-side comparison of config properties between profiles
 - [ ] **Profile picker** — select active Spring profiles when starting an app

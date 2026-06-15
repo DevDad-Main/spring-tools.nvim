@@ -39,13 +39,19 @@ function M.setup()
     sidebar.refresh()
     local state = require("spring-tools.core.state")
     local maven_roots = {}
+    local gradle_roots = {}
     for _, proj in ipairs(state.get_projects()) do
       if proj.build_type == "maven" then
         maven_roots[#maven_roots + 1] = proj.root
+      elseif proj.build_type == "gradle" then
+        gradle_roots[#gradle_roots + 1] = proj.root
       end
     end
     if #maven_roots > 0 then
       mvn.fetch_dynamic_goals(maven_roots)
+    end
+    if #gradle_roots > 0 then
+      mvn.fetch_gradle_tasks(gradle_roots)
     end
     utils.notify("Spring Tools indexes refreshed")
   end, { desc = "Refresh all Spring Tools indexes" })

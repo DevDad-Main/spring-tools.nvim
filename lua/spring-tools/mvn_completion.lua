@@ -430,10 +430,104 @@ function M.invalidate_cache(root)
   if root then
     PLUGIN_CACHE[root] = nil
     DYNAMIC_CACHE[root] = nil
+    GRADLE_CACHE[root] = nil
   else
     PLUGIN_CACHE = {}
     DYNAMIC_CACHE = {}
+    GRADLE_CACHE = {}
   end
+end
+
+-- ── Gradle task discovery ──
+
+local GRADLE_CACHE = {}
+local GRADLE_PENDING = {}
+
+local function find_gradle_cmd(root)
+  local gw = root .. "/gradlew"
+  if vim.fn.executable(gw) == 1 then return { gw } end
+  return { "gradle" }
+end
+
+local function parse_gradle_tasks(text)
+  local tasks = {}
+  for line in text:gmatch("[^\n]+") do
+    local task = line:match("^([%w]+) %- ")
+    if task and not task:match("^[A-Z]+$") then
+      tasks[#tasks + 1] = task
+    end
+  end
+  return tasks
+end
+
+local function fetch_gradle_async(root)
+  if GRADLE_PENDING[root] then return end
+  if vim.fn.isdirectory(root) == 0 then
+    GRADLE_PENDING[root] = nil
+    return
+  end
+  GRADLE_PENDING[root] = true
+
+  local name = vim.fn.fnamemodify(root, ":t")
+  local gradle = find_gradle_cmd(root)
+  local stdout = {}
+
+  vim.fn.jobstart(vim.list_extend(vim.deepcopy(gradle), { "tasks", "--all", "--console=plain", "-q" }), {
+    cwd = root,
+    stdout_buffered = true,
+    on_stdout = function(_, data)
+      for _, line in ipairs(data) do stdout[#stdout + 1] = line end
+    end,
+    on_exit = function(_, code)
+      vim.schedule(function()
+        if code ~= 0 then
+          vim.notify("[spring-tools] Gradle tasks failed for " .. name, vim.log.levels.WARN)
+          GRADLE_PENDING[root] = nil
+          return
+        end
+        local text = table.concat(stdout, "\n")
+        local tasks = parse_gradle_tasks(text)
+        GRADLE_CACHE[root] = tasks
+        local cache_key = "gradle_tasks:" .. root
+        if not utils.cache.data then utils.cache.data = {} end
+        utils.cache.data[cache_key] = { tasks = tasks, build_mtime = vim.fn.getftime(root .. "/build.gradle") }
+        utils.mark_dirty()
+        utils.save_cache()
+        vim.notify("[spring-tools] " .. name .. ": discovered " .. #tasks .. " Gradle tasks", vim.log.levels.INFO)
+        GRADLE_PENDING[root] = nil
+      end)
+    end,
+  })
+end
+
+function M.fetch_gradle_tasks(roots)
+  if type(roots) == "string" then roots = { roots } end
+  for _, root in ipairs(roots) do
+    if GRADLE_CACHE[root] then
+      -- already loaded
+    else
+      local cache_key = "gradle_tasks:" .. root
+      local entry = utils.cache.data and utils.cache.data[cache_key]
+      if entry then
+        local tasks = type(entry) == "table" and entry.tasks or entry
+        local stored_mtime = type(entry) == "table" and entry.build_mtime or nil
+        local current_mtime = vim.fn.getftime(root .. "/build.gradle")
+        if stored_mtime ~= nil and current_mtime ~= -1 and stored_mtime ~= current_mtime then
+          utils.cache.data[cache_key] = nil
+          GRADLE_CACHE[root] = nil
+          fetch_gradle_async(root)
+        else
+          GRADLE_CACHE[root] = tasks
+        end
+      else
+        fetch_gradle_async(root)
+      end
+    end
+  end
+end
+
+function M.get_gradle_tasks(root)
+  return GRADLE_CACHE[root] or {}
 end
 
 return M

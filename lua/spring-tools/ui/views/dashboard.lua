@@ -30,6 +30,7 @@ function M:load_items()
   local active = project.get_active_project()
   M.items = {}
   local maven_roots = {}
+  local gradle_roots = {}
 
   -- Restore persisted auto-restart toggles
   if utils.cache.data then
@@ -57,10 +58,15 @@ function M:load_items()
     }
     if proj.build_type == "maven" then
       maven_roots[#maven_roots + 1] = proj.root
+    elseif proj.build_type == "gradle" then
+      gradle_roots[#gradle_roots + 1] = proj.root
     end
   end
   if #maven_roots > 0 then
     mvn.fetch_dynamic_goals(maven_roots)
+  end
+  if #gradle_roots > 0 then
+    mvn.fetch_gradle_tasks(gradle_roots)
   end
 end
 
@@ -271,6 +277,10 @@ function M:on_activate(idx)
         "gradle bootRun --debug", "gradle bootRun --args='--server.port=9090'",
       }) do
         common_items[#common_items + 1] = { label = "  " .. cmd, action = function() save_and_run(cmd) end }
+      end
+      local gradle_tasks = mvn.get_gradle_tasks(proj.root)
+      for _, task in ipairs(gradle_tasks) do
+        common_items[#common_items + 1] = { label = "  gradle " .. task, action = function() save_and_run("gradle " .. task) end }
       end
     end
     menu[#menu + 1] = { label = " Common commands (" .. #common_items .. ")", submenu = common_items }
