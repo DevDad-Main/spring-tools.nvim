@@ -62,9 +62,12 @@ function M._show_curl_input(endpoint, default_text, on_submit)
   -- Setup omnifunc
   if not M._omni_reg then
     M._omni_reg = true
+    _G._spring_curl_omni = function(fs, base)
+      return M._curl_omni(fs, base)
+    end
     vim.cmd([[
       function! SpringToolsCurlOmni(findstart, base)
-        return luaeval("require('spring-tools.http_client')._curl_omni(_A[1], _A[2])", [a:findstart, a:base])
+        return v:lua._spring_curl_omni(a:findstart, a:base)
       endfunction
     ]])
   end
@@ -76,14 +79,8 @@ function M._show_curl_input(endpoint, default_text, on_submit)
   vim.keymap.set("i", km.complete, function()
     if vim.fn.pumvisible() == 1 then
       vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-n>", true, false, true), "n")
-      return
-    end
-    local line = vim.api.nvim_get_current_line()
-    local col = vim.api.nvim_win_get_cursor(0)[2]
-    local base = line:sub(0, col)
-    local results = M._curl_omni(0, base)
-    if #results > 0 then
-      vim.fn.complete(col + 1, results)
+    else
+      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<C-x><C-o>", true, false, true), "n")
     end
   end, { buffer = buf, silent = true })
 
