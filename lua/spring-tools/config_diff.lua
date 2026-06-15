@@ -185,6 +185,8 @@ function M.show_diff(file_a, file_b, name_a, name_b)
   vim.bo[toolbar_buf].buftype = "nofile"
   vim.bo[toolbar_buf].modifiable = true
 
+  local toolbar_width = 72
+
   local function update_toolbar()
     local parts = {}
     local function f(label, key, count)
@@ -193,15 +195,19 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     f("C", "changed", changed); f("L", "left_only", left_only)
     f("R", "right_only", right_only); f("S", "same", same)
     local counts = table.concat(parts, " ")
-    local files = "  " .. name_a .. "  ↔  " .. name_b
+    local files = name_a .. "  ↔  " .. name_b
     local kb = "(c:changed  l:left  r:right  s:same  a:all  ?:help  q:close)"
+    local inner_w = toolbar_width - 2 -- account for border
+    local function center(str)
+      local pad = math.floor((inner_w - #str) / 2)
+      if pad < 0 then pad = 0 end
+      return string.rep(" ", pad) .. str
+    end
     vim.bo[toolbar_buf].modifiable = true
-    vim.api.nvim_buf_set_lines(toolbar_buf, 0, -1, false, { files, "  " .. counts, "  " .. kb })
+    vim.api.nvim_buf_set_lines(toolbar_buf, 0, -1, false, { center(files), center(counts), center(kb) })
     vim.bo[toolbar_buf].modifiable = false
   end
   update_toolbar()
-
-  local toolbar_width = 72
   local toolbar_win = vim.api.nvim_open_win(toolbar_buf, false, {
     relative = "editor",
     width = toolbar_width,
