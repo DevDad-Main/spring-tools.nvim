@@ -191,7 +191,7 @@ function M.show_diff(file_a, file_b, name_a, name_b)
     relative = "editor",
     width = toolbar_width,
     height = 2,
-    row = 0,
+    row = math.max(0, vim.o.lines - 4),
     col = math.floor((vim.o.columns - toolbar_width) / 2),
     style = "minimal",
     border = "rounded",
