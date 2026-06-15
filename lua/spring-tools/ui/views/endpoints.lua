@@ -147,7 +147,7 @@ function M._resolve_and_send(ep)
 
   local function show_input(resolved_path)
     http._show_curl_input(ep, "", function(input)
-      http.send(ep, input or "")
+      http.send(ep, input or "", resolved_path)
     end, resolved_path)
   end
 

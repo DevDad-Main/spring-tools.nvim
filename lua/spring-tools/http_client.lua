@@ -223,9 +223,9 @@ function M._curl_omni(findstart, base)
   return results
 end
 
-function M.send(endpoint, extra_args)
+function M.send(endpoint, extra_args, resolved_path)
   extra_args = extra_args or ""
-  M._send_resolved(endpoint, extra_args, endpoint.path)
+  M._send_resolved(endpoint, extra_args, resolved_path or endpoint.path)
 end
 
 function M._send_resolved(endpoint, extra_args, path)
@@ -383,8 +383,8 @@ function M._show_response(endpoint, port, body, meta, extra_args, resolved_path)
 
   vim.keymap.set("n", "t", function()
     M._show_curl_input(endpoint, extra_args, function(input)
-      M.send(endpoint, input)
-    end)
+      M.send(endpoint, input, resolved_path)
+    end, resolved_path)
   end, { buffer = buf, silent = true, nowait = true, desc = "Re-send request" })
 end
 

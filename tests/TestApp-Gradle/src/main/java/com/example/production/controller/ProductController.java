@@ -29,6 +29,29 @@ public class ProductController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/{productId}/reviews/{reviewId}")
+    public ResponseEntity<Map<String, String>> getReview(
+            @PathVariable Long productId,
+            @PathVariable Long reviewId) {
+        return ResponseEntity.ok(Map.of(
+            "productId", String.valueOf(productId),
+            "reviewId", String.valueOf(reviewId),
+            "rating", "5",
+            "text", "Great product!"
+        ));
+    }
+
+    @GetMapping("/category/{category}/{subcategory}")
+    public ResponseEntity<Map<String, String>> byCategory(
+            @PathVariable String category,
+            @PathVariable String subcategory) {
+        return ResponseEntity.ok(Map.of(
+            "category", category,
+            "subcategory", subcategory,
+            "count", "42"
+        ));
+    }
+
     @PostMapping
     public ResponseEntity<Product> createProduct(@RequestBody Product product) {
         Product created = productService.createProduct(product);
