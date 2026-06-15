@@ -40,6 +40,7 @@ function M._show_prompt(title, on_submit)
   vim.keymap.set("n", km.close_alt, function() cleanup() end, { buffer = buf, silent = true, nowait = true })
   vim.keymap.set("n", km.popup_next, "<Nop>", { buffer = buf, silent = true })
   vim.keymap.set("n", km.popup_prev, "<Nop>", { buffer = buf, silent = true })
+  vim.api.nvim_set_current_win(win)
   vim.cmd("startinsert!")
 end
 
@@ -355,6 +356,10 @@ function M._show_response(endpoint, port, body, meta, extra_args, resolved_path)
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.bo[buf].modifiable = false
+
+  if body:match('^%s*[{[]') then
+    vim.bo[buf].filetype = "json"
+  end
 
   local sidebar_mod = require("spring-tools.ui.sidebar")
   local main_win = nil

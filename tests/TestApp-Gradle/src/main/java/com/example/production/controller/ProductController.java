@@ -52,6 +52,44 @@ public class ProductController {
         ));
     }
 
+    @GetMapping("/catalog")
+    public ResponseEntity<Map<String, Object>> catalog() {
+        return ResponseEntity.ok(Map.of(
+            "store", "TestApp Store",
+            "version", "1.0.0",
+            "departments", java.util.List.of(
+                Map.of("name", "Electronics", "floor", 2, "open", true,
+                    "items", java.util.List.of(
+                        Map.of("id", 1, "name", "Laptop", "price", 999.99, "stock", 15, "specs", Map.of("ram", "16GB", "cpu", "i7", "storage", "512GB SSD")),
+                        Map.of("id", 2, "name", "Phone", "price", 699.99, "stock", 42, "specs", Map.of("ram", "8GB", "cpu", "A15", "storage", "256GB")),
+                        Map.of("id", 3, "name", "Tablet", "price", 449.99, "stock", 8, "specs", Map.of("ram", "6GB", "cpu", "M2", "storage", "128GB"))
+                    )),
+                Map.of("name", "Books", "floor", 1, "open", false,
+                    "items", java.util.List.of(
+                        Map.of("id", 101, "title", "Spring Boot in Action", "author", "Craig Walls", "price", 39.99, "pages", 450),
+                        Map.of("id", 102, "title", "Clean Code", "author", "Robert Martin", "price", 29.99, "pages", 464),
+                        Map.of("id", 103, "title", "Designing Data-Intensive Applications", "author", "Martin Kleppmann", "price", 44.99, "pages", 616)
+                    )),
+                Map.of("name", "Clothing", "floor", 3, "open", true,
+                    "items", java.util.List.of(
+                        Map.of("id", 201, "name", "T-Shirt", "price", 19.99, "sizes", java.util.List.of("S", "M", "L", "XL")),
+                        Map.of("id", 202, "name", "Jeans", "price", 49.99, "sizes", java.util.List.of("30", "32", "34")),
+                        Map.of("id", 203, "name", "Jacket", "price", 89.99, "sizes", java.util.List.of("M", "L"))
+                    ))
+            ),
+            "metadata", Map.of(
+                "total_items", 9,
+                "total_departments", 3,
+                "last_updated", "2026-06-15T10:00:00Z",
+                "server", Map.of(
+                    "host", "store-01",
+                    "region", "eu-west-1",
+                    "uptime_seconds", 86400
+                )
+            )
+        ));
+    }
+
     @PostMapping
     public ResponseEntity<Product> createProduct(@RequestBody Product product) {
         Product created = productService.createProduct(product);
