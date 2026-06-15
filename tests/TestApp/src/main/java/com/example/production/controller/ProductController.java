@@ -2,6 +2,8 @@ package com.example.production.controller;
 
 import com.example.production.model.Product;
 import com.example.production.service.ProductService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +14,7 @@ import java.util.Map;
 @RequestMapping("/api/products")
 public class ProductController {
     private final ProductService productService;
+    private static final Logger log = LoggerFactory.getLogger(ProductController.class);
 
     public ProductController(ProductService productService) {
         this.productService = productService;
@@ -33,6 +36,7 @@ public class ProductController {
     public ResponseEntity<Map<String, String>> getReview(
             @PathVariable Long productId,
             @PathVariable Long reviewId) {
+        log.info("Review requested — productId={}, reviewId={}", productId, reviewId);
         return ResponseEntity.ok(Map.of(
             "productId", String.valueOf(productId),
             "reviewId", String.valueOf(reviewId),
@@ -45,6 +49,7 @@ public class ProductController {
     public ResponseEntity<Map<String, String>> byCategory(
             @PathVariable String category,
             @PathVariable String subcategory) {
+        log.info("Category requested — category={}, subcategory={}", category, subcategory);
         return ResponseEntity.ok(Map.of(
             "category", category,
             "subcategory", subcategory,
@@ -54,6 +59,7 @@ public class ProductController {
 
     @GetMapping("/catalog")
     public ResponseEntity<Map<String, Object>> catalog() {
+        log.info("Catalog requested — returning full store catalog");
         return ResponseEntity.ok(Map.of(
             "store", "TestApp Store",
             "version", "1.0.0",
