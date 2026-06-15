@@ -17,6 +17,23 @@ local builtin_patterns = {
   { pattern = "[TRACE]", hl = "SpringToolsLogTrace" },
 }
 
+
+local filter_order = { "error", "warn", "info", "debug", "trace" }
+
+-- Lazy-init custom toggleable pattern (config may not be set at module load)
+local custom_inited = false
+local function ensure_custom_init()
+  if custom_inited then return end
+  custom_inited = true
+  local cp = config.options.log and config.options.log.custom
+  if cp and cp.pattern and cp.hl and cp.key then
+    M._custom_key = cp.key
+    M._custom_pattern = cp.pattern
+    M.filter[cp.key] = true
+    filter_order[#filter_order + 1] = cp.key
+  end
+end
+
 local function get_log_patterns()
   ensure_custom_init()
   local custom = config.options.log and config.options.log.levels or {}
@@ -47,22 +64,6 @@ M.filter = {
   debug = true,
   trace = true,
 }
-
-local filter_order = { "error", "warn", "info", "debug", "trace" }
-
--- Lazy-init custom toggleable pattern (config may not be set at module load)
-local custom_inited = false
-local function ensure_custom_init()
-  if custom_inited then return end
-  custom_inited = true
-  local cp = config.options.log and config.options.log.custom
-  if cp and cp.pattern and cp.hl and cp.key then
-    M._custom_key = cp.key
-    M._custom_pattern = cp.pattern
-    M.filter[cp.key] = true
-    filter_order[#filter_order + 1] = cp.key
-  end
-end
 
 local function buf_is_valid()
   return M.buf and vim.api.nvim_buf_is_valid(M.buf)
