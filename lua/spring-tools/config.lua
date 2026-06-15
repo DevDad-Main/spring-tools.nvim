@@ -62,8 +62,8 @@ M.defaults = {
   diff = {
     highlights = {
       changed = "SpringToolsLogInfo",
-      left_only = "SpringToolsLogWarn",
-      right_only = "SpringToolsLogWarn",
+      left_only = "SpringToolsError",
+      right_only = "SpringToolsRunning",
     },
   },
   jdtls = {
