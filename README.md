@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <a href="previews/plugin_demo.mp4">🎬 Watch the demo</a>
+  <img src="previews/plugin_demo.gif" width="1000" />
 </p>
 
 <br>
