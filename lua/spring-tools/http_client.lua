@@ -19,7 +19,8 @@ local default_suggestions = {
   { word = "-w '\\n%{http_code}'", menu = "print HTTP status code" },
 }
 
-function M._show_curl_input(endpoint, default_text, on_submit)
+function M._show_curl_input(endpoint, default_text, on_submit, resolved_path)
+  resolved_path = resolved_path or endpoint.path
   local width = math.min(80, vim.o.columns - 4)
   local row = math.floor((vim.o.lines - 3) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
@@ -40,7 +41,7 @@ function M._show_curl_input(endpoint, default_text, on_submit)
     col = col,
     style = "minimal",
     border = "rounded",
-    title = " curl args for " .. endpoint.method .. " " .. endpoint.path .. " ",
+    title = " curl args for " .. endpoint.method .. " " .. resolved_path .. " ",
     title_pos = "center",
   })
   vim.wo[win].winfixbuf = true
@@ -183,20 +184,7 @@ end
 
 function M.send(endpoint, extra_args)
   extra_args = extra_args or ""
-
-  -- Resolve path variables (e.g., /api/products/{id} → prompt user)
-  local path = endpoint.path
-  for var in path:gmatch("{(%w+)}") do
-    local saved = path
-    vim.ui.input({ prompt = "Enter value for {" .. var .. "}: " }, function(input)
-      path = path:gsub("{" .. var .. "}", input or var)
-      if path == saved then return end
-      M._send_resolved(endpoint, extra_args, path)
-    end)
-    return
-  end
-
-  M._send_resolved(endpoint, extra_args, path)
+  M._send_resolved(endpoint, extra_args, endpoint.path)
 end
 
 function M._send_resolved(endpoint, extra_args, path)
@@ -213,10 +201,19 @@ function M._send_resolved(endpoint, extra_args, path)
     utils.save_cache()
   end
 
-  -- Auto-detect port from running process
+  -- Auto-detect port from any running process
   local port = "8080"
   local proj = project.get_active_project()
-  if proj then
+  local state = require("spring-tools.core.state")
+  local backend = require("spring-tools.core.backend")
+  local all_procs = backend.ProcessManager.get_all()
+  for root, proc in pairs(all_procs) do
+    if proc.status == "running" and proc.port then
+      port = proc.port
+      break
+    end
+  end
+  if not port and proj then
     local be = project.get_backend_for_project(proj)
     if be and be.get_port then
       local p = be:get_port(proj)

@@ -138,9 +138,38 @@ function M:test_endpoint(idx)
   local item = M.items[idx]
   if not item or item.type ~= "endpoint" then return end
   local ep = item.endpoint
-  http._show_curl_input(ep, "", function(input)
-    http.send(ep, input or "")
-  end)
+
+  -- Resolve path variables (e.g., /products/{id})
+  local path = ep.path
+  local vars = {}
+  for var in path:gmatch("{(%w+)}") do
+    vars[#vars + 1] = var
+  end
+
+  local function show_input(resolved_path)
+    http._show_curl_input(ep, "", function(input)
+      http.send(ep, input or "")
+    end, resolved_path)
+  end
+
+  if #vars > 0 then
+    -- Prompt for first variable
+    local function ask_var(i)
+      if i > #vars then
+        show_input(path)
+        return
+      end
+      local var = vars[i]
+      vim.ui.input({ prompt = "{" .. var .. "}: " }, function(value)
+        if not value or value == "" then return end
+        path = path:gsub("{" .. var .. "}", value, 1)
+        ask_var(i + 1)
+      end)
+    end
+    ask_var(1)
+  else
+    show_input(path)
+  end
 end
 
 return M
