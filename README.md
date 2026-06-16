@@ -48,7 +48,7 @@
   <img src="previews/plugin_demo_beans.gif" width="900" />
 </p>
 
-<h4 align="center">Endpoints Explorer &mdash; routes grouped by HTTP method, curl test client</h4>
+<h4 align="center">Endpoints Explorer &mdash; routes grouped by HTTP method, collapsible REST / Actuator sections, curl test client</h4>
 <p align="center">
   <img src="previews/plugin_demo_endpoints_2.gif" width="900" />
 </p>
@@ -63,6 +63,13 @@ command_input = {
   },
 }
 ```
+
+<h4 align="center">Actuator Endpoints &mdash; browse runtime info: health, beans, metrics, env, loggers, mappings, and more</h4>
+<p align="center">
+  <img src="previews/plugin_demo_actuator.gif" width="900" />
+</p>
+
+> **Tip**: Only <code>health</code> and <code>info</code> are exposed by default. Add <code>management.endpoints.web.exposure.include=*</code> to your <code>application.properties</code> to enable all endpoints.
 
 <h4 align="center">Config Diff &mdash; side-by-side comparison with color-coded highlights</h4>
 <p align="center">
@@ -171,7 +178,7 @@ command_input = {
 - **Dynamic Maven Goal Discovery** — auto-discovers plugin goals from `help:effective-pom` and `help:describe` for any Maven plugin, not just 55+ well-known ones; caches across sessions; auto-invalidates on POM changes
 - **Dynamic Gradle Task Discovery** — auto-discovers Gradle tasks via `gradle tasks --all` for any Gradle project; caches across sessions; auto-invalidates on `build.gradle` changes
 - **Bean Explorer** — collapsible sections by stereotype, nested `@Bean` methods under `@Configuration`
-- **Endpoint Explorer** — routes grouped by HTTP method (GET/POST/PUT/PATCH/DELETE), collapsible
+- **Endpoint Explorer** — routes grouped by HTTP method (GET/POST/PUT/PATCH/DELETE), collapsible REST endpoints + Actuator endpoints (health, beans, metrics, env, loggers, mappings, and more) — both sections independently collapsible with their own nested sub-headers
 - **Test Runner** — discover/run JUnit 5 tests, per-method results from surefire XML
 - **Config Explorer** — browse application.properties/YAML, file-grouped, preview values with `p`, Enter jumps to exact line
 - **Config Diff** — `:SpringConfigDiff` or `D` in sidebar opens two config files side-by-side with explicit color-coded highlights (green same, amber changed, red one-sided) and filter toggles via a floating toolbar
@@ -250,7 +257,7 @@ use {
 | --------- | ---------------------------------------------------- |
 | `j` / `k` | Move selection up/down                               |
 | `h` / `l` | Previous/next tab                                    |
-| `1`–`5`   | Jump to tab                                          |
+| `1`–`5`   | Jump to tab (Dash/Beans/Endp/Tests/Config)
 | `<CR>`    | Open nested action menu (commands, logs, stop, etc.) |
 | `o`       | Toggle output panel                                  |
 | `/`       | Unified search across all views                      |
@@ -598,6 +605,7 @@ lua/spring-tools/
 ├── endpoints.lua          -- REST endpoint discovery
 ├── tests.lua              -- JUnit test discovery and runner
 ├── config_explorer.lua    -- properties/YAML parser
+├── actuator.lua           -- Actuator endpoint definitions (health, beans, metrics, env, …)
 ├── build_completion.lua  — Maven & Gradle task discovery via effective-pom, help:describe, and gradle tasks --all
 ├── backends/
 │   ├── init.lua           -- Backend registry
