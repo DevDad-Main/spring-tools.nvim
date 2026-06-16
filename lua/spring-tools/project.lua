@@ -95,8 +95,16 @@ function M.remove_project(root)
 end
 
 function M.detect_projects(start_path)
-  M.load_cache()
   start_path = start_path or vim.fn.getcwd()
+  local resolved = vim.fn.resolve(start_path)
+
+  if M.workspace_root and vim.fn.resolve(M.workspace_root) ~= resolved then
+    M.projects = {}
+  else
+    M.load_cache()
+  end
+
+  M.workspace_root = resolved
 
   local all_roots = utils.find_all_project_roots(start_path)
   if #all_roots == 0 then
@@ -104,8 +112,6 @@ function M.detect_projects(start_path)
     state.set_projects(M.projects, M.workspace_root)
     return M.projects
   end
-
-  M.workspace_root = start_path
 
   for _, root in ipairs(all_roots) do
     local cached
