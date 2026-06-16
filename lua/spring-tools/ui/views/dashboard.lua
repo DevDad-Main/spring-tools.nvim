@@ -152,8 +152,8 @@ function M:render_item(item, selected)
   end
   if item.type == "docker" then
     local indent = string.rep("  ", item.indent or 0)
-    local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
-    return { { indent .. "\u{f308}  " .. item.label, hl } }
+    local hl = selected and "SpringToolsSelected" or "SpringToolsDashboardProject"
+    return { { indent .. "\u{25cb}  " .. item.label, hl } }
   end
   local proj = item.project
   local be = item.backend
