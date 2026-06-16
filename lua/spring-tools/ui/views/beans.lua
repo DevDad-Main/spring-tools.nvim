@@ -20,16 +20,18 @@ local type_labels = {
   components = "Components", configurations = "Configurations", beans = "Beans",
 }
 
-local function build_bean_items_from(grouped)
+local function build_bean_items_from(grouped, section_prefix, indent)
+  indent = indent or 0
+  local pad = string.rep("  ", indent)
   local items = {}
   for _, t in ipairs(type_order) do
     local sub = {}
     if t == "configurations" then
       for _, bean in ipairs(grouped[t]) do
-        table.insert(sub, { type = "bean", bean = bean })
+        table.insert(sub, { type = "bean", bean = bean, indent = indent + 1 })
         for _, b in ipairs(grouped.beans or {}) do
           if b.parent == bean.name then
-            table.insert(sub, { type = "bean_method", bean = b })
+            table.insert(sub, { type = "bean_method", bean = b, indent = indent + 1 })
           end
         end
       end
@@ -38,13 +40,14 @@ local function build_bean_items_from(grouped)
         if t == "beans" and bean.parent then
           -- skip parented beans (shown under their @Configuration parent)
         else
-          table.insert(sub, { type = "bean", bean = bean })
+          table.insert(sub, { type = "bean", bean = bean, indent = indent + 1 })
         end
       end
     end
     if #sub > 0 then
-      local is_collapsed = sections:is_collapsed(t)
-      items[#items + 1] = { type = "header", section_key = t, label = type_labels[t], collapsed = is_collapsed }
+      local sk = (section_prefix or "") .. t
+      local is_collapsed = sections:is_collapsed(sk)
+      items[#items + 1] = { type = "header", section_key = sk, label = type_labels[t], collapsed = is_collapsed, indent = indent }
       if not is_collapsed then
         for _, item in ipairs(sub) do
           table.insert(items, item)
@@ -88,7 +91,7 @@ function M:load_items()
     end
     local grouped = beans_mod.group_by_type()
     M.items = {}
-    local items = build_bean_items_from(grouped)
+    local items = build_bean_items_from(grouped, "", 0)
     for _, item in ipairs(items) do
       table.insert(M.items, item)
     end
@@ -109,7 +112,7 @@ function M:load_items()
     for _, proj in ipairs(projs) do
       local data = M._project_data[proj.root]
       M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root }
-      local items = build_bean_items_from(data.grouped)
+      local items = build_bean_items_from(data.grouped, "beans:" .. proj.root .. ":", 1)
       for _, item in ipairs(items) do
         table.insert(M.items, item)
       end
@@ -128,15 +131,18 @@ function M:render_item(item, selected)
   end
   if item.type == "header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local pad = string.rep("  ", item.indent or 0)
     local hl = selected and "SpringToolsSelected" or "SpringToolsBeanHeader"
-    return { { "  " .. icon .. " " .. item.label, hl } }
+    return { { pad .. icon .. " " .. item.label, hl } }
   end
   if item.type == "bean_method" then
+    local pad = string.rep("  ", item.indent or 3)
     local hl = selected and "SpringToolsSelected" or "SpringToolsBeanMethod"
-    return { { "        @" .. item.bean.name .. "()", hl } }
+    return { { pad .. "@" .. item.bean.name .. "()", hl } }
   end
+  local pad = string.rep("  ", item.indent or 2)
   local hl = selected and "SpringToolsSelected" or "SpringToolsBeanName"
-  return { { "      " .. item.bean.name, hl } }
+  return { { pad .. item.bean.name, hl } }
 end
 
 function M:on_activate(idx)
