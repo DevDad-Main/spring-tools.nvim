@@ -103,7 +103,7 @@ function M:load_items()
 
     local top_level = {}
     for _, proj in ipairs(projs) do
-      if proj.is_top_level then table.insert(top_level, proj) end
+      if proj.is_top_level == nil or proj.is_top_level then table.insert(top_level, proj) end
     end
     render_proj_tree(top_level)
   end

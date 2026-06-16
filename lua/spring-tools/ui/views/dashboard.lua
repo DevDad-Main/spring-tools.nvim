@@ -109,7 +109,7 @@ function M:load_items()
     end
     local top_level = {}
     for _, proj in ipairs(projs) do
-      if proj.is_top_level then table.insert(top_level, proj) end
+      if proj.is_top_level == nil or proj.is_top_level then table.insert(top_level, proj) end
     end
     if ws_is_project then
       add_project_items(top_level)

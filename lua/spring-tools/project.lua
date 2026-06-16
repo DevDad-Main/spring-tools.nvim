@@ -153,9 +153,9 @@ function M.detect_projects(start_path)
       if proj.root ~= parent.root and proj.root:sub(1, #parent.root) == parent.root and proj.root:sub(#parent.root + 1, #parent.root + 1) == "/" then
         local child_name = vim.fn.fnamemodify(proj.root, ":t")
         local pmodules = parent_modules[parent.root]
-        -- Only treat as child if parent explicitly declares it as a module,
-        -- or if parent is a virtual parent (path-prefix matching)
-        if (pmodules and pmodules[child_name]) or parent.is_virtual then
+        -- Treat as child if parent declares it as a module, or if parent
+        -- has no module file at all (virtual parent / container directory)
+        if pmodules == nil or pmodules[child_name] then
           if not parent.children then parent.children = {} end
           parent.children[#parent.children + 1] = proj
           child_roots[proj.root] = true
