@@ -45,6 +45,9 @@
   - Config view scans each project independently, groups properties per project with prefixed collapse keys for isolation.
   - Docker commands added to dashboard action menu (build, compose, ps, logs) for both stopped and running states.
   - All views degrade gracefully to single-project mode (identical UI).
+  - Parent-child tree detection in project.lua: roots nested under another root become children with foldable ▸/▾ headers in the dashboard.
+  - Dashboard renders parent projects as collapsible headers; children render as full backend entries with commands, status, and indentation.
+  - Unrelated top-level projects render flat (no visual change).
 
 ### In Progress
 - (none — all tasks on `feat/multi-project-workspace` are committed)
