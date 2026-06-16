@@ -102,10 +102,17 @@ function M:load_items()
     for _, proj in ipairs(projs) do
       if proj.is_top_level then table.insert(top_level, proj) end
     end
+    local docker_compose_file
+    for _, f in ipairs({ "docker-compose.yml", "docker-compose.yaml" }) do
+      local p = ws .. "/" .. f
+      if vim.fn.filereadable(p) == 1 then docker_compose_file = p; break end
+    end
     if ws_is_project then
       add_project_items(top_level)
+      if docker_compose_file then
+        M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = docker_compose_file, indent = 0 }
+      end
     else
-      -- Virtual parent for the workspace root (not a detected project)
       local ws_name = vim.fn.fnamemodify(ws, ":t")
       local sk = "parent:" .. ws
       local is_collapsed = sections:is_collapsed(sk)
@@ -115,6 +122,9 @@ function M:load_items()
           local item = build_project_item(proj)
           item.indent = 1
           table.insert(M.items, item)
+        end
+        if docker_compose_file then
+          M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = docker_compose_file, indent = 1 }
         end
       end
     end
@@ -139,6 +149,11 @@ function M:render_item(item, selected)
     local indent = string.rep("  ", item.indent or 0)
     local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
     return { { indent .. icon .. "  " .. item.label, hl } }
+  end
+  if item.type == "docker" then
+    local indent = string.rep("  ", item.indent or 0)
+    local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
+    return { { indent .. "\u{f308}  " .. item.label, hl } }
   end
   local proj = item.project
   local be = item.backend
@@ -207,6 +222,33 @@ function M:on_activate(idx)
   if item.type == "parent_header" then
     sections:toggle(item.section_key)
     sidebar.refresh()
+    return
+  end
+  if item.type == "docker" then
+    local docker_menu = {}
+    for _, cmd in ipairs({ "up", "down", "build", "logs -f", "ps", "restart", "pull" }) do
+      docker_menu[#docker_menu + 1] = {
+        label = "  docker-compose " .. cmd,
+        action = function()
+          local full_cmd = "docker-compose -f " .. item.compose_file .. " " .. cmd
+          output.show({ "Running: " .. full_cmd }, "docker-compose")
+          vim.fn.jobstart(vim.split(full_cmd, " "), {
+            cwd = state.get_workspace_root(),
+            on_stdout = function(_, data)
+              if data then vim.schedule(function()
+                for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
+              end) end
+            end,
+            on_stderr = function(_, data)
+              if data then vim.schedule(function()
+                for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
+              end) end
+            end,
+          })
+        end,
+      }
+    end
+    M.show_actions(docker_menu)
     return
   end
   local proj = item.project
