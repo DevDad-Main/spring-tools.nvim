@@ -5,6 +5,9 @@
   <img src="https://img.shields.io/github/license/DevDad-Main/spring-tools.nvim?style=for-the-badge" alt="License">
   <img src="https://img.shields.io/badge/neovim-0.10+-blue?style=for-the-badge&logo=neovim" alt="Neovim">
   <img src="https://img.shields.io/github/last-commit/DevDad-Main/spring-tools.nvim?style=for-the-badge&logo=git" alt="Last Commit">
+  <a href="https://dotfyle.com/plugins/DevDad-Main/spring-tools.nvim">
+    <img src="https://dotfyle.com/plugins/DevDad-Main/spring-tools.nvim/shield?style=flat" />
+  </a>
 </p>
 
 <h1 align="center">spring-tools.nvim</h1>
