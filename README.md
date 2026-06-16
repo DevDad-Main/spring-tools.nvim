@@ -674,7 +674,7 @@ A sample Spring Boot test app is available at `tests/TestApp/` (Maven) and `test
 
 ## Limitations
 
-- Java parsing uses regex heuristics, not a full AST — complex nested annotations may not be detected
+- Java parsing powered by Tree-sitter AST queries — accurate detection of nested and multi-line annotations, immune to comment/string false positives
 - Windows support limited — `find` command is used for file discovery
 - Multi-module projects not fully supported
 

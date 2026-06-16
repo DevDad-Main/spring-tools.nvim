@@ -26,7 +26,14 @@ function M.header()
 end
 
 function M:load_items()
-  M._test_classes = tests_mod.find_test_methods(scan_dir())
+  if #M.items == 0 and not M._test_classes then
+    M.items = { { type = "loading", label = "Indexing tests..." } }
+    vim.defer_fn(function()
+      M._test_classes = tests_mod.find_test_methods(scan_dir())
+      sidebar.refresh()
+    end, 1)
+    return
+  end
   M.items = {}
   table.insert(M.items, { type = "all", label = "Run all tests" })
   for _, test in ipairs(M._test_classes) do
@@ -41,6 +48,10 @@ function M:load_items()
 end
 
 function M:render_item(item, selected)
+  if item.type == "loading" then
+    local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
+    return { { "  " .. item.label, hl } }
+  end
   if item.type == "all" then
     local hl = selected and "SpringToolsSelected" or "SpringToolsTestRunAll"
     return { { "  " .. "\u{25b6}" .. " " .. item.label, hl } }

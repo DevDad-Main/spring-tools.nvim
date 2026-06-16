@@ -26,7 +26,14 @@ function M.header()
 end
 
 function M:load_items()
-  beans_mod.build_index(scan_dir())
+  if not beans_mod.index_built and #beans_mod.beans == 0 then
+    M.items = { { type = "loading", label = "Indexing beans..." } }
+    vim.defer_fn(function()
+      beans_mod.build_index(scan_dir())
+      sidebar.refresh()
+    end, 1)
+    return
+  end
   local grouped = beans_mod.group_by_type()
 
   M.items = {}
@@ -63,6 +70,10 @@ function M:load_items()
 end
 
 function M:render_item(item, selected)
+  if item.type == "loading" then
+    local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
+    return { { "  " .. item.label, hl } }
+  end
   if item.type == "header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
     local hl = selected and "SpringToolsSelected" or "SpringToolsBeanHeader"

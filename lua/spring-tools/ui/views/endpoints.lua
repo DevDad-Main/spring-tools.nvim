@@ -32,7 +32,14 @@ function M.header()
 end
 
 function M:load_items()
-  endpoints_mod.scan_endpoints(scan_dir())
+  if #endpoints_mod.endpoints == 0 then
+    M.items = { { type = "loading", label = "Indexing endpoints..." } }
+    vim.defer_fn(function()
+      endpoints_mod.scan_endpoints(scan_dir())
+      sidebar.refresh()
+    end, 1)
+    return
+  end
   table.sort(endpoints_mod.endpoints, function(a, b)
     local oa, ob = method_order[a.method] or 99, method_order[b.method] or 99
     if oa ~= ob then return oa < ob end
@@ -61,6 +68,10 @@ function M:load_items()
 end
 
 function M:render_item(item, selected)
+  if item.type == "loading" then
+    local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
+    return { { "  " .. item.label, hl } }
+  end
   if item.type == "header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
     local hl = selected and "SpringToolsSelected" or "SpringToolsMethodHeader"
