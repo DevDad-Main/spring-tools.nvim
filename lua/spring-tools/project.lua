@@ -98,10 +98,22 @@ function M.detect_projects(start_path)
   start_path = start_path or vim.fn.getcwd()
   local resolved = vim.fn.resolve(start_path)
 
+  local function is_under_workspace(root)
+    return root:sub(1, #resolved) == resolved and (root:sub(#resolved + 1, #resolved + 1) == "/" or #root == #resolved)
+  end
+
   if M.workspace_root and vim.fn.resolve(M.workspace_root) ~= resolved then
     M.projects = {}
   else
     M.load_cache()
+    -- Filter out entries from other workspaces
+    local filtered = {}
+    for _, p in ipairs(M.projects) do
+      if is_under_workspace(p.root) or p.root == resolved then
+        filtered[#filtered + 1] = p
+      end
+    end
+    M.projects = filtered
   end
 
   M.workspace_root = resolved
