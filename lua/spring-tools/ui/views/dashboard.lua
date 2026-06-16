@@ -80,6 +80,15 @@ function M:load_items()
         M.items[#M.items + 1] = { type = "parent_header", project = proj, label = proj.name, section_key = sk, collapsed = is_collapsed, indent = indent }
         if not is_collapsed then
           add_project_items(proj.children, indent + 1)
+          if proj.is_virtual then
+            for _, f in ipairs({ "docker-compose.yml", "docker-compose.yaml" }) do
+              local p = proj.root .. "/" .. f
+              if vim.fn.filereadable(p) == 1 then
+                M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = p, indent = indent + 1 }
+                break
+              end
+            end
+          end
         end
       else
         local item = build_project_item(proj)
@@ -102,16 +111,8 @@ function M:load_items()
     for _, proj in ipairs(projs) do
       if proj.is_top_level then table.insert(top_level, proj) end
     end
-    local docker_compose_file
-    for _, f in ipairs({ "docker-compose.yml", "docker-compose.yaml" }) do
-      local p = ws .. "/" .. f
-      if vim.fn.filereadable(p) == 1 then docker_compose_file = p; break end
-    end
     if ws_is_project then
       add_project_items(top_level)
-      if docker_compose_file then
-        M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = docker_compose_file, indent = 0 }
-      end
     else
       local ws_name = vim.fn.fnamemodify(ws, ":t")
       local sk = "parent:" .. ws
@@ -122,9 +123,6 @@ function M:load_items()
           local item = build_project_item(proj)
           item.indent = 1
           table.insert(M.items, item)
-        end
-        if docker_compose_file then
-          M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = docker_compose_file, indent = 1 }
         end
       end
     end
