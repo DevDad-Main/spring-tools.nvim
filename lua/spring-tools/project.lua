@@ -37,12 +37,18 @@ function M.save_cache()
   end)
 end
 
-function M.build_entry(project_root)
+function M.build_entry(project_root, cached)
+  local has_sb
+  if cached and cached.has_spring_boot ~= nil then
+    has_sb = cached.has_spring_boot
+  else
+    has_sb = M.detect_spring_boot(project_root)
+  end
   return {
     name = vim.fn.fnamemodify(project_root, ":t"),
     root = project_root,
     build_type = utils.build_type(project_root),
-    has_spring_boot = M.detect_spring_boot(project_root),
+    has_spring_boot = has_sb,
     backends = {},
   }
 end
@@ -102,7 +108,11 @@ function M.detect_projects(start_path)
   M.workspace_root = start_path
 
   for _, root in ipairs(all_roots) do
-    local entry = M.build_entry(root)
+    local cached
+    for _, p in ipairs(M.projects) do
+      if p.root == root then cached = p; break end
+    end
+    local entry = M.build_entry(root, cached)
     local backends_mod = require("spring-tools.backends")
     entry.backends = {}
     for name, be in pairs(backends_mod.backends) do
