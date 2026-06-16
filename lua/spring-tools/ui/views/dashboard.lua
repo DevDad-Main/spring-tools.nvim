@@ -305,7 +305,18 @@ function M:on_activate(idx)
         common_items[#common_items + 1] = { label = "  gradle " .. task, action = function() save_and_run("gradle " .. task) end }
       end
     end
+    local docker_items = {}
+    for _, cmd in ipairs({
+      "docker build -t " .. proj.name .. " .",
+      "docker-compose up",
+      "docker-compose down",
+      "docker ps",
+      "docker logs -f " .. proj.name,
+    }) do
+      docker_items[#docker_items + 1] = { label = "  " .. cmd, action = function() save_and_run(cmd) end }
+    end
     menu[#menu + 1] = { label = " Common commands (" .. #common_items .. ")", submenu = common_items }
+    menu[#menu + 1] = { label = " Docker (" .. #docker_items .. ")", submenu = docker_items }
     menu[#menu + 1] = { label = "  Custom run...", action = function()
       M._show_command_input(proj, "", function(input)
         save_and_run(input)
@@ -320,6 +331,15 @@ function M:on_activate(idx)
     menu[#menu + 1] = { label = "  Stop", action = function() require("spring-tools.core.backend").ProcessManager:stop(proj); sidebar.refresh() end }
     menu[#menu + 1] = { label = "  View logs", action = function() M.show_logs(proj) end }
     menu[#menu + 1] = { label = "  Restart", action = do_restart }
+    local docker_items = {}
+    for _, cmd in ipairs({
+      "docker ps",
+      "docker logs -f " .. proj.name,
+      "docker-compose logs -f",
+    }) do
+      docker_items[#docker_items + 1] = { label = "  " .. cmd, action = function() save_and_run(cmd) end }
+    end
+    menu[#menu + 1] = { label = " Docker (" .. #docker_items .. ")", submenu = docker_items }
     local ar_on = M._auto_restart[proj.root]
     menu[#menu + 1] = { label = (ar_on and "↻  Auto-restart: on" or "↻  Auto-restart: off"), action = function()
       M._auto_restart[proj.root] = not ar_on
