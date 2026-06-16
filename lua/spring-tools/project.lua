@@ -29,10 +29,25 @@ end
 function M.save_cache()
   local path = M.cache_path()
   vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
+  local existing = {}
+  pcall(function()
+    local f = io.open(path, "r")
+    if f then
+      local content = f:read("*a")
+      f:close()
+      local data = vim.json.decode(content)
+      if type(data) == "table" then
+        for _, p in ipairs(data) do existing[p.root] = p end
+      end
+    end
+  end)
+  for _, p in ipairs(M.projects) do existing[p.root] = p end
+  local merged = {}
+  for _, p in pairs(existing) do merged[#merged + 1] = p end
   pcall(function()
     local f = io.open(path, "w")
     if not f then return end
-    f:write(vim.json.encode(M.projects))
+    f:write(vim.json.encode(merged))
     f:close()
   end)
 end
@@ -95,28 +110,8 @@ function M.remove_project(root)
 end
 
 function M.detect_projects(start_path)
+  M.load_cache()
   start_path = start_path or vim.fn.getcwd()
-  local resolved = vim.fn.resolve(start_path)
-
-  local function is_under_workspace(root)
-    return root:sub(1, #resolved) == resolved and (root:sub(#resolved + 1, #resolved + 1) == "/" or #root == #resolved)
-  end
-
-  if M.workspace_root and vim.fn.resolve(M.workspace_root) ~= resolved then
-    M.projects = {}
-  else
-    M.load_cache()
-    -- Filter out entries from other workspaces
-    local filtered = {}
-    for _, p in ipairs(M.projects) do
-      if is_under_workspace(p.root) or p.root == resolved then
-        filtered[#filtered + 1] = p
-      end
-    end
-    M.projects = filtered
-  end
-
-  M.workspace_root = resolved
 
   local all_roots = utils.find_all_project_roots(start_path)
   if #all_roots == 0 then
@@ -124,6 +119,8 @@ function M.detect_projects(start_path)
     state.set_projects(M.projects, M.workspace_root)
     return M.projects
   end
+
+  M.workspace_root = start_path
 
   for _, root in ipairs(all_roots) do
     local cached
