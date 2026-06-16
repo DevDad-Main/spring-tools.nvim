@@ -72,15 +72,19 @@ function M:load_items()
 
     for _, proj in ipairs(projs) do
       local data = M._project_classes[proj.root]
-      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root }
-      M.items[#M.items + 1] = { type = "all", label = "Run all tests", project_root = proj.root }
-      for _, test in ipairs(data.classes) do
-        local sk = test.class .. ":" .. proj.root
-        local is_collapsed = sections:is_collapsed(sk)
-        M.items[#M.items + 1] = { type = "class", test = test, label = test.class, section_key = sk, collapsed = is_collapsed, project_root = proj.root }
-        if not is_collapsed then
-          for _, method in ipairs(test.methods) do
-            M.items[#M.items + 1] = { type = "method", test = test, method = method, label = method.name, project_root = proj.root }
+      local psk = "proj:" .. proj.root
+      local proj_collapsed = sections:is_collapsed(psk)
+      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed }
+      if not proj_collapsed then
+        M.items[#M.items + 1] = { type = "all", label = "Run all tests", project_root = proj.root }
+        for _, test in ipairs(data.classes) do
+          local sk = test.class .. ":" .. proj.root
+          local is_collapsed = sections:is_collapsed(sk)
+          M.items[#M.items + 1] = { type = "class", test = test, label = test.class, section_key = sk, collapsed = is_collapsed, project_root = proj.root }
+          if not is_collapsed then
+            for _, method in ipairs(test.methods) do
+              M.items[#M.items + 1] = { type = "method", test = test, method = method, label = method.name, project_root = proj.root }
+            end
           end
         end
       end
@@ -95,8 +99,9 @@ function M:render_item(item, selected)
     return { { "  " .. item.label, hl } }
   end
   if item.type == "project_header" then
+    local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
     local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
-    return { { "\u{25be} " .. item.label, hl } }
+    return { { icon .. " " .. item.label, hl } }
   end
   if item.type == "all" then
     local pfx = multi and "    " or "  "
@@ -152,7 +157,11 @@ end
 function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
-  if item.type == "project_header" then return end
+  if item.type == "project_header" then
+    sections:toggle(item.section_key)
+    sidebar.refresh()
+    return
+  end
 
   local proj_root = item.project_root or scan_dir()
   local proj = project.find_project_for_file(proj_root) or project.get_active_project()

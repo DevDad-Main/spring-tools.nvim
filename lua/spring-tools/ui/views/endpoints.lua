@@ -108,7 +108,10 @@ local function build_multi_items(projs)
 
   for _, proj in ipairs(projs) do
     local data = M._project_data[proj.root]
-    M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root }
+    local psk = "proj:" .. proj.root
+    local proj_collapsed = sections:is_collapsed(psk)
+    M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed }
+    if not proj_collapsed then
 
     local rest_collapsed = sections:is_collapsed("rest:" .. proj.root)
     M.items[#M.items + 1] = { type = "section_header", section_key = "rest:" .. proj.root, label = "REST Endpoints  (" .. #data.rest .. ")", collapsed = rest_collapsed }
@@ -123,10 +126,11 @@ local function build_multi_items(projs)
             for _, ep in ipairs(data.rest) do
               if ep.method == method then
                 M.items[#M.items + 1] = { type = "endpoint", endpoint = ep }
-              end
-            end
-          end
-        end
+      end
+    end
+    end
+  end
+end
       end
     end
 
@@ -171,8 +175,9 @@ function M:render_item(item, selected)
     return { { "  " .. item.label, hl } }
   end
   if item.type == "project_header" then
+    local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
     local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
-    return { { "\u{25be} " .. item.label, hl } }
+    return { { icon .. " " .. item.label, hl } }
   end
   if item.type == "section_header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
@@ -202,7 +207,11 @@ end
 function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
-  if item.type == "project_header" then return end
+  if item.type == "project_header" then
+    sections:toggle(item.section_key)
+    sidebar.refresh()
+    return
+  end
   if item.type == "section_header" then
     sections:toggle(item.section_key)
     sidebar.refresh()

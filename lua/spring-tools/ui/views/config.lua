@@ -119,11 +119,15 @@ function M:load_items()
 
     for _, proj in ipairs(projs) do
       local data = M._project_data[proj.root]
-      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root }
-      local prefix = proj.root .. ":"
-      local items = build_items_for_properties(data.properties, prefix)
-      for _, item in ipairs(items) do
-        table.insert(M.items, item)
+      local psk = "proj:" .. proj.root
+      local proj_collapsed = sections:is_collapsed(psk)
+      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed }
+      if not proj_collapsed then
+        local prefix = proj.root .. ":"
+        local items = build_items_for_properties(data.properties, prefix)
+        for _, item in ipairs(items) do
+          table.insert(M.items, item)
+        end
       end
     end
   end
@@ -132,8 +136,9 @@ end
 function M:render_item(item, selected)
   local multi = project.is_multi_project()
   if item.type == "project_header" then
+    local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
     local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
-    return { { "\u{25be} " .. item.label, hl } }
+    return { { icon .. " " .. item.label, hl } }
   end
   if item.type == "file_section" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
@@ -201,7 +206,11 @@ end
 function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
-  if item.type == "project_header" then return end
+  if item.type == "project_header" then
+    sections:toggle(item.section_key)
+    sidebar.refresh()
+    return
+  end
   if item.type == "file_section" or item.type == "section" then
     sections:toggle(item.key)
     sidebar.refresh()

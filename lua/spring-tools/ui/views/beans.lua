@@ -109,10 +109,14 @@ function M:load_items()
 
     for _, proj in ipairs(projs) do
       local data = M._project_data[proj.root]
-      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root }
-      local items = build_bean_items_from(data.grouped, "beans:" .. proj.root .. ":", 1)
-      for _, item in ipairs(items) do
-        table.insert(M.items, item)
+      local sk = "proj:" .. proj.root
+      local is_collapsed = sections:is_collapsed(sk)
+      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = sk, collapsed = is_collapsed }
+      if not is_collapsed then
+        local items = build_bean_items_from(data.grouped, "beans:" .. proj.root .. ":", 1)
+        for _, item in ipairs(items) do
+          table.insert(M.items, item)
+        end
       end
     end
   end
@@ -124,8 +128,9 @@ function M:render_item(item, selected)
     return { { "  " .. item.label, hl } }
   end
   if item.type == "project_header" then
+    local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
     local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
-    return { { "\u{25be} " .. item.label, hl } }
+    return { { icon .. " " .. item.label, hl } }
   end
   if item.type == "header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
@@ -134,11 +139,11 @@ function M:render_item(item, selected)
     return { { pad .. icon .. " " .. item.label, hl } }
   end
   if item.type == "bean_method" then
-    local pad = item._indent and string.rep("  ", item._indent + 3) or "        "
+    local pad = item._indent and string.rep("  ", item._indent + 4) or "        "
     local hl = selected and "SpringToolsSelected" or "SpringToolsBeanMethod"
     return { { pad .. "@" .. item.bean.name .. "()", hl } }
   end
-  local pad = item._indent and string.rep("  ", item._indent + 2) or "      "
+  local pad = item._indent and string.rep("  ", item._indent + 3) or "      "
   local hl = selected and "SpringToolsSelected" or "SpringToolsBeanName"
   return { { pad .. item.bean.name, hl } }
 end
@@ -146,7 +151,11 @@ end
 function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
-  if item.type == "project_header" then return end
+  if item.type == "project_header" then
+    sections:toggle(item.section_key)
+    sidebar.refresh()
+    return
+  end
   if item.type == "header" then
     sections:toggle(item.section_key)
     sidebar.refresh()
