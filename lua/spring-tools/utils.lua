@@ -98,7 +98,7 @@ function M.find_all_project_roots(start_path)
     seen[dir] = true
     if M.is_maven_project(dir) or M.is_gradle_project(dir) then
       roots[#roots + 1] = dir
-      return
+      -- Continue scanning subdirectories for child modules
     end
     local ok, entries = pcall(vim.fn.readdir, dir)
     if not ok then return end
@@ -127,6 +127,33 @@ function M.get_maven_child_modules(project_root)
     modules[name] = true
   end
   return next(modules) ~= nil and modules or nil
+end
+
+function M.get_gradle_child_modules(project_root)
+  for _, sf in ipairs({ "settings.gradle", "settings.gradle.kts" }) do
+    local f = io.open(project_root .. "/" .. sf, "r")
+    if f then
+      local content = f:read("*a")
+      f:close()
+      local modules = {}
+      for match in content:gmatch("include%s+'([^']+)'") do
+        local name = match:match(":([^:]+)$") or match:match("([^/]+)$") or match
+        modules[name] = true
+      end
+      for match in content:gmatch('include%s+"([^"]+)"') do
+        local name = match:match(":([^:]+)$") or match:match("([^/]+)$") or match
+        modules[name] = true
+      end
+      return next(modules) ~= nil and modules or nil
+    end
+  end
+  return nil
+end
+
+function M.get_child_modules(project_root)
+  local mvn = M.get_maven_child_modules(project_root)
+  if mvn then return mvn end
+  return M.get_gradle_child_modules(project_root)
 end
 
 function M.find_build_files(project_root)

@@ -89,9 +89,19 @@ function M:load_items()
     end
   end
 
+  local ws_is_project = false
   if ws and #projs > 1 then
-    local ws_name = vim.fn.fnamemodify(ws, ":t")
-    M.items[#M.items + 1] = { type = "workspace", label = ws_name }
+    -- Check if workspace root is itself a detected project
+    for _, proj in ipairs(projs) do
+      if proj.is_top_level and proj.root == ws then
+        ws_is_project = true
+        break
+      end
+    end
+    if not ws_is_project then
+      local ws_name = vim.fn.fnamemodify(ws, ":t")
+      M.items[#M.items + 1] = { type = "workspace", label = ws_name }
+    end
     local top_level = {}
     for _, proj in ipairs(projs) do
       if proj.is_top_level then table.insert(top_level, proj) end
