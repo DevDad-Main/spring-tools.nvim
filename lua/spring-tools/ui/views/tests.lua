@@ -10,7 +10,7 @@ local M = {}
 M.title = "Tests"
 
 M.items = {}
-M._test_classes = {}
+M._test_classes = nil
 
 local function scan_dir()
   local proj = project.get_active_project()
