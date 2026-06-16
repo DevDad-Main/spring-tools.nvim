@@ -211,7 +211,7 @@ end
 
 function M.file_modified_since(path, timestamp)
   local mtime = vim.fn.getftime(path)
-  return mtime > timestamp
+  return mtime < 0 or mtime > timestamp
 end
 
 function M.hex_encode(s)
