@@ -119,13 +119,24 @@ function M.detect_projects(start_path)
   end
   table.sort(M.projects, function(a, b) return #a.root < #b.root end)
   local child_roots = {}
+  local parent_modules = {}
+  for _, proj in ipairs(M.projects) do
+    parent_modules[proj.root] = utils.get_maven_child_modules(proj.root)
+  end
   for _, proj in ipairs(M.projects) do
     for _, parent in ipairs(M.projects) do
       if proj.root ~= parent.root and proj.root:sub(1, #parent.root) == parent.root and proj.root:sub(#parent.root + 1, #parent.root + 1) == "/" then
-        if not parent.children then parent.children = {} end
-        parent.children[#parent.children + 1] = proj
-        child_roots[proj.root] = true
-        break
+        local child_name = vim.fn.fnamemodify(proj.root, ":t")
+        local pmodules = parent_modules[parent.root]
+        local is_declared = pmodules and pmodules[child_name]
+        -- Only treat as child if declared in parent's <module> tags, or fall
+        -- back to path-prefix when parent has no module declarations
+        if pmodules == nil or is_declared then
+          if not parent.children then parent.children = {} end
+          parent.children[#parent.children + 1] = proj
+          child_roots[proj.root] = true
+          break
+        end
       end
     end
   end

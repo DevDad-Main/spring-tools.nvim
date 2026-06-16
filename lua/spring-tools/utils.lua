@@ -115,6 +115,20 @@ function M.find_all_project_roots(start_path)
   return roots
 end
 
+function M.get_maven_child_modules(project_root)
+  local pom = project_root .. "/pom.xml"
+  local f = io.open(pom, "r")
+  if not f then return nil end
+  local content = f:read("*a")
+  f:close()
+  local modules = {}
+  for match in content:gmatch("<module>([^<]+)</module>") do
+    local name = match:match("([^/]+)$") or match
+    modules[name] = true
+  end
+  return next(modules) ~= nil and modules or nil
+end
+
 function M.find_build_files(project_root)
   local files = {}
   for _, f in ipairs({ "pom.xml", "build.gradle", "build.gradle.kts" }) do
