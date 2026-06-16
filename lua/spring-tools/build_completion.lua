@@ -272,7 +272,11 @@ local function fetch_async(root)
       local completed = 0
       local cmd_base = find_mvn_cmd(root)
 
-      for _, plugin in ipairs(unknown) do
+      vim.schedule(function()
+        vim.notify("[spring-tools] " .. name .. ": discovering dynamic goals from " .. #unknown .. " plugins...", vim.log.levels.INFO)
+      end)
+
+      for i, plugin in ipairs(unknown) do
         local out = {}
         vim.fn.jobstart(vim.list_extend(vim.deepcopy(cmd_base), { "help:describe", "-Dplugin=" .. plugin.prefix }), {
           cwd = root,
@@ -296,6 +300,9 @@ local function fetch_async(root)
                 dynamic[#dynamic + 1] = g
               end
             end
+            vim.schedule(function()
+              vim.notify("[spring-tools] " .. name .. ": resolved " .. plugin.aid .. " (" .. completed .. "/" .. #unknown .. ")", vim.log.levels.INFO)
+            end)
             if completed == #unknown then
               vim.schedule(function()
                 vim.notify("[spring-tools] " .. name .. ": discovered " .. #dynamic .. " dynamic goals from " .. #unknown .. " plugins", vim.log.levels.INFO)

@@ -10,6 +10,7 @@ local M = {}
 M.title = "Tests"
 
 M.items = {}
+M._test_classes = {}
 
 local function scan_dir()
   local proj = project.get_active_project()
@@ -17,15 +18,18 @@ local function scan_dir()
 end
 
 function M.header()
-  local classes = tests_mod.find_test_methods(scan_dir())
-  return { { "Test Explorer (" .. #classes .. " classes)", "SpringToolsHeader" } }
+  local count = 0
+  for _, item in ipairs(M.items) do
+    if item.type == "class" then count = count + 1 end
+  end
+  return { { "Test Explorer (" .. count .. " classes)", "SpringToolsHeader" } }
 end
 
 function M:load_items()
-  local test_classes = tests_mod.find_test_methods(scan_dir())
+  M._test_classes = tests_mod.find_test_methods(scan_dir())
   M.items = {}
   table.insert(M.items, { type = "all", label = "Run all tests" })
-  for _, test in ipairs(test_classes) do
+  for _, test in ipairs(M._test_classes) do
     local is_collapsed = sections:is_collapsed(test.class)
     M.items[#M.items + 1] = { type = "class", test = test, label = test.class, section_key = test.class, collapsed = is_collapsed }
     if not is_collapsed then

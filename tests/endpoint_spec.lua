@@ -1,8 +1,30 @@
 local path = "."
 package.path = package.path .. ";" .. path .. "/lua/?.lua"
 
+local function temp_project()
+  local dir = "/tmp/spring-test-" .. math.floor(os.clock() * 10000)
+  vim.fn.mkdir(dir, "p")
+  local f = io.open(dir .. "/pom.xml", "w")
+  f:write("<project></project>")
+  f:close()
+  return dir
+end
+
+local function cleanup(dir)
+  vim.fn.delete(dir, "rf")
+end
+
 describe("REST endpoint detection", function()
   local endpoints = require("spring-tools.endpoints")
+  local tmpdir
+
+  before_each(function()
+    tmpdir = temp_project()
+  end)
+
+  after_each(function()
+    cleanup(tmpdir)
+  end)
 
   it("detects @GetMapping", function()
     local lines = {
@@ -16,12 +38,12 @@ describe("REST endpoint detection", function()
       "}",
     }
     local content = table.concat(lines, "\n")
-    local file = "/tmp/test_EndpointController.java"
+    local file = tmpdir .. "/EndpointController.java"
     local f = io.open(file, "w")
     f:write(content)
     f:close()
 
-    endpoints.scan_endpoints("/tmp")
+    endpoints.scan_endpoints(tmpdir)
     local found = false
     for _, ep in ipairs(endpoints.endpoints) do
       if ep.method == "GET" and ep.path == "/users/{id}" then
@@ -30,7 +52,6 @@ describe("REST endpoint detection", function()
       end
     end
     assert.is_true(found)
-    os.remove(file)
   end)
 
   it("detects @PostMapping", function()
@@ -44,12 +65,12 @@ describe("REST endpoint detection", function()
       "}",
     }
     local content = table.concat(lines, "\n")
-    local file = "/tmp/test_PostController.java"
+    local file = tmpdir .. "/PostController.java"
     local f = io.open(file, "w")
     f:write(content)
     f:close()
 
-    endpoints.scan_endpoints("/tmp")
+    endpoints.scan_endpoints(tmpdir)
     local found = false
     for _, ep in ipairs(endpoints.endpoints) do
       if ep.method == "POST" then
@@ -58,7 +79,6 @@ describe("REST endpoint detection", function()
       end
     end
     assert.is_true(found)
-    os.remove(file)
   end)
 
   it("detects @DeleteMapping with path", function()
@@ -71,12 +91,12 @@ describe("REST endpoint detection", function()
       "}",
     }
     local content = table.concat(lines, "\n")
-    local file = "/tmp/test_DeleteController.java"
+    local file = tmpdir .. "/DeleteController.java"
     local f = io.open(file, "w")
     f:write(content)
     f:close()
 
-    endpoints.scan_endpoints("/tmp")
+    endpoints.scan_endpoints(tmpdir)
     local found = false
     for _, ep in ipairs(endpoints.endpoints) do
       if ep.method == "DELETE" and ep.path == "/api/users/{id}" then
@@ -85,7 +105,6 @@ describe("REST endpoint detection", function()
       end
     end
     assert.is_true(found)
-    os.remove(file)
   end)
 
   it("extracts path from annotation", function()

@@ -2,6 +2,7 @@ local project = require("spring-tools.project")
 local ui = require("spring-tools.ui")
 local utils = require("spring-tools.utils")
 local config = require("spring-tools.config")
+local jp = require("spring-tools.java_parser")
 
 local M = {}
 
@@ -184,57 +185,89 @@ local function parse_gradle_output(output)
   return results
 end
 
+M._test_cache = {}
+
+function M.invalidate_test_cache(project_root)
+  if project_root then
+    M._test_cache[project_root] = nil
+    if utils.cache.data then
+      utils.cache.data["test_index:" .. project_root] = nil
+      utils.mark_dirty()
+    end
+  else
+    M._test_cache = {}
+  end
+end
+
 function M.find_test_methods(dir)
   dir = dir or vim.fn.getcwd()
   local project_root = utils.find_project_root(dir)
   if not project_root then return {} end
 
+  if M._test_cache[project_root] then
+    return M._test_cache[project_root]
+  end
+
+  local cache_key = "test_index:" .. project_root
+  if utils.cache.data and utils.cache.data[cache_key] then
+    local cached = utils.cache.data[cache_key]
+    if cached.mtimes then
+      local valid = true
+      for file, mtime in pairs(cached.mtimes) do
+        if utils.file_modified_since(file, mtime) then
+          valid = false
+          break
+        end
+      end
+      if valid then
+        M._test_cache[project_root] = cached.tests
+        return cached.tests
+      end
+    end
+  end
+
   local tests = {}
+  local mtimes = {}
   local java_files = utils.find_java_files(project_root)
 
   for _, file in ipairs(java_files) do
-    local f = io.open(file, "r")
-    if not f then goto continue end
-    local content = f:read("*a")
-    f:close()
+    local mtime = vim.fn.getftime(file)
+    local parsed = jp.parse_file(file)
+    if not parsed then goto continue end
 
-    local is_test = content:find("@Test") and true or false
-    if not is_test then
-      local ext = content:find("extends.*TestCase")
-      is_test = ext and true or false
+    local test_methods = jp.find_test_methods_in_file(parsed)
+    if #test_methods == 0 then
+      parsed:cleanup()
+      goto continue
     end
 
-    if is_test then
-      local class_match = content:match("class%s+(%w+)")
-      local package_match = content:match("package%s+([%w%.]+)")
-      local full_class = package_match and (package_match .. "." .. class_match) or class_match
+    local class_name = jp.find_class_name(parsed)
+    local package_name = jp.find_package_name(parsed)
+    local full_class = package_name and (package_name .. "." .. class_name) or class_name
 
-      local methods = {}
-      local lines = vim.split(content, "\n", { plain = true })
-      for i, line in ipairs(lines) do
-        if line:find("@Test") then
-          for j = i, math.min(i + 3, #lines) do
-            local method_match = lines[j]:match("void%s+(%w+)%s*%(")
-            if method_match then
-              table.insert(methods, { name = method_match, line = j + 1 })
-              break
-            end
-          end
-        end
-      end
-
-      table.insert(tests, {
-        class = class_match,
-        full_class = full_class,
-        file = file,
-        package = package_match,
-        methods = methods,
-      })
+    local methods = {}
+    for _, tm in ipairs(test_methods) do
+      table.insert(methods, { name = tm.name, line = tm.line })
     end
 
+    table.insert(tests, {
+      class = class_name,
+      full_class = full_class,
+      file = file,
+      package = package_name,
+      methods = methods,
+    })
+    mtimes[file] = mtime
+
+    parsed:cleanup()
     ::continue::
   end
 
+  M._test_cache[project_root] = tests
+  if not utils.cache.data then utils.cache.data = {} end
+  utils.cache.data[cache_key] = { tests = tests, mtimes = mtimes }
+  utils.mark_dirty()
+  utils.save_cache()
   return tests
 end
 

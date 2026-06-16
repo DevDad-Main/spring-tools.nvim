@@ -1,27 +1,10 @@
 local utils = require("spring-tools.utils")
 local config = require("spring-tools.config")
+local jp = require("spring-tools.java_parser")
 
 local M = {}
 
 M.endpoints = {}
-
-local http_methods = {
-  "GetMapping",
-  "PostMapping",
-  "PutMapping",
-  "DeleteMapping",
-  "PatchMapping",
-  "RequestMapping",
-}
-
-local method_map = {
-  GetMapping = "GET",
-  PostMapping = "POST",
-  PutMapping = "PUT",
-  DeleteMapping = "DELETE",
-  PatchMapping = "PATCH",
-  RequestMapping = nil,
-}
 
 function M.extract_path(annotation_line)
   local path = annotation_line:match("%((.*)%)")
@@ -45,7 +28,7 @@ function M.extract_path(annotation_line)
 end
 
 function M.determine_method(mapping_type, annotation_line)
-  local default_method = method_map[mapping_type]
+  local default_method = jp.http_methods[mapping_type]
   if mapping_type == "RequestMapping" then
     local method_str = annotation_line:match("method%s*=%s*RequestMethod%.(%w+)")
     if not method_str then
@@ -87,63 +70,17 @@ function M.scan_endpoints(dir)
   end
 
   for _, file in ipairs(java_files) do
-    local f = io.open(file, "r")
-    if not f then goto continue end
-    local content = f:read("*a")
-    f:close()
-
     local mtime = vim.fn.getftime(file)
-    local lines = vim.split(content, "\n", { plain = true })
+    local parsed = jp.parse_file(file)
+    if not parsed then goto continue end
 
-    local class_mapping = ""
-    local in_controller = false
-
-    for i, line in ipairs(lines) do
-      local stripped = line:gsub("%s+", "")
-
-      if stripped:find("@RestController") or stripped:find("@Controller") then
-        in_controller = true
-        class_mapping = ""
-      end
-
-      local class_request = false
-      if stripped:find("@RequestMapping") and in_controller then
-        class_mapping = M.extract_path(line)
-        class_request = true
-      end
-
-      for _, method in ipairs(http_methods) do
-        if stripped:find("@" .. method) then
-          if method == "RequestMapping" and class_request then
-            goto continue_method
-          end
-          local method_path = M.extract_path(line)
-          local http_method = M.determine_method(method, line)
-          local full_path = class_mapping .. method_path
-          if full_path == "" then full_path = "/" end
-
-          local method_name = nil
-          for j = i, math.min(i + 5, #lines) do
-            local func_match = lines[j]:match("public%s+%w+%s+(%w+)%s*%(")
-            if func_match then
-              method_name = func_match
-              break
-            end
-          end
-
-          table.insert(M.endpoints, {
-            method = http_method,
-            path = full_path,
-            file = file,
-            line = i,
-            method_name = method_name,
-            mtime = mtime,
-          })
-        end
-        ::continue_method::
-      end
+    local endpoints = jp.find_endpoints(parsed, file)
+    for _, ep in ipairs(endpoints) do
+      ep.mtime = mtime
+      table.insert(M.endpoints, ep)
     end
 
+    parsed:cleanup()
     ::continue::
   end
 

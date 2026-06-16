@@ -228,6 +228,18 @@ function M.send(endpoint, extra_args, resolved_path)
 end
 
 function M._send_resolved(endpoint, extra_args, path)
+  -- Capture the main window and buffer NOW (synchronous), not when response arrives
+  local main_win = nil
+  local orig_buf = nil
+  local sidebar_mod = require("spring-tools.ui.sidebar")
+  for _, w in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_is_valid(w) and (sidebar_mod.win == nil or w ~= sidebar_mod.win) then
+      local b = vim.api.nvim_win_get_buf(w)
+      if vim.api.nvim_buf_is_valid(b) and vim.bo[b].filetype ~= "springtools-output" then
+        main_win = w; orig_buf = b; break
+      end
+    end
+  end
 
   -- Save to history (non-empty, unique args)
   if extra_args ~= "" then
@@ -289,7 +301,7 @@ function M._send_resolved(endpoint, extra_args, path)
         end
 
         local verbose = table.concat(stderr_lines, "\n")
-        M._show_response(endpoint, port, response_body, meta, extra_args, path, verbose)
+        M._show_response(endpoint, port, response_body, meta, extra_args, path, verbose, main_win, orig_buf)
         utils.notify(endpoint.method .. " " .. endpoint.path .. " → done", vim.log.levels.INFO)
       end)
     end,
@@ -303,7 +315,7 @@ function M._send_resolved(endpoint, extra_args, path)
         vim.schedule(function()
           local verbose = table.concat(stderr_lines, "\n")
           if verbose == "" then verbose = "curl exited with code " .. code end
-          M._show_response(endpoint, port, "", { HTTP_CODE = "ERR" }, extra_args, path, verbose)
+          M._show_response(endpoint, port, "", { HTTP_CODE = "ERR" }, extra_args, path, verbose, main_win, orig_buf)
           utils.notify("Request failed (exit " .. code .. ")", vim.log.levels.WARN)
         end)
       end
@@ -325,12 +337,11 @@ function M._split_response(raw)
   return body, meta
 end
 
-function M._show_response(endpoint, port, body, meta, extra_args, resolved_path, verbose_out)
+function M._show_response(endpoint, port, body, meta, extra_args, resolved_path, verbose_out, main_win, orig_buf)
   resolved_path = resolved_path or endpoint.path
   verbose_out = verbose_out or ""
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].buftype = "nofile"
-  vim.bo[buf].bufhidden = "wipe"
   vim.bo[buf].modifiable = true
 
   local lines = {}
@@ -380,21 +391,16 @@ function M._show_response(endpoint, port, body, meta, extra_args, resolved_path,
     vim.bo[buf].filetype = "json"
   end
 
-  local sidebar_mod = require("spring-tools.ui.sidebar")
-  local main_win = nil
-  for _, w in ipairs(vim.api.nvim_list_wins()) do
-    if w ~= sidebar_mod.win then
-      local b = vim.api.nvim_win_get_buf(w)
-      if vim.bo[b].filetype ~= "springtools-output" then main_win = w; break end
-    end
+  if main_win and vim.api.nvim_win_is_valid(main_win) then
+    vim.api.nvim_set_current_win(main_win)
   end
-  if main_win then vim.api.nvim_set_current_win(main_win) end
   vim.api.nvim_set_current_buf(buf)
 
   local function close()
-    if vim.api.nvim_buf_is_valid(buf) then
-      vim.api.nvim_buf_delete(buf, { force = true })
+    if orig_buf and vim.api.nvim_buf_is_valid(orig_buf) and vim.api.nvim_win_is_valid(main_win) then
+      pcall(vim.api.nvim_win_set_buf, main_win, orig_buf)
     end
+    pcall(vim.api.nvim_buf_delete, buf, { force = true })
   end
   vim.keymap.set("n", "q", close, { buffer = buf, silent = true, nowait = true })
   vim.keymap.set("n", "<Esc>", close, { buffer = buf, silent = true, nowait = true })

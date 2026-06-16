@@ -1,8 +1,30 @@
 local path = "."
 package.path = package.path .. ";" .. path .. "/lua/?.lua"
 
+local function temp_project()
+  local dir = "/tmp/spring-test-" .. math.floor(os.clock() * 10000)
+  vim.fn.mkdir(dir, "p")
+  local f = io.open(dir .. "/pom.xml", "w")
+  f:write("<project></project>")
+  f:close()
+  return dir
+end
+
+local function cleanup(dir)
+  vim.fn.delete(dir, "rf")
+end
+
 describe("Bean annotation detection", function()
   local beans = require("spring-tools.beans")
+  local tmpdir
+
+  before_each(function()
+    tmpdir = temp_project()
+  end)
+
+  after_each(function()
+    cleanup(tmpdir)
+  end)
 
   it("detects @Service annotation", function()
     local lines = {
@@ -10,12 +32,12 @@ describe("Bean annotation detection", function()
       "public class UserService {",
     }
     local content = table.concat(lines, "\n")
-    local file = "/tmp/test_UserService.java"
+    local file = tmpdir .. "/UserService.java"
     local f = io.open(file, "w")
     f:write(content)
     f:close()
 
-    beans.build_index("/tmp")
+    beans.build_index(tmpdir)
     local found = false
     for _, bean in ipairs(beans.beans) do
       if bean.name == "UserService" and bean.type == "services" then
@@ -24,7 +46,6 @@ describe("Bean annotation detection", function()
       end
     end
     assert.is_true(found)
-    os.remove(file)
   end)
 
   it("detects @Repository annotation", function()
@@ -33,12 +54,12 @@ describe("Bean annotation detection", function()
       "public class UserRepository {",
     }
     local content = table.concat(lines, "\n")
-    local file = "/tmp/test_UserRepository.java"
+    local file = tmpdir .. "/UserRepository.java"
     local f = io.open(file, "w")
     f:write(content)
     f:close()
 
-    beans.build_index("/tmp")
+    beans.build_index(tmpdir)
     local found = false
     for _, bean in ipairs(beans.beans) do
       if bean.name == "UserRepository" and bean.type == "repositories" then
@@ -47,7 +68,6 @@ describe("Bean annotation detection", function()
       end
     end
     assert.is_true(found)
-    os.remove(file)
   end)
 
   it("detects @RestController annotation", function()
@@ -56,12 +76,12 @@ describe("Bean annotation detection", function()
       "public class UserController {",
     }
     local content = table.concat(lines, "\n")
-    local file = "/tmp/test_UserController.java"
+    local file = tmpdir .. "/UserController.java"
     local f = io.open(file, "w")
     f:write(content)
     f:close()
 
-    beans.build_index("/tmp")
+    beans.build_index(tmpdir)
     local found = false
     for _, bean in ipairs(beans.beans) do
       if bean.name == "UserController" and bean.type == "controllers" then
@@ -70,7 +90,6 @@ describe("Bean annotation detection", function()
       end
     end
     assert.is_true(found)
-    os.remove(file)
   end)
 
   it("detects @Bean method annotation", function()
@@ -84,12 +103,12 @@ describe("Bean annotation detection", function()
       "}",
     }
     local content = table.concat(lines, "\n")
-    local file = "/tmp/test_AppConfig.java"
+    local file = tmpdir .. "/AppConfig.java"
     local f = io.open(file, "w")
     f:write(content)
     f:close()
 
-    beans.build_index("/tmp")
+    beans.build_index(tmpdir)
     local found = false
     for _, bean in ipairs(beans.beans) do
       if bean.name == "dataSource" then
@@ -98,6 +117,5 @@ describe("Bean annotation detection", function()
       end
     end
     assert.is_true(found)
-    os.remove(file)
   end)
 end)

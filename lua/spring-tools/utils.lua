@@ -31,14 +31,17 @@ end
 function M.save_cache()
   if not M.cache.dirty then return end
   local path = M.get_cache_path()
-  local ok, _ = pcall(function()
-    local f = io.open(path, "w")
-    if not f then return end
+  vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
+  local f = io.open(path, "w")
+  if not f then return end
+  local ok, err = pcall(function()
     f:write(vim.json.encode(M.cache.data))
     f:close()
   end)
   if ok then
     M.cache.dirty = false
+  else
+    f:close()
   end
 end
 

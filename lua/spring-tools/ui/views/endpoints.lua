@@ -27,8 +27,8 @@ local method_colors = {
 local method_order = { "GET", "POST", "PUT", "DELETE", "PATCH" }
 
 function M.header()
-  endpoints_mod.scan_endpoints(scan_dir())
-  return { { "REST Endpoints (" .. #endpoints_mod.endpoints .. ")", "SpringToolsHeader" } }
+  local count = endpoints_mod.endpoints and #endpoints_mod.endpoints or 0
+  return { { "REST Endpoints (" .. count .. ")", "SpringToolsHeader" } }
 end
 
 function M:load_items()

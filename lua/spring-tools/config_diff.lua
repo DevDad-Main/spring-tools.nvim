@@ -153,16 +153,18 @@ function M.show_diff(file_a, file_b, name_a, name_b)
   -- Open file A
   local sidebar_mod = require("spring-tools.ui.sidebar")
   local main_win = nil
+  local orig_buf = nil
   for _, w in ipairs(vim.api.nvim_list_wins()) do
     if w ~= sidebar_mod.win then
       local b = vim.api.nvim_win_get_buf(w)
-      if vim.bo[b].filetype ~= "springtools-output" then main_win = w; break end
+      if vim.bo[b].filetype ~= "springtools-output" then main_win = w; orig_buf = b; break end
     end
   end
   if main_win then vim.api.nvim_set_current_win(main_win) end
 
   -- Create scratch buffers (never touch real files)
   local buf_a = vim.api.nvim_create_buf(false, true)
+  local win_a = vim.api.nvim_get_current_win()
   vim.api.nvim_set_current_buf(buf_a)
   vim.bo[buf_a].buftype = "nofile"
   vim.bo[buf_a].bufhidden = "wipe"
@@ -172,6 +174,7 @@ function M.show_diff(file_a, file_b, name_a, name_b)
 
   -- File B in vertical split
   vim.cmd("belowright vsplit")
+  local win_b = vim.api.nvim_get_current_win()
   local buf_b = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_set_current_buf(buf_b)
   vim.bo[buf_b].buftype = "nofile"
@@ -230,8 +233,10 @@ function M.show_diff(file_a, file_b, name_a, name_b)
   local function close()
     pcall(vim.api.nvim_win_close, toolbar_win, true)
     pcall(vim.api.nvim_buf_delete, toolbar_buf, { force = true })
-    pcall(vim.api.nvim_buf_delete, buf_a, { force = true })
-    pcall(vim.api.nvim_buf_delete, buf_b, { force = true })
+    pcall(vim.api.nvim_win_close, win_b, true)
+    if orig_buf and vim.api.nvim_buf_is_valid(orig_buf) and vim.api.nvim_win_is_valid(win_a) then
+      pcall(vim.api.nvim_win_set_buf, win_a, orig_buf)
+    end
   end
 
   local function show_help()

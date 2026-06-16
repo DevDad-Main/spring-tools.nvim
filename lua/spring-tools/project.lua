@@ -1,4 +1,5 @@
 local utils = require("spring-tools.utils")
+local jp = require("spring-tools.java_parser")
 
 local M = {}
 
@@ -69,6 +70,17 @@ function M.remove_project(root)
       M.save_cache()
       local state = require("spring-tools.core.state")
       state.set_projects(M.projects)
+      local cache_prefixes = { "bean_index:", "endpoint_index:", "config_index_v2:", "test_index:", "mvn_dynamic_goals:", "gradle_tasks:", "auto_restart:", "auto_clean:", "recent_cmds:" }
+      for _, pfx in ipairs(cache_prefixes) do
+        local key = pfx .. root
+        if utils.cache.data and utils.cache.data[key] ~= nil then
+          utils.cache.data[key] = nil
+          utils.mark_dirty()
+        end
+      end
+      require("spring-tools.build_completion").invalidate_cache(root)
+      utils.save_cache()
+      require("spring-tools.tests").invalidate_test_cache(root)
       return true
     end
   end
@@ -105,13 +117,11 @@ end
 function M.detect_spring_boot(project_root)
   local java_files = utils.find_java_files(project_root)
   for _, file in ipairs(java_files) do
-    local f = io.open(file, "r")
-    if f then
-      local content = f:read("*a")
-      f:close()
-      if content:find("@SpringBootApplication") then
-        return true
-      end
+    local parsed = jp.parse_file(file)
+    if parsed then
+      local has_sba = jp.has_spring_boot_application(parsed)
+      parsed:cleanup()
+      if has_sba then return true end
     end
   end
   return false

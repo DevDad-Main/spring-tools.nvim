@@ -2,6 +2,7 @@ local config = require("spring-tools.config")
 local utils = require("spring-tools.utils")
 local sidebar = require("spring-tools.ui.sidebar")
 local output = require("spring-tools.ui.output")
+local jp = require("spring-tools.java_parser")
 
 local M = {}
 
@@ -175,34 +176,33 @@ function M.run_current_test(type)
 
   local cursor = vim.api.nvim_win_get_cursor(0)
   local content = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-  local class_match, method_match, package_match
   local proj_mod = require("spring-tools.project")
 
+  local parsed = jp.parse_lines(content)
+  if not parsed then
+    utils.notify("Could not parse Java file", vim.log.levels.WARN)
+    return
+  end
+
+  local class_name = jp.find_class_name(parsed)
+  local package_name = jp.find_package_name(parsed)
+  local method_name = nil
+
   if type == "method" then
-    for i = cursor[1] - 1, 1, -1 do
-      if content[i] and content[i]:find("@Test") then
-        for j = i, math.min(i + 3, #content) do
-          local m = content[j]:match("void%s+(%w+)%s*%(")
-          if m then method_match = m; break end
-        end
-        break
-      end
+    local method = jp.get_test_method_at_or_after(parsed, cursor[1])
+    if method then
+      method_name = method.name
     end
   end
 
-  for _, line in ipairs(content) do
-    local p = line:match("package%s+([%w%.]+)")
-    if p then package_match = p end
-    local c = line:match("class%s+(%w+)")
-    if c then class_match = c end
-  end
+  parsed:cleanup()
 
-  if not class_match then
+  if not class_name then
     utils.notify("Could not determine class name", vim.log.levels.WARN)
     return
   end
 
-  local full_class = package_match and (package_match .. "." .. class_match) or class_match
+  local full_class = package_name and (package_name .. "." .. class_name) or class_name
   local proj = proj_mod.get_active_project()
   if not proj then
     utils.notify("No project found", vim.log.levels.WARN)
@@ -213,9 +213,9 @@ function M.run_current_test(type)
   if not be then return end
 
   local cmd
-  if type == "method" and method_match then
-    cmd = be:get_test_command(proj, full_class, method_match)
-    utils.notify("Running test: " .. full_class .. "#" .. method_match)
+  if type == "method" and method_name then
+    cmd = be:get_test_command(proj, full_class, method_name)
+    utils.notify("Running test: " .. full_class .. "#" .. method_name)
   else
     cmd = be:get_test_command(proj, full_class, nil)
     utils.notify("Running tests: " .. full_class)

@@ -21,8 +21,8 @@ local type_labels = {
 }
 
 function M.header()
-  beans_mod.build_index(scan_dir())
-  return { { "Spring Beans (" .. #beans_mod.beans .. ")", "SpringToolsHeader" } }
+  local count = beans_mod.beans and #beans_mod.beans or 0
+  return { { "Spring Beans (" .. count .. ")", "SpringToolsHeader" } }
 end
 
 function M:load_items()

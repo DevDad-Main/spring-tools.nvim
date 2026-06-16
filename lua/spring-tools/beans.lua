@@ -1,30 +1,11 @@
 local utils = require("spring-tools.utils")
 local config = require("spring-tools.config")
+local jp = require("spring-tools.java_parser")
 
 local M = {}
 
 M.beans = {}
 M.index_built = false
-
-local bean_annotations = {
-  "Component",
-  "Service",
-  "Repository",
-  "Controller",
-  "RestController",
-  "Configuration",
-  "Bean",
-}
-
-local category_map = {
-  Component = "components",
-  Service = "services",
-  Repository = "repositories",
-  Controller = "controllers",
-  RestController = "controllers",
-  Configuration = "configurations",
-  Bean = "beans",
-}
 
 function M.build_index(dir)
   dir = dir or vim.fn.getcwd()
@@ -55,71 +36,34 @@ function M.build_index(dir)
   end
 
   for _, file in ipairs(java_files) do
-    local f = io.open(file, "r")
-    if not f then goto continue end
-    local content = f:read("*a")
-    f:close()
-
     local mtime = vim.fn.getftime(file)
-    local lines = vim.split(content, "\n", { plain = true })
+    local parsed = jp.parse_file(file)
+    if not parsed then goto continue end
 
-    local class_name = nil
-    local pending_type = nil
-    local found_class = false
-
-    for i, line in ipairs(lines) do
-      local stripped = line:gsub("%s+", "")
-
-      for _, annotation in ipairs(bean_annotations) do
-        local pattern = "@" .. annotation
-        if stripped:find(pattern, 1, true) then
-          local cat = category_map[annotation]
-
-          if annotation == "Bean" then
-            local method_match
-            for j = i, math.min(i + 3, #lines) do
-              method_match = lines[j]:match("public%s+%w+%s+(%w+)%s*%(")
-              if method_match then break end
-            end
-            if method_match and class_name then
-              table.insert(M.beans, {
-                name = method_match,
-                type = "beans",
-                parent = class_name,
-                file = file,
-                line = i,
-                mtime = mtime,
-              })
-            end
-          else
-            pending_type = cat
-            found_class = false
-            for j = i, math.min(i + 5, #lines) do
-              local cap = lines[j]:match("class%s+(%w+)")
-              if not cap then cap = lines[j]:match("interface%s+(%w+)") end
-              if cap then
-                class_name = cap
-                found_class = true
-                break
-              end
-            end
-          end
-          break
-        end
-      end
-
-      if pending_type and found_class then
-        table.insert(M.beans, {
-          name = class_name,
-          type = pending_type,
-          file = file,
-          line = i,
-          mtime = mtime,
-        })
-        pending_type = nil
-      end
+    local beans = jp.find_beans(parsed, file)
+    for _, bean in ipairs(beans) do
+      table.insert(M.beans, {
+        name = bean.name,
+        type = bean.type,
+        file = file,
+        line = bean.line,
+        mtime = mtime,
+      })
     end
 
+    local bean_methods = jp.find_bean_methods(parsed, file)
+    for _, bm in ipairs(bean_methods) do
+      table.insert(M.beans, {
+        name = bm.name,
+        type = "beans",
+        parent = bm.parent,
+        file = file,
+        line = bm.line,
+        mtime = mtime,
+      })
+    end
+
+    parsed:cleanup()
     ::continue::
   end
 
