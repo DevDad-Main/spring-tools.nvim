@@ -199,10 +199,10 @@ function M:render_item(item, selected)
   local method = item.method
   local path = item.endpoint and item.endpoint.path or item.path
   if selected then
-    local pfx = project.is_multi_project() and "            " or "          "
+    local pfx = project.is_multi_project() and "          " or "        "
     return { { pfx .. method .. "  " .. path, "SpringToolsSelected" } }
   end
-  local pfx = project.is_multi_project() and "            " or "          "
+  local pfx = project.is_multi_project() and "          " or "        "
   return { { segments = {
     { pfx .. method .. "  ", method_colors[method] or "SpringToolsDim" },
     { path, nil },
