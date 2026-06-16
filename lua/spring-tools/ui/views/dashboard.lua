@@ -247,8 +247,8 @@ function M:on_activate(idx)
       }
     end
     docker_menu[#docker_menu + 1] = { label = "  Custom command...", action = function()
-      local first_proj = state.get_projects()[1]
-      M._show_command_input(first_proj or {}, "docker-compose -f " .. item.compose_file .. " ", function(input)
+      local ws = state.get_workspace_root()
+      M._show_command_input(state.get_projects()[1] or {}, "docker-compose ", function(input)
         if input == "" then return end
         output.show({ "Running: " .. input }, "docker-compose")
         vim.fn.jobstart(vim.split(input, " "), {
@@ -947,7 +947,7 @@ function M._show_command_input(proj, default_text, on_submit)
       local col = vim.api.nvim_win_get_cursor(0)[2]
       if col < 1 then return end
       local line = vim.api.nvim_get_current_line()
-      local char = line:sub(col + 1, col + 1)
+      local char = line:sub(col, col)
       if not char:match("[%w:_%-.@/]") then return end
       vim.schedule(function()
         if vim.fn.mode() ~= "i" then return end
@@ -959,7 +959,8 @@ function M._show_command_input(proj, default_text, on_submit)
   vim.bo[buf].filetype = "springtools-cmd-input"
 
   vim.cmd("startinsert!")
-  vim.api.nvim_win_set_cursor(win, { 1, #default_text })
+  local cursor_col = #default_text < width - 2 and #default_text or 0
+  vim.api.nvim_win_set_cursor(win, { 1, cursor_col })
 end
 
 function M:on_remove(idx)
