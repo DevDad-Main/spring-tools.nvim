@@ -226,7 +226,7 @@ function M:on_activate(idx)
   end
   if item.type == "docker" then
     local docker_menu = {}
-    for _, cmd in ipairs({ "up", "down", "build", "logs -f", "ps", "restart", "pull" }) do
+    for _, cmd in ipairs({ "up", "down", "build", "up -d", "logs -f", "ps", "restart", "pull", "stop", "start", "exec", "run", "top", "config", "rm" }) do
       docker_menu[#docker_menu + 1] = {
         label = "  docker-compose " .. cmd,
         action = function()

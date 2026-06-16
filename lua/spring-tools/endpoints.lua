@@ -51,33 +51,15 @@ function M.scan_endpoints(dir)
   end
 
   M.endpoints = {}
-  local java_files = utils.find_java_files(project_root)
   local cache_key = "endpoint_index:" .. project_root
 
   if utils.cache.data and utils.cache.data[cache_key] then
     local cached = utils.cache.data[cache_key]
-    local cached_files = {}
     local valid = true
     for _, entry in ipairs(cached) do
-      cached_files[entry.file] = true
       if utils.file_modified_since(entry.file, entry.mtime) then
         valid = false
         break
-      end
-    end
-    -- Check for new files not in cache, or files removed
-    if valid then
-      local cached_count = 0
-      for _ in pairs(cached_files) do cached_count = cached_count + 1 end
-      if #java_files ~= cached_count then
-        valid = false
-      else
-        for _, file in ipairs(java_files) do
-          if not cached_files[file] then
-            valid = false
-            break
-          end
-        end
       end
     end
     if valid and #cached > 0 then
@@ -86,6 +68,7 @@ function M.scan_endpoints(dir)
     end
   end
 
+  local java_files = utils.find_java_files(project_root)
   for _, file in ipairs(java_files) do
     local mtime = vim.fn.getftime(file)
     local parsed = jp.parse_file(file)
