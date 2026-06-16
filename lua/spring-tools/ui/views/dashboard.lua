@@ -6,6 +6,7 @@ local sidebar = require("spring-tools.ui.sidebar")
 local output = require("spring-tools.ui.output")
 local utils = require("spring-tools.utils")
 local build = require("spring-tools.build_completion")
+local sections = require("spring-tools.ui.sections").new("dashboard")
 
 local M = {}
 
@@ -69,16 +70,35 @@ function M:load_items()
     }
   end
 
+  local function add_project_items(proj_list, indent)
+    indent = indent or 0
+    for _, proj in ipairs(proj_list) do
+      local has_children = proj.children and #proj.children > 0
+      if has_children then
+        local sk = "parent:" .. proj.root
+        local is_collapsed = sections:is_collapsed(sk)
+        M.items[#M.items + 1] = { type = "parent_header", project = proj, label = proj.name, section_key = sk, collapsed = is_collapsed, indent = indent }
+        if not is_collapsed then
+          add_project_items(proj.children, indent + 1)
+        end
+      else
+        local item = build_project_item(proj)
+        item.indent = indent
+        table.insert(M.items, item)
+      end
+    end
+  end
+
   if ws and #projs > 1 then
     local ws_name = vim.fn.fnamemodify(ws, ":t")
     M.items[#M.items + 1] = { type = "workspace", label = ws_name }
+    local top_level = {}
     for _, proj in ipairs(projs) do
-      table.insert(M.items, build_project_item(proj))
+      if proj.is_top_level then table.insert(top_level, proj) end
     end
+    add_project_items(top_level)
   else
-    for _, proj in ipairs(projs) do
-      table.insert(M.items, build_project_item(proj))
-    end
+    add_project_items(projs)
   end
   if #maven_roots > 0 then
     build.fetch_dynamic_goals(maven_roots)
@@ -92,6 +112,12 @@ function M:render_item(item, selected)
   if item.type == "workspace" then
     local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
     return { { "  \u{25be} " .. item.label, hl } }
+  end
+  if item.type == "parent_header" then
+    local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local indent = string.rep("  ", item.indent or 0)
+    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    return { { indent .. icon .. "  " .. item.label, hl } }
   end
   local proj = item.project
   local be = item.backend
@@ -136,16 +162,17 @@ function M:render_item(item, selected)
   local build_type = (proj.build_type or ""):len() > 0 and proj.build_type or nil
   local auto_restart = M._auto_restart[proj.root] and "\u{21bb} " or ""
 
+  local indent = string.rep("  ", item.indent or 0)
   local active_mark = item.is_active and "\u{2605} " or "  "
 
   if selected then
-    local line = active_mark .. dot .. "  " .. proj.name .. "  " .. auto_restart .. status_tag .. (build_type and "  " .. build_type or "")
+    local line = indent .. active_mark .. dot .. "  " .. proj.name .. "  " .. auto_restart .. status_tag .. (build_type and "  " .. build_type or "")
     return { { line, "SpringToolsSelected" } }
   end
 
   return { {
     segments = {
-      { active_mark .. dot .. "  ", dot_hl },
+      { indent .. active_mark .. dot .. "  ", dot_hl },
       { proj.name, "SpringToolsDashboardProject" },
       { "  " .. auto_restart .. status_tag, status_hl },
       { build_type and "  " .. build_type or "", build_type and "SpringToolsDashboardBuildType" or nil },
@@ -156,6 +183,11 @@ end
 function M:on_activate(idx)
   local item = M.items[idx]
   if not item or item.type == "workspace" then return end
+  if item.type == "parent_header" then
+    sections:toggle(item.section_key)
+    sidebar.refresh()
+    return
+  end
   local proj = item.project
   local be = item.backend
 

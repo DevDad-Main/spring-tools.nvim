@@ -113,6 +113,27 @@ function M.detect_projects(start_path)
     M.add_entry(entry)
   end
 
+  -- Build parent-child tree: a root nested under another root is a child
+  for _, proj in ipairs(M.projects) do
+    proj.children = nil
+  end
+  table.sort(M.projects, function(a, b) return #a.root < #b.root end)
+  local child_roots = {}
+  for _, proj in ipairs(M.projects) do
+    for _, parent in ipairs(M.projects) do
+      if proj.root ~= parent.root and proj.root:sub(1, #parent.root) == parent.root and proj.root:sub(#parent.root + 1, #parent.root + 1) == "/" then
+        if not parent.children then parent.children = {} end
+        parent.children[#parent.children + 1] = proj
+        child_roots[proj.root] = true
+        break
+      end
+    end
+  end
+  -- Mark top-level status
+  for _, proj in ipairs(M.projects) do
+    proj.is_top_level = not child_roots[proj.root]
+  end
+
   if not M.active_project_root then
     local cwd = vim.fn.getcwd()
     for _, proj in ipairs(M.projects) do
