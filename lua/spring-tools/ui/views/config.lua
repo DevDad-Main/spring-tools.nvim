@@ -130,42 +130,47 @@ function M:load_items()
 end
 
 function M:render_item(item, selected)
+  local multi = project.is_multi_project()
   if item.type == "project_header" then
-    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
-    return { { "  \u{25be} " .. item.label, hl } }
+    local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
+    return { { "\u{25be} " .. item.label, hl } }
   end
   if item.type == "file_section" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local pfx = multi and "    " or "  "
     local hl = selected and "SpringToolsSelected" or "SpringToolsConfigFile"
-    return { { "  " .. icon .. " " .. item.label, hl } }
+    return { { pfx .. icon .. " " .. item.label, hl } }
   end
   if item.type == "section" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local pfx = multi and "      " or "    "
     local hl = selected and "SpringToolsSelected" or "SpringToolsConfigSection"
-    return { { "    " .. icon .. " " .. item.label, hl } }
+    return { { pfx .. icon .. " " .. item.label, hl } }
   end
   local sub_key = item.prop.key:sub(#get_top_key(item.prop.key) + 2)
   local value = item.prop.value
+  local key_pfx = multi and "          " or "        "
+  local val_pfx = multi and "            " or "          "
   if item.expanded then
     if selected then
       return {
-        { "        " .. sub_key .. " =", "SpringToolsSelected" },
-        { "          " .. value, "SpringToolsSelected" },
+        { key_pfx .. sub_key .. " =", "SpringToolsSelected" },
+        { val_pfx .. value, "SpringToolsSelected" },
       }
     end
     return {
       { segments = {
-        { "        " .. sub_key, "SpringToolsConfigKey" },
+        { key_pfx .. sub_key, "SpringToolsConfigKey" },
         { " =", nil },
       } },
       { segments = {
-        { "          ", nil },
+        { val_pfx, nil },
         { value, "SpringToolsConfigValue" },
       } },
     }
   end
   local sidebar_width = require("spring-tools.config").options.sidebar.width
-  local indent = 8
+  local indent = multi and 12 or 8
   local full = sub_key .. " = " .. value
   local max = sidebar_width - indent - 1
   if #full > max then
@@ -174,11 +179,11 @@ function M:render_item(item, selected)
     value = value:sub(1, keep) .. "..."
   end
   if selected then
-    return { { "        " .. sub_key .. " = " .. value, "SpringToolsSelected" } }
+    return { { key_pfx .. sub_key .. " = " .. value, "SpringToolsSelected" } }
   end
   return { {
     segments = {
-      { "        " .. sub_key, "SpringToolsConfigKey" },
+      { key_pfx .. sub_key, "SpringToolsConfigKey" },
       { " = ", nil },
       { value, "SpringToolsConfigValue" },
     },

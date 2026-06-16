@@ -89,17 +89,19 @@ function M:load_items()
 end
 
 function M:render_item(item, selected)
+  local multi = project.is_multi_project()
   if item.type == "loading" then
     local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
     return { { "  " .. item.label, hl } }
   end
   if item.type == "project_header" then
-    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
-    return { { "  \u{25be} " .. item.label, hl } }
+    local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
+    return { { "\u{25be} " .. item.label, hl } }
   end
   if item.type == "all" then
+    local pfx = multi and "    " or "  "
     local hl = selected and "SpringToolsSelected" or "SpringToolsTestRunAll"
-    return { { "  " .. "\u{25b6}" .. " " .. item.label, hl } }
+    return { { pfx .. "\u{25b6}" .. " " .. item.label, hl } }
   end
   if item.type == "class" then
     local cr = tests_mod.class_results and tests_mod.class_results[item.test.class]
@@ -109,13 +111,15 @@ function M:render_item(item, selected)
     else
       icon = item.collapsed and "\u{25b8}" or "\u{25be}"
     end
+    local pfx = multi and "    " or "  "
     local hl = selected and "SpringToolsSelected" or "SpringToolsTestClass"
-    return { { "  " .. icon .. " " .. item.label, hl } }
+    return { { pfx .. icon .. " " .. item.label, hl } }
   end
+  local pfx = multi and "        " or "      "
   local hl = selected and "SpringToolsSelected" or "SpringToolsTestMethod"
   local mr = tests_mod.method_results
   local status_icon = (mr and mr[item.test.class] and mr[item.test.class][item.method.name]) and (mr[item.test.class][item.method.name] == "failed" and "\u{2717}" or "\u{2713}") or "\u{22a1}"
-  return { { "      " .. status_icon .. " " .. item.label, hl } }
+  return { { pfx .. status_icon .. " " .. item.label, hl } }
 end
 
 function M:run_test(cmd)

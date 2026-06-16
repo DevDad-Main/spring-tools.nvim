@@ -171,26 +171,30 @@ function M:render_item(item, selected)
     return { { "  " .. item.label, hl } }
   end
   if item.type == "project_header" then
-    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
-    return { { "  \u{25be} " .. item.label, hl } }
+    local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
+    return { { "\u{25be} " .. item.label, hl } }
   end
   if item.type == "section_header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local pfx = project.is_multi_project() and "    " or "  "
     local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
-    return { { "  " .. icon .. " " .. item.label, hl } }
+    return { { pfx .. icon .. " " .. item.label, hl } }
   end
   if item.type == "header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local pfx = project.is_multi_project() and "      " or "    "
     local hl = selected and "SpringToolsSelected" or "SpringToolsMethodHeader"
-    return { { "    " .. icon .. " " .. item.label, hl } }
+    return { { pfx .. icon .. " " .. item.label, hl } }
   end
   local method = item.method
   local path = item.endpoint and item.endpoint.path or item.path
   if selected then
-    return { { "      " .. method .. "  " .. path, "SpringToolsSelected" } }
+    local pfx = project.is_multi_project() and "        " or "      "
+    return { { pfx .. method .. "  " .. path, "SpringToolsSelected" } }
   end
+  local pfx = project.is_multi_project() and "        " or "      "
   return { { segments = {
-    { "      " .. method .. "  ", method_colors[method] or "SpringToolsDim" },
+    { pfx .. method .. "  ", method_colors[method] or "SpringToolsDim" },
     { path, nil },
   } } }
 end
