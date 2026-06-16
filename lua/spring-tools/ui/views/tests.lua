@@ -11,6 +11,7 @@ M.title = "Tests"
 
 M.items = {}
 M._test_classes = nil
+M._project_classes = nil
 
 local function scan_dir()
   local proj = project.get_active_project()
@@ -19,29 +20,69 @@ end
 
 function M.header()
   local count = 0
-  for _, item in ipairs(M.items) do
-    if item.type == "class" then count = count + 1 end
+  if project.is_multi_project() and M._project_classes then
+    for _, data in pairs(M._project_classes) do
+      for _, test in ipairs(data.classes) do
+        if test.class then count = count + 1 end
+      end
+    end
+  else
+    for _, item in ipairs(M.items) do
+      if item.type == "class" then count = count + 1 end
+    end
   end
   return { { "Test Explorer (" .. count .. " classes)", "SpringToolsHeader" } }
 end
 
 function M:load_items()
-  if #M.items == 0 and not M._test_classes then
-    M.items = { { type = "loading", label = "Indexing tests..." } }
-    vim.defer_fn(function()
-      M._test_classes = tests_mod.find_test_methods(scan_dir())
-      sidebar.refresh()
-    end, 1)
-    return
-  end
-  M.items = {}
-  table.insert(M.items, { type = "all", label = "Run all tests" })
-  for _, test in ipairs(M._test_classes) do
-    local is_collapsed = sections:is_collapsed(test.class)
-    M.items[#M.items + 1] = { type = "class", test = test, label = test.class, section_key = test.class, collapsed = is_collapsed }
-    if not is_collapsed then
-      for _, method in ipairs(test.methods) do
-        M.items[#M.items + 1] = { type = "method", test = test, method = method, label = method.name }
+  local multi = project.is_multi_project()
+
+  if not multi then
+    if #M.items == 0 and not M._test_classes then
+      M.items = { { type = "loading", label = "Indexing tests..." } }
+      vim.defer_fn(function()
+        M._test_classes = tests_mod.find_test_methods(scan_dir())
+        sidebar.refresh()
+      end, 1)
+      return
+    end
+    M.items = {}
+    table.insert(M.items, { type = "all", label = "Run all tests" })
+    for _, test in ipairs(M._test_classes) do
+      local is_collapsed = sections:is_collapsed(test.class)
+      M.items[#M.items + 1] = { type = "class", test = test, label = test.class, section_key = test.class, collapsed = is_collapsed }
+      if not is_collapsed then
+        for _, method in ipairs(test.methods) do
+          M.items[#M.items + 1] = { type = "method", test = test, method = method, label = method.name }
+        end
+      end
+    end
+  else
+    local projs = project.get_workspace_projects()
+    M._project_classes = {}
+    M.items = {}
+
+    for _, proj in ipairs(projs) do
+      local classes = tests_mod.find_test_methods(proj.root)
+      M._project_classes[proj.root] = {
+        name = proj.name,
+        classes = classes,
+      }
+    end
+
+    for _, proj in ipairs(projs) do
+      local data = M._project_classes[proj.root]
+      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root }
+      M.items[#M.items + 1] = { type = "all", label = "Run all tests", project_root = proj.root }
+      for _, test in ipairs(data.classes) do
+        local sk = test.class .. ":" .. proj.root
+        local is_collapsed = sections:is_collapsed(sk)
+        M.items[#M.items + 1] = { type = "class", test = test, label = test.class, section_key = sk, collapsed = is_collapsed, project_root = proj.root }
+        if not is_collapsed then
+          for _, method in ipairs(test.methods) do
+            M.items[#M.items + 1] = { type = "method", test = test, method = method, label = method.name, project_root = proj.root }
+          end
+        end
       end
     end
   end
@@ -51,6 +92,10 @@ function M:render_item(item, selected)
   if item.type == "loading" then
     local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
     return { { "  " .. item.label, hl } }
+  end
+  if item.type == "project_header" then
+    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    return { { "  \u{25be} " .. item.label, hl } }
   end
   if item.type == "all" then
     local hl = selected and "SpringToolsSelected" or "SpringToolsTestRunAll"
@@ -103,7 +148,10 @@ end
 function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
-  local proj = project.get_active_project()
+  if item.type == "project_header" then return end
+
+  local proj_root = item.project_root or scan_dir()
+  local proj = project.find_project_for_file(proj_root) or project.get_active_project()
   if not proj then utils.notify("No project found", vim.log.levels.WARN) return end
   local be = project.get_backend_for_project(proj)
   if not be then return end

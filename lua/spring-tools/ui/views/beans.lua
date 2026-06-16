@@ -20,31 +20,16 @@ local type_labels = {
   components = "Components", configurations = "Configurations", beans = "Beans",
 }
 
-function M.header()
-  local count = beans_mod.beans and #beans_mod.beans or 0
-  return { { "Spring Beans (" .. count .. ")", "SpringToolsHeader" } }
-end
-
-function M:load_items()
-  if not beans_mod.index_built and #beans_mod.beans == 0 then
-    M.items = { { type = "loading", label = "Indexing beans..." } }
-    vim.defer_fn(function()
-      beans_mod.build_index(scan_dir())
-      sidebar.refresh()
-    end, 1)
-    return
-  end
-  local grouped = beans_mod.group_by_type()
-
-  M.items = {}
+local function build_bean_items_from(grouped)
+  local items = {}
   for _, t in ipairs(type_order) do
-    local items = {}
+    local sub = {}
     if t == "configurations" then
       for _, bean in ipairs(grouped[t]) do
-        table.insert(items, { type = "bean", bean = bean })
+        table.insert(sub, { type = "bean", bean = bean })
         for _, b in ipairs(grouped.beans or {}) do
           if b.parent == bean.name then
-            table.insert(items, { type = "bean_method", bean = b })
+            table.insert(sub, { type = "bean_method", bean = b })
           end
         end
       end
@@ -53,17 +38,80 @@ function M:load_items()
         if t == "beans" and bean.parent then
           -- skip parented beans (shown under their @Configuration parent)
         else
-          table.insert(items, { type = "bean", bean = bean })
+          table.insert(sub, { type = "bean", bean = bean })
         end
       end
     end
-    if #items > 0 then
+    if #sub > 0 then
       local is_collapsed = sections:is_collapsed(t)
-      M.items[#M.items + 1] = { type = "header", section_key = t, label = type_labels[t], collapsed = is_collapsed }
+      items[#items + 1] = { type = "header", section_key = t, label = type_labels[t], collapsed = is_collapsed }
       if not is_collapsed then
-        for _, item in ipairs(items) do
-          table.insert(M.items, item)
+        for _, item in ipairs(sub) do
+          table.insert(items, item)
         end
+      end
+    end
+  end
+  return items
+end
+
+local function scan_project(proj_root)
+  beans_mod.build_index(proj_root)
+  return beans_mod.group_by_type()
+end
+
+function M.header()
+  local count = 0
+  if project.is_multi_project() then
+    for _, data in pairs(M._project_data or {}) do
+      for _, t in ipairs(type_order) do
+        count = count + #(data.grouped[t] or {})
+      end
+    end
+  else
+    count = beans_mod.beans and #beans_mod.beans or 0
+  end
+  return { { "Spring Beans (" .. count .. ")", "SpringToolsHeader" } }
+end
+
+function M:load_items()
+  local multi = project.is_multi_project()
+
+  if not multi then
+    if not beans_mod.index_built and #beans_mod.beans == 0 then
+      M.items = { { type = "loading", label = "Indexing beans..." } }
+      vim.defer_fn(function()
+        beans_mod.build_index(scan_dir())
+        sidebar.refresh()
+      end, 1)
+      return
+    end
+    local grouped = beans_mod.group_by_type()
+    M.items = {}
+    local items = build_bean_items_from(grouped)
+    for _, item in ipairs(items) do
+      table.insert(M.items, item)
+    end
+  else
+    local projs = project.get_workspace_projects()
+    M._project_data = {}
+    M.items = {}
+
+    for _, proj in ipairs(projs) do
+      local grouped = scan_project(proj.root)
+      M._project_data[proj.root] = {
+        name = proj.name,
+        grouped = grouped,
+        bean_count = #beans_mod.beans,
+      }
+    end
+
+    for _, proj in ipairs(projs) do
+      local data = M._project_data[proj.root]
+      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root }
+      local items = build_bean_items_from(data.grouped)
+      for _, item in ipairs(items) do
+        table.insert(M.items, item)
       end
     end
   end
@@ -73,6 +121,10 @@ function M:render_item(item, selected)
   if item.type == "loading" then
     local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
     return { { "  " .. item.label, hl } }
+  end
+  if item.type == "project_header" then
+    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    return { { "  \u{25be} " .. item.label, hl } }
   end
   if item.type == "header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
@@ -90,6 +142,7 @@ end
 function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
+  if item.type == "project_header" then return end
   if item.type == "header" then
     sections:toggle(item.section_key)
     sidebar.refresh()

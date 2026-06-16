@@ -18,8 +18,16 @@ local function scan_dir()
 end
 
 function M.header()
-  config_mod.build_index(scan_dir())
-  return { { "Config (" .. #config_mod.properties .. " props)", "SpringToolsHeader" } }
+  local count = 0
+  if project.is_multi_project() and M._project_data then
+    for _, data in pairs(M._project_data) do
+      count = count + #data.properties
+    end
+  else
+    config_mod.build_index(scan_dir())
+    count = #config_mod.properties
+  end
+  return { { "Config (" .. count .. " props)", "SpringToolsHeader" } }
 end
 
 local function get_top_key(key)
@@ -27,11 +35,10 @@ local function get_top_key(key)
   return top or key
 end
 
-function M:load_items()
-  config_mod.build_index(scan_dir())
-
+local function build_items_for_properties(props, source_prefix)
+  local items = {}
   local file_groups = {}
-  for _, prop in ipairs(config_mod.properties) do
+  for _, prop in ipairs(props) do
     local src = prop.source or "application.properties"
     if not file_groups[src] then file_groups[src] = {} end
     table.insert(file_groups[src], prop)
@@ -50,18 +57,18 @@ function M:load_items()
     end
   end
 
-  M.items = {}
   for _, src in ipairs(ordered_sources) do
-    local props = file_groups[src]
-    table.sort(props, function(a, b) return a.key < b.key end)
+    local sprops = file_groups[src]
+    table.sort(sprops, function(a, b) return a.key < b.key end)
 
-    local is_file_collapsed = sections:is_collapsed("file:" .. src)
-    local file_label = src .. " (" .. #props .. " props)"
-    table.insert(M.items, { type = "file_section", key = "file:" .. src, label = file_label, collapsed = is_file_collapsed })
+    local file_key = (source_prefix or "") .. "file:" .. src
+    local is_file_collapsed = sections:is_collapsed(file_key)
+    local file_label = src .. " (" .. #sprops .. " props)"
+    table.insert(items, { type = "file_section", key = file_key, label = file_label, collapsed = is_file_collapsed })
 
     if not is_file_collapsed then
       local groups = {}
-      for _, prop in ipairs(props) do
+      for _, prop in ipairs(sprops) do
         local top = get_top_key(prop.key)
         if not groups[top] then groups[top] = {} end
         table.insert(groups[top], prop)
@@ -72,20 +79,61 @@ function M:load_items()
       table.sort(ordered_tops)
 
       for _, top in ipairs(ordered_tops) do
-        local section_key = "file:" .. src .. "/" .. top
+        local section_key = (source_prefix or "") .. "file:" .. src .. "/" .. top
         local is_collapsed = sections:is_collapsed(section_key)
-        table.insert(M.items, { type = "section", key = section_key, label = top .. ": (" .. #groups[top] .. " props)", collapsed = is_collapsed })
+        table.insert(items, { type = "section", key = section_key, label = top .. ": (" .. #groups[top] .. " props)", collapsed = is_collapsed })
         if not is_collapsed then
           for _, prop in ipairs(groups[top]) do
-            table.insert(M.items, { type = "prop", prop = prop, expanded = M.expanded_props[prop.key] or false })
+            table.insert(items, { type = "prop", prop = prop, expanded = M.expanded_props[prop.key] or false })
           end
         end
+      end
+    end
+  end
+  return items
+end
+
+function M:load_items()
+  local multi = project.is_multi_project()
+
+  M.items = {}
+
+  if not multi then
+    config_mod.build_index(scan_dir())
+    local items = build_items_for_properties(config_mod.properties)
+    for _, item in ipairs(items) do
+      table.insert(M.items, item)
+    end
+  else
+    local projs = project.get_workspace_projects()
+    M._project_data = {}
+
+    for _, proj in ipairs(projs) do
+      config_mod.build_index(proj.root)
+      local props = vim.deepcopy(config_mod.properties)
+      M._project_data[proj.root] = {
+        name = proj.name,
+        properties = props,
+      }
+    end
+
+    for _, proj in ipairs(projs) do
+      local data = M._project_data[proj.root]
+      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root }
+      local prefix = proj.root .. ":"
+      local items = build_items_for_properties(data.properties, prefix)
+      for _, item in ipairs(items) do
+        table.insert(M.items, item)
       end
     end
   end
 end
 
 function M:render_item(item, selected)
+  if item.type == "project_header" then
+    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    return { { "  \u{25be} " .. item.label, hl } }
+  end
   if item.type == "file_section" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
     local hl = selected and "SpringToolsSelected" or "SpringToolsConfigFile"
@@ -148,6 +196,7 @@ end
 function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
+  if item.type == "project_header" then return end
   if item.type == "file_section" or item.type == "section" then
     sections:toggle(item.key)
     sidebar.refresh()
