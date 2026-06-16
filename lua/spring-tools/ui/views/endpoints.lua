@@ -30,8 +30,13 @@ local method_order = { "GET", "POST", "PUT", "DELETE", "PATCH" }
 function M.header()
   local total = 0
   if project.is_multi_project() then
+    local n = 0
     for _, data in pairs(M._project_data or {}) do
-      total = total + #data.rest + #data.actuator
+      total = total + #data.rest
+      n = n + 1
+    end
+    for _, g in ipairs(actuator_mod.endpoints) do
+      total = total + #g.endpoints * n
     end
   else
     total = (endpoints_mod.endpoints and #endpoints_mod.endpoints or 0)
