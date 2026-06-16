@@ -93,6 +93,8 @@ function M.find_all_project_roots(start_path)
   start_path = vim.fn.resolve(start_path)
   local roots = {}
   local seen = {}
+  local scan_children
+
   local function scan(dir, depth)
     if seen[dir] then return end
     seen[dir] = true

@@ -248,6 +248,26 @@ function M:on_activate(idx)
         end,
       }
     end
+    docker_menu[#docker_menu + 1] = { label = "  Custom command...", action = function()
+      local first_proj = state.get_projects()[1]
+      M._show_command_input(first_proj or {}, "docker-compose -f " .. item.compose_file .. " ", function(input)
+        if input == "" then return end
+        output.show({ "Running: " .. input }, "docker-compose")
+        vim.fn.jobstart(vim.split(input, " "), {
+          cwd = state.get_workspace_root(),
+          on_stdout = function(_, data)
+            if data then vim.schedule(function()
+              for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
+            end) end
+          end,
+          on_stderr = function(_, data)
+            if data then vim.schedule(function()
+              for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
+            end) end
+          end,
+        })
+      end)
+    end }
     M.show_actions(docker_menu)
     return
   end
