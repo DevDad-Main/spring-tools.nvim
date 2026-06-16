@@ -153,7 +153,7 @@ function M:render_item(item, selected)
   if item.type == "docker" then
     local indent = string.rep("  ", item.indent or 0)
     local hl = selected and "SpringToolsSelected" or "SpringToolsDashboardProject"
-    return { { indent .. "\u{25cb}  " .. item.label, hl } }
+    return { { indent .. "  " .. "\u{f308}  " .. item.label, hl } }
   end
   local proj = item.project
   local be = item.backend
@@ -702,8 +702,8 @@ function M._omni(findstart, base)
     return results
   end
 
-  if not first:match("^mv") and not first:match("^gradle") then
-    for _, c in ipairs({ "mvn", "mvnw", "mvnDebug", "gradle", "gradlew" }) do
+  if not first:match("^mv") and not first:match("^gradle") and not first:match("^docker") then
+    for _, c in ipairs({ "mvn", "mvnw", "mvnDebug", "gradle", "gradlew", "docker", "docker-compose" }) do
       if c:lower():find(base:lower(), 1, true) then
         table.insert(results, c)
       end
@@ -716,6 +716,24 @@ function M._omni(findstart, base)
     for _, p in ipairs(data.phases) do
       if p:lower():find(base:lower(), 1, true) then
         table.insert(results, p)
+      end
+    end
+    return results
+  end
+
+  if first:match("^docker$") then
+    for _, cmd in ipairs({ "build", "run", "ps", "logs", "exec", "stop", "start", "restart", "pull", "push", "images", "rm", "rmi", "network", "volume", "compose", "system", "inspect" }) do
+      if cmd:lower():find(base:lower(), 1, true) then
+        table.insert(results, cmd)
+      end
+    end
+    return results
+  end
+
+  if first:match("^docker%-compose$") then
+    for _, cmd in ipairs({ "up", "down", "build", "logs", "ps", "restart", "pull", "exec", "run", "start", "stop", "config", "top" }) do
+      if cmd:lower():find(base:lower(), 1, true) then
+        table.insert(results, cmd)
       end
     end
     return results
