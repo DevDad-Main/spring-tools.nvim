@@ -45,6 +45,7 @@ function M.setup_highlights()
     SpringToolsBorder = { fg = title_fg, bg = bg },
     SpringToolsKey = { fg = special_fg, bg = bg },
     SpringToolsValue = { fg = fg, bg = bg },
+    SpringToolsSectionHeader = { fg = title_fg, bold = true, bg = bg },
     SpringToolsMethodHeader = { fg = special_fg, bold = true, bg = bg },
     SpringToolsBeanHeader = { fg = special_fg, bold = true, bg = bg },
     SpringToolsTestRunAll = { fg = special_fg, bold = true, bg = bg },

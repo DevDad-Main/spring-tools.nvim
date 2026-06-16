@@ -1,4 +1,5 @@
 local endpoints_mod = require("spring-tools.endpoints")
+local actuator_mod = require("spring-tools.actuator")
 local sidebar = require("spring-tools.ui.sidebar")
 local utils = require("spring-tools.utils")
 local project = require("spring-tools.project")
@@ -27,8 +28,12 @@ local method_colors = {
 local method_order = { "GET", "POST", "PUT", "DELETE", "PATCH" }
 
 function M.header()
-  local count = endpoints_mod.endpoints and #endpoints_mod.endpoints or 0
-  return { { "REST Endpoints (" .. count .. ")", "SpringToolsHeader" } }
+  local rest_count = endpoints_mod.endpoints and #endpoints_mod.endpoints or 0
+  local act_count = 0
+  for _, g in ipairs(actuator_mod.endpoints) do
+    act_count = act_count + #g.endpoints
+  end
+  return { { "Endpoints (" .. rest_count + act_count .. ")", "SpringToolsHeader" } }
 end
 
 function M:load_items()
@@ -52,15 +57,34 @@ function M:load_items()
   end
 
   M.items = {}
-  for _, method in ipairs(method_order) do
-    if counts[method] and counts[method] > 0 then
-      local is_collapsed = sections:is_collapsed(method)
-      M.items[#M.items + 1] = { type = "header", method = method, label = method .. "  (" .. counts[method] .. ")", collapsed = is_collapsed }
-      if not is_collapsed then
-        for _, ep in ipairs(endpoints_mod.endpoints) do
-          if ep.method == method then
-            M.items[#M.items + 1] = { type = "endpoint", endpoint = ep }
+
+  local rest_collapsed = sections:is_collapsed("rest")
+  M.items[#M.items + 1] = { type = "section_header", section_key = "rest", label = "REST Endpoints  (" .. (#endpoints_mod.endpoints) .. ")", collapsed = rest_collapsed }
+  if not rest_collapsed then
+    for _, method in ipairs(method_order) do
+      if counts[method] and counts[method] > 0 then
+        local is_collapsed = sections:is_collapsed(method)
+        M.items[#M.items + 1] = { type = "header", method = method, label = method .. "  (" .. counts[method] .. ")", collapsed = is_collapsed }
+        if not is_collapsed then
+          for _, ep in ipairs(endpoints_mod.endpoints) do
+            if ep.method == method then
+              M.items[#M.items + 1] = { type = "endpoint", endpoint = ep }
+            end
           end
+        end
+      end
+    end
+  end
+
+  local act_collapsed = sections:is_collapsed("actuator")
+  M.items[#M.items + 1] = { type = "section_header", section_key = "actuator", label = "Actuator Endpoints  (" .. #actuator_mod.endpoints .. ")", collapsed = act_collapsed }
+  if not act_collapsed then
+    for _, g in ipairs(actuator_mod.endpoints) do
+      local is_collapsed = sections:is_collapsed(g.group)
+      M.items[#M.items + 1] = { type = "header", group = g.group, label = g.group .. "  (" .. #g.endpoints .. ")", collapsed = is_collapsed }
+      if not is_collapsed then
+        for _, ep in ipairs(g.endpoints) do
+          M.items[#M.items + 1] = { type = "actuator_endpoint", path = ep.path, method = ep.method, description = ep.description, group = g.group }
         end
       end
     end
@@ -72,18 +96,23 @@ function M:render_item(item, selected)
     local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
     return { { "  " .. item.label, hl } }
   end
+  if item.type == "section_header" then
+    local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
+    return { { "  " .. icon .. " " .. item.label, hl } }
+  end
   if item.type == "header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
     local hl = selected and "SpringToolsSelected" or "SpringToolsMethodHeader"
-    return { { "  " .. icon .. " " .. item.label, hl } }
+    return { { "    " .. icon .. " " .. item.label, hl } }
   end
-  local ep = item.endpoint
-  local path = ep.path
+  local method = item.method
+  local path = item.endpoint and item.endpoint.path or item.path
   if selected then
-    return { { "      " .. ep.method .. "  " .. path, "SpringToolsSelected" } }
+    return { { "      " .. method .. "  " .. path, "SpringToolsSelected" } }
   end
   return { { segments = {
-    { "      " .. ep.method .. "  ", method_colors[ep.method] },
+    { "      " .. method .. "  ", method_colors[method] or "SpringToolsDim" },
     { path, nil },
   } } }
 end
@@ -91,44 +120,81 @@ end
 function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
-  if item.type == "header" then
-    sections:toggle(item.method)
+  if item.type == "section_header" then
+    sections:toggle(item.section_key)
     sidebar.refresh()
     return
   end
-  local ep = item.endpoint
-  local actions = {
-    { label = "Jump to definition", fn = function()
-      sidebar.open_in_main(ep.file, ep.line)
-    end },
-    { label = "Copy curl", fn = function()
-      local port = M._get_port()
-      local curl = "curl -X " .. ep.method .. " http://localhost:" .. port .. ep.path
-      vim.fn.setreg("+", curl)
-      utils.notify("Curl copied")
-    end },
-    { label = "Send request", fn = function()
-      M._resolve_and_send(ep)
-    end },
-    { label = "Open in browser", fn = function()
-      local port = M._get_port()
-      local url = "http://localhost:" .. port .. ep.path
-      if vim.fn.has("mac") == 1 then vim.fn.system({ "open", url })
-      elseif vim.fn.has("unix") == 1 then vim.fn.system({ "xdg-open", url }) end
-    end },
-  }
-  local sidebar_win = sidebar.win
-  if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
-    pcall(vim.api.nvim_set_current_win, sidebar_win)
+  if item.type == "header" then
+    sections:toggle(item.method or item.group)
+    sidebar.refresh()
+    return
   end
-  local labels = vim.tbl_map(function(a) return a.label end, actions)
-  local map = {}
-  for _, a in ipairs(actions) do map[a.label] = a.fn end
-  vim.ui.select(labels, {
-    prompt = ep.method .. " " .. ep.path .. ":",
-  }, function(choice)
-    if choice and map[choice] then map[choice]() end
-  end)
+  if item.type == "endpoint" then
+    local ep = item.endpoint
+    local actions = {
+      { label = "Jump to definition", fn = function()
+        sidebar.open_in_main(ep.file, ep.line)
+      end },
+      { label = "Copy curl", fn = function()
+        local port = M._get_port()
+        local curl = "curl -X " .. ep.method .. " http://localhost:" .. port .. ep.path
+        vim.fn.setreg("+", curl)
+        utils.notify("Curl copied")
+      end },
+      { label = "Send request", fn = function()
+        M._resolve_and_send(ep)
+      end },
+      { label = "Open in browser", fn = function()
+        local port = M._get_port()
+        local url = "http://localhost:" .. port .. ep.path
+        if vim.fn.has("mac") == 1 then vim.fn.system({ "open", url })
+        elseif vim.fn.has("unix") == 1 then vim.fn.system({ "xdg-open", url }) end
+      end },
+    }
+    local sidebar_win = sidebar.win
+    if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+      pcall(vim.api.nvim_set_current_win, sidebar_win)
+    end
+    local labels = vim.tbl_map(function(a) return a.label end, actions)
+    local map = {}
+    for _, a in ipairs(actions) do map[a.label] = a.fn end
+    vim.ui.select(labels, {
+      prompt = ep.method .. " " .. ep.path .. ":",
+    }, function(choice)
+      if choice and map[choice] then map[choice]() end
+    end)
+  elseif item.type == "actuator_endpoint" then
+    local actions = {
+      { label = "Send request", fn = function()
+        M._resolve_and_send(item)
+      end },
+      { label = "Copy curl", fn = function()
+        local port = M._get_port()
+        local curl = "curl -X " .. item.method .. " http://localhost:" .. port .. item.path
+        vim.fn.setreg("+", curl)
+        utils.notify("Curl copied")
+      end },
+      { label = "Open in browser", fn = function()
+        local port = M._get_port()
+        local url = "http://localhost:" .. port .. item.path
+        if vim.fn.has("mac") == 1 then vim.fn.system({ "open", url })
+        elseif vim.fn.has("unix") == 1 then vim.fn.system({ "xdg-open", url }) end
+      end },
+    }
+    local sidebar_win = sidebar.win
+    if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+      pcall(vim.api.nvim_set_current_win, sidebar_win)
+    end
+    local labels = vim.tbl_map(function(a) return a.label end, actions)
+    local map = {}
+    for _, a in ipairs(actions) do map[a.label] = a.fn end
+    vim.ui.select(labels, {
+      prompt = item.method .. " " .. item.path .. ":",
+    }, function(choice)
+      if choice and map[choice] then map[choice]() end
+    end)
+  end
 end
 
 function M._get_port()
@@ -145,8 +211,8 @@ end
 
 function M:test_endpoint(idx)
   local item = M.items[idx]
-  if not item or item.type ~= "endpoint" then return end
-  M._resolve_and_send(item.endpoint)
+  if not item or (item.type ~= "endpoint" and item.type ~= "actuator_endpoint") then return end
+  M._resolve_and_send(item.type == "endpoint" and item.endpoint or item)
 end
 
 function M._resolve_and_send(ep)
