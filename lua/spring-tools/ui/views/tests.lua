@@ -62,33 +62,50 @@ function M:load_items()
     M._project_classes = {}
     M.items = {}
 
+    -- Pre-scan all projects
     for _, proj in ipairs(projs) do
-      local classes = tests_mod.find_test_methods(proj.root)
-      M._project_classes[proj.root] = {
-        name = proj.name,
-        classes = classes,
-      }
+      if not M._project_classes[proj.root] then
+        local classes = tests_mod.find_test_methods(proj.root)
+        M._project_classes[proj.root] = { name = proj.name, classes = classes }
+      end
     end
 
-    for _, proj in ipairs(projs) do
-      local data = M._project_classes[proj.root]
-      local psk = "proj:" .. proj.root
-      local proj_collapsed = sections:is_collapsed(psk)
-      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed }
-      if not proj_collapsed then
-        M.items[#M.items + 1] = { type = "all", label = "Run all tests", project_root = proj.root }
-        for _, test in ipairs(data.classes) do
-          local sk = test.class .. ":" .. proj.root
-          local is_collapsed = sections:is_collapsed(sk)
-          M.items[#M.items + 1] = { type = "class", test = test, label = test.class, section_key = sk, collapsed = is_collapsed, project_root = proj.root }
-          if not is_collapsed then
-            for _, method in ipairs(test.methods) do
-              M.items[#M.items + 1] = { type = "method", test = test, method = method, label = method.name, project_root = proj.root }
+    local function render_proj_tree(proj_list, indent)
+      indent = indent or 0
+      for _, proj in ipairs(proj_list) do
+        local data = M._project_classes[proj.root]
+        if not data then
+          local classes = tests_mod.find_test_methods(proj.root)
+          data = { name = proj.name, classes = classes }
+          M._project_classes[proj.root] = data
+        end
+        local psk = "proj:" .. proj.root
+        local proj_collapsed = sections:is_collapsed(psk)
+        M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed }
+        if not proj_collapsed then
+          M.items[#M.items + 1] = { type = "all", label = "Run all tests", project_root = proj.root }
+          for _, test in ipairs(data.classes) do
+            local sk = test.class .. ":" .. proj.root
+            local is_collapsed = sections:is_collapsed(sk)
+            M.items[#M.items + 1] = { type = "class", test = test, label = test.class, section_key = sk, collapsed = is_collapsed, project_root = proj.root }
+            if not is_collapsed then
+              for _, method in ipairs(test.methods) do
+                M.items[#M.items + 1] = { type = "method", test = test, method = method, label = method.name, project_root = proj.root }
+              end
             end
           end
         end
+        if proj.children and #proj.children > 0 then
+          render_proj_tree(proj.children, indent + 1)
+        end
       end
     end
+
+    local top_level = {}
+    for _, proj in ipairs(projs) do
+      if proj.is_top_level then table.insert(top_level, proj) end
+    end
+    render_proj_tree(top_level)
   end
 end
 
@@ -100,8 +117,9 @@ function M:render_item(item, selected)
   end
   if item.type == "project_header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local pad = item._indent and string.rep("  ", item._indent) or ""
     local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
-    return { { icon .. " " .. item.label, hl } }
+    return { { pad .. icon .. " " .. item.label, hl } }
   end
   if item.type == "all" then
     local pfx = multi and "    " or "  "

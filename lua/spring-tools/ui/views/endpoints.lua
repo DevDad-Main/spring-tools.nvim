@@ -97,62 +97,73 @@ local function build_multi_items(projs)
   M._project_data = {}
   M.items = {}
 
+  -- Pre-scan all projects
   for _, proj in ipairs(projs) do
-    endpoints_mod.scan_endpoints(proj.root)
-    local rest = vim.deepcopy(endpoints_mod.endpoints)
-    table.sort(rest, function(a, b)
-      local oa, ob = method_order[a.method] or 99, method_order[b.method] or 99
-      if oa ~= ob then return oa < ob end
-      return a.path < b.path
-    end)
-    M._project_data[proj.root] = {
-      name = proj.name,
-      rest = rest,
-    }
+    if not M._project_data[proj.root] then
+      endpoints_mod.scan_endpoints(proj.root)
+      local rest = vim.deepcopy(endpoints_mod.endpoints)
+      table.sort(rest, function(a, b)
+        local oa, ob = method_order[a.method] or 99, method_order[b.method] or 99
+        if oa ~= ob then return oa < ob end
+        return a.path < b.path
+      end)
+      M._project_data[proj.root] = { name = proj.name, rest = rest }
+    end
   end
 
-  for _, proj in ipairs(projs) do
-    local data = M._project_data[proj.root]
-    local psk = "proj:" .. proj.root
-    local proj_collapsed = sections:is_collapsed(psk)
-    M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed }
-    if not proj_collapsed then
-
-      local rest_collapsed = sections:is_collapsed("rest:" .. proj.root)
-      M.items[#M.items + 1] = { type = "section_header", section_key = "rest:" .. proj.root, label = "REST Endpoints  (" .. #data.rest .. ")", collapsed = rest_collapsed }
-      if not rest_collapsed then
-        local counts = {}
-        for _, ep in ipairs(data.rest) do counts[ep.method] = (counts[ep.method] or 0) + 1 end
-        for _, method in ipairs(method_order) do
-          if counts[method] and counts[method] > 0 then
-            local is_collapsed = sections:is_collapsed(method .. ":" .. proj.root)
-            M.items[#M.items + 1] = { type = "header", method = method, label = method .. "  (" .. counts[method] .. ")", collapsed = is_collapsed, section_key = method .. ":" .. proj.root }
-            if not is_collapsed then
-              for _, ep in ipairs(data.rest) do
-                if ep.method == method then
-                  M.items[#M.items + 1] = { type = "endpoint", endpoint = ep, method = ep.method, path = ep.path, project_root = proj.root }
+  local function render_proj_tree(proj_list, indent)
+    indent = indent or 0
+    for _, proj in ipairs(proj_list) do
+      local data = M._project_data[proj.root]
+      local psk = "proj:" .. proj.root
+      local proj_collapsed = sections:is_collapsed(psk)
+      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed }
+      if not proj_collapsed then
+        local rest_collapsed = sections:is_collapsed("rest:" .. proj.root)
+        M.items[#M.items + 1] = { type = "section_header", section_key = "rest:" .. proj.root, label = "REST Endpoints  (" .. #data.rest .. ")", collapsed = rest_collapsed }
+        if not rest_collapsed then
+          local counts = {}
+          for _, ep in ipairs(data.rest) do counts[ep.method] = (counts[ep.method] or 0) + 1 end
+          for _, method in ipairs(method_order) do
+            if counts[method] and counts[method] > 0 then
+              local is_collapsed = sections:is_collapsed(method .. ":" .. proj.root)
+              M.items[#M.items + 1] = { type = "header", method = method, label = method .. "  (" .. counts[method] .. ")", collapsed = is_collapsed, section_key = method .. ":" .. proj.root }
+              if not is_collapsed then
+                for _, ep in ipairs(data.rest) do
+                  if ep.method == method then
+                    M.items[#M.items + 1] = { type = "endpoint", endpoint = ep, method = ep.method, path = ep.path, project_root = proj.root }
+                  end
                 end
               end
             end
           end
         end
-      end
 
-      local act_collapsed = sections:is_collapsed("actuator:" .. proj.root)
-      M.items[#M.items + 1] = { type = "section_header", section_key = "actuator:" .. proj.root, label = "Actuator Endpoints  (" .. #actuator_mod.endpoints .. ")", collapsed = act_collapsed }
-      if not act_collapsed then
-        for _, g in ipairs(actuator_mod.endpoints) do
-          local is_collapsed = sections:is_collapsed(g.group .. ":" .. proj.root)
-          M.items[#M.items + 1] = { type = "header", group = g.group, label = g.group .. "  (" .. #g.endpoints .. ")", collapsed = is_collapsed, section_key = g.group .. ":" .. proj.root }
-          if not is_collapsed then
-            for _, ep in ipairs(g.endpoints) do
-              M.items[#M.items + 1] = { type = "actuator_endpoint", path = ep.path, method = ep.method, description = ep.description, group = g.group, project_root = proj.root }
+        local act_collapsed = sections:is_collapsed("actuator:" .. proj.root)
+        M.items[#M.items + 1] = { type = "section_header", section_key = "actuator:" .. proj.root, label = "Actuator Endpoints  (" .. #actuator_mod.endpoints .. ")", collapsed = act_collapsed }
+        if not act_collapsed then
+          for _, g in ipairs(actuator_mod.endpoints) do
+            local is_collapsed = sections:is_collapsed(g.group .. ":" .. proj.root)
+            M.items[#M.items + 1] = { type = "header", group = g.group, label = g.group .. "  (" .. #g.endpoints .. ")", collapsed = is_collapsed, section_key = g.group .. ":" .. proj.root }
+            if not is_collapsed then
+              for _, ep in ipairs(g.endpoints) do
+                M.items[#M.items + 1] = { type = "actuator_endpoint", path = ep.path, method = ep.method, description = ep.description, group = g.group, project_root = proj.root }
+              end
             end
           end
         end
       end
+      if proj.children and #proj.children > 0 then
+        render_proj_tree(proj.children, indent + 1)
+      end
     end
   end
+
+  local top_level = {}
+  for _, proj in ipairs(projs) do
+    if proj.is_top_level then table.insert(top_level, proj) end
+  end
+  render_proj_tree(top_level)
 end
 
 function M:load_items()
@@ -181,8 +192,9 @@ function M:render_item(item, selected)
   end
   if item.type == "project_header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local pad = item._indent and string.rep("  ", item._indent) or ""
     local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
-    return { { icon .. " " .. item.label, hl } }
+    return { { pad .. icon .. " " .. item.label, hl } }
   end
   if item.type == "section_header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"

@@ -98,27 +98,43 @@ function M:load_items()
     M._project_data = {}
     M.items = {}
 
-    for _, proj in ipairs(projs) do
-      local grouped = scan_project(proj.root)
-      M._project_data[proj.root] = {
-        name = proj.name,
-        grouped = grouped,
-        bean_count = #beans_mod.beans,
-      }
-    end
-
-    for _, proj in ipairs(projs) do
-      local data = M._project_data[proj.root]
-      local sk = "proj:" .. proj.root
-      local is_collapsed = sections:is_collapsed(sk)
-      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = sk, collapsed = is_collapsed }
-      if not is_collapsed then
-        local items = build_bean_items_from(data.grouped, "beans:" .. proj.root .. ":", 1)
-        for _, item in ipairs(items) do
-          table.insert(M.items, item)
+    local function render_proj_tree(proj_list, indent)
+      indent = indent or 0
+      for _, proj in ipairs(proj_list) do
+        local data = M._project_data[proj.root]
+        if not data then
+          local grouped = scan_project(proj.root)
+          M._project_data[proj.root] = { name = proj.name, grouped = grouped, bean_count = #beans_mod.beans }
+          data = M._project_data[proj.root]
+        end
+        local sk = "proj:" .. proj.root
+        local is_collapsed = sections:is_collapsed(sk)
+        M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = sk, collapsed = is_collapsed, _indent = indent }
+        if not is_collapsed then
+          local items = build_bean_items_from(data.grouped, "beans:" .. proj.root .. ":", indent + 1)
+          for _, item in ipairs(items) do
+            table.insert(M.items, item)
+          end
+        end
+        if proj.children and #proj.children > 0 then
+          render_proj_tree(proj.children, indent + 1)
         end
       end
     end
+
+    -- Pre-scan all projects
+    for _, proj in ipairs(projs) do
+      if not M._project_data[proj.root] then
+        local grouped = scan_project(proj.root)
+        M._project_data[proj.root] = { name = proj.name, grouped = grouped, bean_count = #beans_mod.beans }
+      end
+    end
+
+    local top_level = {}
+    for _, proj in ipairs(projs) do
+      if proj.is_top_level then table.insert(top_level, proj) end
+    end
+    render_proj_tree(top_level)
   end
 end
 
@@ -129,8 +145,9 @@ function M:render_item(item, selected)
   end
   if item.type == "project_header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local pad = item._indent and string.rep("  ", item._indent) or ""
     local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
-    return { { icon .. " " .. item.label, hl } }
+    return { { pad .. icon .. " " .. item.label, hl } }
   end
   if item.type == "header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"

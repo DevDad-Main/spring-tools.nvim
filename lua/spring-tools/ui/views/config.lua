@@ -109,27 +109,42 @@ function M:load_items()
     M._project_data = {}
 
     for _, proj in ipairs(projs) do
-      config_mod.build_index(proj.root)
-      local props = vim.deepcopy(config_mod.properties)
-      M._project_data[proj.root] = {
-        name = proj.name,
-        properties = props,
-      }
+      if not M._project_data[proj.root] then
+        config_mod.build_index(proj.root)
+        M._project_data[proj.root] = { name = proj.name, properties = vim.deepcopy(config_mod.properties) }
+      end
     end
 
-    for _, proj in ipairs(projs) do
-      local data = M._project_data[proj.root]
-      local psk = "proj:" .. proj.root
-      local proj_collapsed = sections:is_collapsed(psk)
-      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed }
-      if not proj_collapsed then
-        local prefix = proj.root .. ":"
-        local items = build_items_for_properties(data.properties, prefix)
-        for _, item in ipairs(items) do
-          table.insert(M.items, item)
+    local function render_proj_tree(proj_list, indent)
+      indent = indent or 0
+      for _, proj in ipairs(proj_list) do
+        local data = M._project_data[proj.root]
+        if not data then
+          config_mod.build_index(proj.root)
+          data = { name = proj.name, properties = vim.deepcopy(config_mod.properties) }
+          M._project_data[proj.root] = data
+        end
+        local psk = "proj:" .. proj.root
+        local proj_collapsed = sections:is_collapsed(psk)
+        M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed }
+        if not proj_collapsed then
+          local prefix = proj.root .. ":"
+          local items = build_items_for_properties(data.properties, prefix)
+          for _, item in ipairs(items) do
+            table.insert(M.items, item)
+          end
+        end
+        if proj.children and #proj.children > 0 then
+          render_proj_tree(proj.children, indent + 1)
         end
       end
     end
+
+    local top_level = {}
+    for _, proj in ipairs(projs) do
+      if proj.is_top_level then table.insert(top_level, proj) end
+    end
+    render_proj_tree(top_level)
   end
 end
 
@@ -137,8 +152,9 @@ function M:render_item(item, selected)
   local multi = project.is_multi_project()
   if item.type == "project_header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
+    local pad = item._indent and string.rep("  ", item._indent) or ""
     local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
-    return { { icon .. " " .. item.label, hl } }
+    return { { pad .. icon .. " " .. item.label, hl } }
   end
   if item.type == "file_section" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
