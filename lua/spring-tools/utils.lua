@@ -88,6 +88,33 @@ function M.find_project_root(start_path)
   return nil
 end
 
+function M.find_all_project_roots(start_path)
+  start_path = start_path or vim.fn.getcwd()
+  start_path = vim.fn.resolve(start_path)
+  local roots = {}
+  local seen = {}
+  local function scan(dir)
+    if seen[dir] then return end
+    seen[dir] = true
+    if M.is_maven_project(dir) or M.is_gradle_project(dir) then
+      roots[#roots + 1] = dir
+      return
+    end
+    local ok, entries = pcall(vim.fn.readdir, dir)
+    if not ok then return end
+    for _, entry in ipairs(entries) do
+      if entry ~= "." and entry ~= ".." and entry ~= ".git" and entry ~= "node_modules" and entry ~= "target" and entry ~= "build" then
+        local full = dir .. "/" .. entry
+        if vim.fn.isdirectory(full) == 1 then
+          scan(full)
+        end
+      end
+    end
+  end
+  scan(start_path)
+  return roots
+end
+
 function M.find_build_files(project_root)
   local files = {}
   for _, f in ipairs({ "pom.xml", "build.gradle", "build.gradle.kts" }) do

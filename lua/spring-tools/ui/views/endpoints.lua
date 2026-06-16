@@ -28,23 +28,21 @@ local method_colors = {
 local method_order = { "GET", "POST", "PUT", "DELETE", "PATCH" }
 
 function M.header()
-  local rest_count = endpoints_mod.endpoints and #endpoints_mod.endpoints or 0
-  local act_count = 0
-  for _, g in ipairs(actuator_mod.endpoints) do
-    act_count = act_count + #g.endpoints
+  local total = 0
+  if project.is_multi_project() then
+    for _, data in pairs(M._project_data or {}) do
+      total = total + #data.rest + #data.actuator
+    end
+  else
+    total = (endpoints_mod.endpoints and #endpoints_mod.endpoints or 0)
+    for _, g in ipairs(actuator_mod.endpoints) do
+      total = total + #g.endpoints
+    end
   end
-  return { { "Endpoints (" .. rest_count + act_count .. ")", "SpringToolsHeader" } }
+  return { { "Endpoints (" .. total .. ")", "SpringToolsHeader" } }
 end
 
-function M:load_items()
-  if #endpoints_mod.endpoints == 0 then
-    M.items = { { type = "loading", label = "Indexing endpoints..." } }
-    vim.defer_fn(function()
-      endpoints_mod.scan_endpoints(scan_dir())
-      sidebar.refresh()
-    end, 1)
-    return
-  end
+local function build_single_items()
   table.sort(endpoints_mod.endpoints, function(a, b)
     local oa, ob = method_order[a.method] or 99, method_order[b.method] or 99
     if oa ~= ob then return oa < ob end
@@ -57,7 +55,6 @@ function M:load_items()
   end
 
   M.items = {}
-
   local rest_collapsed = sections:is_collapsed("rest")
   M.items[#M.items + 1] = { type = "section_header", section_key = "rest", label = "REST Endpoints  (" .. (#endpoints_mod.endpoints) .. ")", collapsed = rest_collapsed }
   if not rest_collapsed then
@@ -91,10 +88,91 @@ function M:load_items()
   end
 end
 
+local function build_multi_items(projs)
+  M._project_data = {}
+  M.items = {}
+
+  for _, proj in ipairs(projs) do
+    endpoints_mod.scan_endpoints(proj.root)
+    local rest = vim.deepcopy(endpoints_mod.endpoints)
+    table.sort(rest, function(a, b)
+      local oa, ob = method_order[a.method] or 99, method_order[b.method] or 99
+      if oa ~= ob then return oa < ob end
+      return a.path < b.path
+    end)
+    M._project_data[proj.root] = {
+      name = proj.name,
+      rest = rest,
+    }
+  end
+
+  for _, proj in ipairs(projs) do
+    local data = M._project_data[proj.root]
+    M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root }
+
+    local rest_collapsed = sections:is_collapsed("rest:" .. proj.root)
+    M.items[#M.items + 1] = { type = "section_header", section_key = "rest:" .. proj.root, label = "REST Endpoints  (" .. #data.rest .. ")", collapsed = rest_collapsed }
+    if not rest_collapsed then
+      local counts = {}
+      for _, ep in ipairs(data.rest) do counts[ep.method] = (counts[ep.method] or 0) + 1 end
+      for _, method in ipairs(method_order) do
+        if counts[method] and counts[method] > 0 then
+          local is_collapsed = sections:is_collapsed(method .. ":" .. proj.root)
+          M.items[#M.items + 1] = { type = "header", method = method, label = method .. "  (" .. counts[method] .. ")", collapsed = is_collapsed, section_key = method .. ":" .. proj.root }
+          if not is_collapsed then
+            for _, ep in ipairs(data.rest) do
+              if ep.method == method then
+                M.items[#M.items + 1] = { type = "endpoint", endpoint = ep }
+              end
+            end
+          end
+        end
+      end
+    end
+
+    local act_collapsed = sections:is_collapsed("actuator:" .. proj.root)
+    M.items[#M.items + 1] = { type = "section_header", section_key = "actuator:" .. proj.root, label = "Actuator Endpoints  (" .. #actuator_mod.endpoints .. ")", collapsed = act_collapsed }
+    if not act_collapsed then
+      for _, g in ipairs(actuator_mod.endpoints) do
+        local is_collapsed = sections:is_collapsed(g.group .. ":" .. proj.root)
+        M.items[#M.items + 1] = { type = "header", group = g.group, label = g.group .. "  (" .. #g.endpoints .. ")", collapsed = is_collapsed, section_key = g.group .. ":" .. proj.root }
+        if not is_collapsed then
+          for _, ep in ipairs(g.endpoints) do
+            M.items[#M.items + 1] = { type = "actuator_endpoint", path = ep.path, method = ep.method, description = ep.description, group = g.group, project_root = proj.root }
+          end
+        end
+      end
+    end
+  end
+end
+
+function M:load_items()
+  local projs = project.get_workspace_projects()
+  local multi = project.is_multi_project()
+
+  if not multi then
+    if #endpoints_mod.endpoints == 0 then
+      M.items = { { type = "loading", label = "Indexing endpoints..." } }
+      vim.defer_fn(function()
+        endpoints_mod.scan_endpoints(scan_dir())
+        sidebar.refresh()
+      end, 1)
+      return
+    end
+    build_single_items()
+  else
+    build_multi_items(projs)
+  end
+end
+
 function M:render_item(item, selected)
   if item.type == "loading" then
     local hl = selected and "SpringToolsSelected" or "SpringToolsDim"
     return { { "  " .. item.label, hl } }
+  end
+  if item.type == "project_header" then
+    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    return { { "  \u{25be} " .. item.label, hl } }
   end
   if item.type == "section_header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
@@ -120,13 +198,14 @@ end
 function M:on_activate(idx)
   local item = M.items[idx]
   if not item then return end
+  if item.type == "project_header" then return end
   if item.type == "section_header" then
     sections:toggle(item.section_key)
     sidebar.refresh()
     return
   end
   if item.type == "header" then
-    sections:toggle(item.method or item.group)
+    sections:toggle(item.section_key or item.method or item.group)
     sidebar.refresh()
     return
   end
@@ -170,13 +249,13 @@ function M:on_activate(idx)
         M._resolve_and_send(item)
       end },
       { label = "Copy curl", fn = function()
-        local port = M._get_port()
+        local port = M._get_port(item.project_root)
         local curl = "curl -X " .. item.method .. " http://localhost:" .. port .. item.path
         vim.fn.setreg("+", curl)
         utils.notify("Curl copied")
       end },
       { label = "Open in browser", fn = function()
-        local port = M._get_port()
+        local port = M._get_port(item.project_root)
         local url = "http://localhost:" .. port .. item.path
         if vim.fn.has("mac") == 1 then vim.fn.system({ "open", url })
         elseif vim.fn.has("unix") == 1 then vim.fn.system({ "xdg-open", url }) end
@@ -197,13 +276,25 @@ function M:on_activate(idx)
   end
 end
 
-function M._get_port()
-  local proj = project.get_active_project()
-  if proj then
-    local be = project.get_backend_for_project(proj)
-    if be and be.get_port then
-      local p = be:get_port(proj)
-      if p and p ~= "" then return p end
+function M._get_port(project_root)
+  if project_root then
+    for _, proj in ipairs(project.get_workspace_projects()) do
+      if proj.root == project_root then
+        local be = project.get_backend_for_project(proj)
+        if be and be.get_port then
+          local p = be:get_port(proj)
+          if p and p ~= "" then return p end
+        end
+      end
+    end
+  else
+    local proj = project.get_active_project()
+    if proj then
+      local be = project.get_backend_for_project(proj)
+      if be and be.get_port then
+        local p = be:get_port(proj)
+        if p and p ~= "" then return p end
+      end
     end
   end
   return "8080"

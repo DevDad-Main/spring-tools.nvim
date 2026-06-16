@@ -5,6 +5,7 @@ local M = {}
 
 M.projects = {}
 M.active_project_root = nil
+M.workspace_root = nil
 M._excluded = {}
 
 function M.cache_path()
@@ -69,7 +70,7 @@ function M.remove_project(root)
       end
       M.save_cache()
       local state = require("spring-tools.core.state")
-      state.set_projects(M.projects)
+      state.set_projects(M.projects, M.workspace_root)
       local cache_prefixes = { "bean_index:", "endpoint_index:", "config_index_v2:", "test_index:", "mvn_dynamic_goals:", "gradle_tasks:", "auto_restart:", "auto_clean:", "recent_cmds:" }
       for _, pfx in ipairs(cache_prefixes) do
         local key = pfx .. root
@@ -90,27 +91,43 @@ end
 function M.detect_projects(start_path)
   M.load_cache()
   start_path = start_path or vim.fn.getcwd()
-  local project_root = utils.find_project_root(start_path)
-  if not project_root then
+
+  local all_roots = utils.find_all_project_roots(start_path)
+  if #all_roots == 0 then
     local state = require("spring-tools.core.state")
-    state.set_projects(M.projects)
+    state.set_projects(M.projects, M.workspace_root)
     return M.projects
   end
-  local entry = M.build_entry(project_root)
-  local backends_mod = require("spring-tools.backends")
-  entry.backends = {}
-  for name, be in pairs(backends_mod.backends) do
-    if be:detect(project_root) then
-      table.insert(entry.backends, name)
+
+  M.workspace_root = start_path
+
+  for _, root in ipairs(all_roots) do
+    local entry = M.build_entry(root)
+    local backends_mod = require("spring-tools.backends")
+    entry.backends = {}
+    for name, be in pairs(backends_mod.backends) do
+      if be:detect(root) then
+        table.insert(entry.backends, name)
+      end
+    end
+    M.add_entry(entry)
+  end
+
+  if not M.active_project_root then
+    local cwd = vim.fn.getcwd()
+    for _, proj in ipairs(M.projects) do
+      if cwd:find(proj.root, 1, true) == 1 then
+        M.active_project_root = proj.root
+        break
+      end
+    end
+    if not M.active_project_root and #M.projects > 0 then
+      M.active_project_root = M.projects[1].root
     end
   end
-  M.add_entry(entry)
-  -- Auto-select the CWD project as active on first load or when CWD changes
-  if not M.active_project_root or M.active_project_root ~= project_root then
-    M.active_project_root = project_root
-  end
+
   local state = require("spring-tools.core.state")
-  state.set_projects(M.projects)
+  state.set_projects(M.projects, M.workspace_root)
   return M.projects
 end
 
@@ -151,6 +168,17 @@ end
 
 function M.set_active_project(proj)
   M.active_project_root = proj and proj.root or nil
+end
+
+function M.is_multi_project()
+  return #M.projects > 1
+end
+
+function M.get_workspace_projects()
+  if M.workspace_root and #M.projects > 0 then
+    return M.projects
+  end
+  return {}
 end
 
 local backend_priority = { spring_boot = 1, docker = 2 }

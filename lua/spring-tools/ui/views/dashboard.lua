@@ -13,6 +13,11 @@ M.title = "Dashboard"
 
 function M.header()
   local count = #state.get_projects()
+  local ws = state.get_workspace_root()
+  if ws and count > 1 then
+    local ws_name = vim.fn.fnamemodify(ws, ":t")
+    return { { "Spring Tools \u{b7} 1 workspace \u{b7} " .. count .. " project" .. (count ~= 1 and "s" or ""), "SpringToolsHeader" } }
+  end
   local parts = { "Spring Tools \u{b7} " .. count .. " project" .. (count ~= 1 and "s" or "") }
   return { { table.concat(parts, ""), "SpringToolsHeader" } }
 end
@@ -25,9 +30,10 @@ M._auto_clean = {}
 
 function M:load_items()
   build.invalidate_cache()
-  state.set_projects(project.detect_projects())
+  state.set_projects(project.detect_projects(), project.workspace_root)
   local projs = state.get_projects()
   local active = project.get_active_project()
+  local ws = state.get_workspace_root()
   M.items = {}
   local maven_roots = {}
   local gradle_roots = {}
@@ -46,20 +52,32 @@ function M:load_items()
     end
   end
 
-  for _, proj in ipairs(projs) do
+  local function build_project_item(proj)
     local be = project.get_backend_for_project(proj)
     local status = be and be:get_status(proj) or "stopped"
-    M.items[#M.items + 1] = {
+    if proj.build_type == "maven" then
+      maven_roots[#maven_roots + 1] = proj.root
+    elseif proj.build_type == "gradle" then
+      gradle_roots[#gradle_roots + 1] = proj.root
+    end
+    return {
       type = "project",
       project = proj,
       backend = be,
       status = status,
       is_active = active and proj.root == active.root,
     }
-    if proj.build_type == "maven" then
-      maven_roots[#maven_roots + 1] = proj.root
-    elseif proj.build_type == "gradle" then
-      gradle_roots[#gradle_roots + 1] = proj.root
+  end
+
+  if ws and #projs > 1 then
+    local ws_name = vim.fn.fnamemodify(ws, ":t")
+    M.items[#M.items + 1] = { type = "workspace", label = ws_name }
+    for _, proj in ipairs(projs) do
+      table.insert(M.items, build_project_item(proj))
+    end
+  else
+    for _, proj in ipairs(projs) do
+      table.insert(M.items, build_project_item(proj))
     end
   end
   if #maven_roots > 0 then
@@ -71,6 +89,10 @@ function M:load_items()
 end
 
 function M:render_item(item, selected)
+  if item.type == "workspace" then
+    local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
+    return { { "  \u{25be} " .. item.label, hl } }
+  end
   local proj = item.project
   local be = item.backend
   local status = item.status
@@ -133,7 +155,7 @@ end
 
 function M:on_activate(idx)
   local item = M.items[idx]
-  if not item then return end
+  if not item or item.type == "workspace" then return end
   local proj = item.project
   local be = item.backend
 

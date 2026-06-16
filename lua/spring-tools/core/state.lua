@@ -1,6 +1,7 @@
 local M = {}
 
 M.projects = {}
+M.workspace_root = nil
 M.selected_project = 1
 M.active_panel = "dashboard"
 
@@ -17,16 +18,21 @@ function M.emit(event, ...)
   end
 end
 
-function M.set_projects(projects)
+function M.set_projects(projects, workspace_root)
   M.projects = projects
+  M.workspace_root = workspace_root
   if M.selected_project > #projects then
     M.selected_project = #projects > 0 and 1 or 0
   end
-  M.emit("projects_changed", projects)
+  M.emit("projects_changed", projects, workspace_root)
 end
 
 function M.get_projects()
   return M.projects
+end
+
+function M.get_workspace_root()
+  return M.workspace_root
 end
 
 function M.get_selected_project()
@@ -52,6 +58,7 @@ end
 
 function M.reset()
   M.projects = {}
+  M.workspace_root = nil
   M.selected_project = 1
   M.active_panel = "dashboard"
 end
