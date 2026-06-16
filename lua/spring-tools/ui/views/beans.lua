@@ -124,7 +124,7 @@ function M:render_item(item, selected)
     return { { "  " .. item.label, hl } }
   end
   if item.type == "project_header" then
-    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    local hl = selected and "SpringToolsSelected" or "SpringToolsSectionHeader"
     return { { "\u{25be} " .. item.label, hl } }
   end
   if item.type == "header" then
@@ -134,11 +134,11 @@ function M:render_item(item, selected)
     return { { pad .. icon .. " " .. item.label, hl } }
   end
   if item.type == "bean_method" then
-    local pad = item._indent and string.rep("  ", item._indent + 2) or "        "
+    local pad = item._indent and string.rep("  ", item._indent + 3) or "        "
     local hl = selected and "SpringToolsSelected" or "SpringToolsBeanMethod"
     return { { pad .. "@" .. item.bean.name .. "()", hl } }
   end
-  local pad = item._indent and string.rep("  ", item._indent + 1) or "      "
+  local pad = item._indent and string.rep("  ", item._indent + 2) or "      "
   local hl = selected and "SpringToolsSelected" or "SpringToolsBeanName"
   return { { pad .. item.bean.name, hl } }
 end
