@@ -153,13 +153,59 @@ function M.detect_projects(start_path)
       if proj.root ~= parent.root and proj.root:sub(1, #parent.root) == parent.root and proj.root:sub(#parent.root + 1, #parent.root + 1) == "/" then
         local child_name = vim.fn.fnamemodify(proj.root, ":t")
         local pmodules = parent_modules[parent.root]
-        -- Only treat as child if parent explicitly declares it as a module
-        if pmodules and pmodules[child_name] then
+        -- Only treat as child if parent explicitly declares it as a module,
+        -- or if parent is a virtual parent (path-prefix matching)
+        if (pmodules and pmodules[child_name]) or parent.is_virtual then
           if not parent.children then parent.children = {} end
           parent.children[#parent.children + 1] = proj
           child_roots[proj.root] = true
           break
         end
+      end
+    end
+  end
+  -- If workspace root is not a project but has sub-projects under it,
+  -- create a virtual parent entry so it persists across workspace switches
+  local ws_is_project = false
+  for _, proj in ipairs(M.projects) do
+    if proj.root == M.workspace_root or proj.root == start_path then
+      ws_is_project = true
+      break
+    end
+  end
+  if not ws_is_project then
+    local sub_count = 0
+    for _, proj in ipairs(M.projects) do
+      if proj.root:sub(1, #start_path) == start_path and proj.root:sub(#start_path + 1, #start_path + 1) == "/" then
+        sub_count = sub_count + 1
+      end
+    end
+    if sub_count >= 2 then
+      local vp = {
+        name = vim.fn.fnamemodify(start_path, ":t"),
+        root = start_path,
+        is_virtual = true,
+        children_roots = {},
+      }
+      for _, proj in ipairs(M.projects) do
+        if proj.root:sub(1, #start_path) == start_path and proj.root:sub(#start_path + 1, #start_path + 1) == "/" then
+          vp.children_roots[#vp.children_roots + 1] = proj.root
+          child_roots[proj.root] = true
+        end
+      end
+      if #vp.children_roots >= 2 then
+        local inserted = false
+        for i, p in ipairs(M.projects) do
+          if p.root == start_path then
+            M.projects[i] = vp
+            inserted = true
+            break
+          end
+        end
+        if not inserted then
+          table.insert(M.projects, vp)
+        end
+        M.save_cache()
       end
     end
   end
