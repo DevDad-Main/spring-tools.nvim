@@ -136,7 +136,7 @@ function M:render_item(item, selected)
   end
   if item.type == "parent_header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
-    local indent = string.rep("    ", item.indent or 0)
+    local indent = string.rep("  ", item.indent or 0)
     local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
     return { { indent .. icon .. "  " .. item.label, hl } }
   end
@@ -183,8 +183,8 @@ function M:render_item(item, selected)
   local build_type = (proj.build_type or ""):len() > 0 and proj.build_type or nil
   local auto_restart = M._auto_restart[proj.root] and "\u{21bb} " or ""
 
-  local indent = string.rep("    ", item.indent or 0)
-  local active_mark = item.is_active and "\u{2605}    " or "    "
+  local indent = string.rep("  ", item.indent or 0)
+  local active_mark = item.is_active and "\u{2605} " or "  "
 
   if selected then
     local line = indent .. active_mark .. dot .. "  " .. proj.name .. "  " .. auto_restart .. status_tag .. (build_type and "  " .. build_type or "")
