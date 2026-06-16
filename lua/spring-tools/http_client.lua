@@ -253,14 +253,27 @@ function M._send_resolved(endpoint, extra_args, path)
     utils.save_cache()
   end
 
-  -- Auto-detect port from any running process
+  -- Auto-detect port: prefer endpoint's own project, then any running process
   local port = "8080"
   local backend = require("spring-tools.core.backend")
-  local all_procs = backend.ProcessManager.get_all()
-  for _, proc in pairs(all_procs) do
-    if proc.status == "running" and proc.port then
-      port = proc.port
-      break
+  if endpoint.project_root then
+    for _, proj in ipairs(project.get_workspace_projects()) do
+      if proj.root == endpoint.project_root then
+        local be = project.get_backend_for_project(proj)
+        if be and be.get_port then
+          local p = be:get_port(proj)
+          if p and p ~= "" then port = p; break end
+        end
+      end
+    end
+  end
+  if port == "8080" then
+    local all_procs = backend.ProcessManager.get_all()
+    for _, proc in pairs(all_procs) do
+      if proc.status == "running" and proc.port then
+        port = proc.port
+        break
+      end
     end
   end
   -- Fallback: read server.port from active project's properties

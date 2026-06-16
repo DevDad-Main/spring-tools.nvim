@@ -130,7 +130,7 @@ local function build_multi_items(projs)
             if not is_collapsed then
               for _, ep in ipairs(data.rest) do
                 if ep.method == method then
-                  M.items[#M.items + 1] = { type = "endpoint", endpoint = ep, method = ep.method, path = ep.path }
+                  M.items[#M.items + 1] = { type = "endpoint", endpoint = ep, method = ep.method, path = ep.path, project_root = proj.root }
                 end
               end
             end
@@ -199,10 +199,10 @@ function M:render_item(item, selected)
   local method = item.method
   local path = item.endpoint and item.endpoint.path or item.path
   if selected then
-    local pfx = project.is_multi_project() and "        " or "      "
+    local pfx = project.is_multi_project() and "            " or "          "
     return { { pfx .. method .. "  " .. path, "SpringToolsSelected" } }
   end
-  local pfx = project.is_multi_project() and "        " or "      "
+  local pfx = project.is_multi_project() and "            " or "          "
   return { { segments = {
     { pfx .. method .. "  ", method_colors[method] or "SpringToolsDim" },
     { path, nil },
@@ -234,16 +234,16 @@ function M:on_activate(idx)
         sidebar.open_in_main(ep.file, ep.line)
       end },
       { label = "Copy curl", fn = function()
-        local port = M._get_port()
+        local port = M._get_port(item.project_root)
         local curl = "curl -X " .. ep.method .. " http://localhost:" .. port .. ep.path
         vim.fn.setreg("+", curl)
         utils.notify("Curl copied")
       end },
       { label = "Send request", fn = function()
-        M._resolve_and_send(ep)
+        M._resolve_and_send(item)
       end },
       { label = "Open in browser", fn = function()
-        local port = M._get_port()
+        local port = M._get_port(item.project_root)
         local url = "http://localhost:" .. port .. ep.path
         if vim.fn.has("mac") == 1 then vim.fn.system({ "open", url })
         elseif vim.fn.has("unix") == 1 then vim.fn.system({ "xdg-open", url }) end
@@ -321,7 +321,7 @@ end
 function M:test_endpoint(idx)
   local item = M.items[idx]
   if not item or (item.type ~= "endpoint" and item.type ~= "actuator_endpoint") then return end
-  M._resolve_and_send(item.type == "endpoint" and item.endpoint or item)
+  M._resolve_and_send(item)
 end
 
 function M._resolve_and_send(ep)
