@@ -93,25 +93,48 @@ function M.find_all_project_roots(start_path)
   start_path = vim.fn.resolve(start_path)
   local roots = {}
   local seen = {}
-  local function scan(dir)
+  local function scan(dir, depth)
     if seen[dir] then return end
     seen[dir] = true
     if M.is_maven_project(dir) or M.is_gradle_project(dir) then
       roots[#roots + 1] = dir
-      -- Continue scanning subdirectories for child modules
+      -- After finding a project root, only scan immediate subdirectories
+      -- for child modules (don't recurse deeper than 1 level into children)
+      if depth == 0 then
+        scan_children(dir)
+      end
+      return
     end
+    if depth > 4 then return end
     local ok, entries = pcall(vim.fn.readdir, dir)
     if not ok then return end
     for _, entry in ipairs(entries) do
       if entry ~= "." and entry ~= ".." and entry ~= ".git" and entry ~= "node_modules" and entry ~= "target" and entry ~= "build" then
         local full = dir .. "/" .. entry
         if vim.fn.isdirectory(full) == 1 then
-          scan(full)
+          scan(full, depth + 1)
         end
       end
     end
   end
-  scan(start_path)
+
+  local function scan_children(parent_dir)
+    local ok, entries = pcall(vim.fn.readdir, parent_dir)
+    if not ok then return end
+    for _, entry in ipairs(entries) do
+      if entry ~= "." and entry ~= ".." and entry ~= ".git" and entry ~= "node_modules" and entry ~= "target" and entry ~= "build" then
+        local full = parent_dir .. "/" .. entry
+        if vim.fn.isdirectory(full) == 1 and not seen[full] then
+          seen[full] = true
+          if M.is_maven_project(full) or M.is_gradle_project(full) then
+            roots[#roots + 1] = full
+          end
+        end
+      end
+    end
+  end
+
+  scan(start_path, 0)
   return roots
 end
 

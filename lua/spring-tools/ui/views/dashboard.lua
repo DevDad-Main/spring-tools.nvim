@@ -91,22 +91,33 @@ function M:load_items()
 
   local ws_is_project = false
   if ws and #projs > 1 then
-    -- Check if workspace root is itself a detected project
+    local ws_resolved = vim.fn.resolve(ws)
     for _, proj in ipairs(projs) do
-      if proj.is_top_level and proj.root == ws then
+      if proj.is_top_level and vim.fn.resolve(proj.root) == ws_resolved then
         ws_is_project = true
         break
       end
-    end
-    if not ws_is_project then
-      local ws_name = vim.fn.fnamemodify(ws, ":t")
-      M.items[#M.items + 1] = { type = "workspace", label = ws_name }
     end
     local top_level = {}
     for _, proj in ipairs(projs) do
       if proj.is_top_level then table.insert(top_level, proj) end
     end
-    add_project_items(top_level)
+    if ws_is_project then
+      add_project_items(top_level)
+    else
+      -- Virtual parent for the workspace root (not a detected project)
+      local ws_name = vim.fn.fnamemodify(ws, ":t")
+      local sk = "parent:" .. ws
+      local is_collapsed = sections:is_collapsed(sk)
+      M.items[#M.items + 1] = { type = "parent_header", label = ws_name, section_key = sk, collapsed = is_collapsed, indent = 0 }
+      if not is_collapsed then
+        for _, proj in ipairs(top_level) do
+          local item = build_project_item(proj)
+          item.indent = 1
+          table.insert(M.items, item)
+        end
+      end
+    end
   else
     add_project_items(projs)
   end
@@ -125,7 +136,7 @@ function M:render_item(item, selected)
   end
   if item.type == "parent_header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
-    local indent = string.rep("   ", item.indent or 0)
+    local indent = string.rep("    ", item.indent or 0)
     local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
     return { { indent .. icon .. "  " .. item.label, hl } }
   end
@@ -172,8 +183,8 @@ function M:render_item(item, selected)
   local build_type = (proj.build_type or ""):len() > 0 and proj.build_type or nil
   local auto_restart = M._auto_restart[proj.root] and "\u{21bb} " or ""
 
-  local indent = string.rep("   ", item.indent or 0)
-  local active_mark = item.is_active and "\u{2605} " or "   "
+  local indent = string.rep("    ", item.indent or 0)
+  local active_mark = item.is_active and "\u{2605}    " or "    "
 
   if selected then
     local line = indent .. active_mark .. dot .. "  " .. proj.name .. "  " .. auto_restart .. status_tag .. (build_type and "  " .. build_type or "")
