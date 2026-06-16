@@ -112,7 +112,23 @@ function M.find_all_project_roots(start_path)
     end
   end
   scan(start_path)
-  return roots
+
+  -- Filter to top-level roots only: a root nested inside another root is a sub-module
+  table.sort(roots, function(a, b) return #a < #b end)
+  local top = {}
+  for _, r in ipairs(roots) do
+    local is_sub = false
+    for _, p in ipairs(top) do
+      if r ~= p and r:sub(1, #p) == p and r:sub(#p + 1, #p + 1) == "/" then
+        is_sub = true
+        break
+      end
+    end
+    if not is_sub then
+      top[#top + 1] = r
+    end
+  end
+  return top
 end
 
 function M.find_build_files(project_root)
