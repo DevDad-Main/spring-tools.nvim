@@ -396,17 +396,22 @@ function M.collapse_parent()
 end
 
 function M.expand_child()
-  for i = M.selected + 1, #M.items, 1 do
-    local item = M.items[i]
-    if item and (item.type == "project_header" or item.type == "parent_header" or item.type == "header" or item.type == "section_header") and item.section_key then
-      if item.collapsed then
-        local view = M.get_view()
-        if view and view.on_activate then
-          M.selected = i
-          view:on_activate(i)
+  -- Look forward first, then backward
+  for _, dir in ipairs({ 1, -1 }) do
+    local i = M.selected + dir
+    while i >= 1 and i <= #M.items do
+      local item = M.items[i]
+      if item and (item.type == "project_header" or item.type == "parent_header" or item.type == "header" or item.type == "section_header") and item.section_key then
+        if item.collapsed then
+          local view = M.get_view()
+          if view and view.on_activate then
+            M.selected = i
+            view:on_activate(i)
+          end
+          return
         end
-        return
       end
+      i = i + dir
     end
   end
 end
