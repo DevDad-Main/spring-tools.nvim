@@ -31,6 +31,8 @@
   <img src="previews/plugin_demo.gif" width="1000" />
 </p>
 
+> **Note for first run**: On first open, `spring-tools.nvim` performs a one-time project discovery scan across your workspace — parsing Java files and building caches. You may notice a brief pause while this happens. All results are persisted to disk, so subsequent sessions load instantly.
+
 <br>
 
 ## Previews

@@ -89,7 +89,13 @@ function M.remove_project(root)
         M._excluded[root] = true
         M.active_project_root = nil
       end
-      M.save_cache()
+      -- Write directly (no merge) to ensure removal
+      local path = M.cache_path()
+      vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
+      pcall(function()
+        local f = io.open(path, "w")
+        if f then f:write(vim.json.encode(M.projects)); f:close() end
+      end)
       local state = require("spring-tools.core.state")
       state.set_projects(M.projects, M.workspace_root)
       local cache_prefixes = { "bean_index:", "endpoint_index:", "config_index_v2:", "test_index:", "mvn_dynamic_goals:", "gradle_tasks:", "auto_restart:", "auto_clean:", "recent_cmds:" }
