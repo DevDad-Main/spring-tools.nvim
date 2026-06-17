@@ -170,6 +170,39 @@ command_input = {
 
 </details>
 
+<details><summary>Click to view microservice screenshots</summary>
+
+<br>
+
+> **Tip**: The sidebar dynamically detects when you're in a multi-project workspace — a parent header groups child microservices, Section keys are scoped per project, and Docker Compose integration surfaces in both the project menu and as a clickable widget. The UI adapts automatically whether you're working in a monorepo or a microservice cluster.
+
+<h4 align="center">Microservice Dashboard &mdash; foldable parent header, nested services, Docker Compose widget</h4>
+<p align="center">
+  <img src="previews/spring-microservice-dashboard.png" width="900" />
+</p>
+
+<h4 align="center">Microservice Beans &mdash; per-project grouping with collapsible headers</h4>
+<p align="center">
+  <img src="previews/spring-microservice-beans.png" width="900" />
+</p>
+
+<h4 align="center">Microservice Endpoints &mdash; scoped REST and Actuator sections per service</h4>
+<p align="center">
+  <img src="previews/spring-microservices-endpoints.png" width="900" />
+</p>
+
+<h4 align="center">Microservice Tests &mdash; separate test explorers per project</h4>
+<p align="center">
+  <img src="previews/spring-microservices-tests.png" width="900" />
+</p>
+
+<h4 align="center">Microservice Config &mdash; independent property browsing per service</h4>
+<p align="center">
+  <img src="previews/spring-microservices-configs.png" width="900" />
+</p>
+
+</details>
+
 ## Features
 
 - **Sidebar UI** — persistent sidebar with 5 tabbed views and `?` help float; position configurable (`left`/`right`)
@@ -187,7 +220,7 @@ command_input = {
 - **Config Diff** — `:SpringConfigDiff` or `D` in sidebar opens two config files side-by-side with explicit color-coded highlights (green same, amber changed, red one-sided) and filter toggles via a floating toolbar
 - **HTTP Client** — `t` on an endpoint sends a curl request; auto-detects port from running process; supports custom headers/args; pretty-prints JSON responses with syntax highlighting
 - **Process Manager** — unbuffered I/O, port extraction, exit code tracking
-- **Project Cache** — persistent JSON at `~/.local/share/nvim/spring-tools/projects.json`
+- **Multi-Project Workspace** — detects multiple projects, groups microservices under parent headers, foldable project sections, Docker Compose integration, per-project port detection, dynamically switches UI between monorepo and microservice modes
 - **Unified Search** — `:SpringSearch` opens a fuzzy picker across all beans, endpoints, tests, and config properties with nerd-font icons — jumps directly to the definition on selection
 - **Auto-restart** — save any file and the app restarts automatically; skips test files, debounces rapid saves, shows changed filename in success line; per-project toggle persists across sessions; optional clean rebuild
 
@@ -687,7 +720,7 @@ A sample Spring Boot test app is available at `tests/TestApp/` (Maven) and `test
 
 - Java parsing powered by Tree-sitter AST queries — accurate detection of nested and multi-line annotations, immune to comment/string false positives
 - Windows support limited — `find` command is used for file discovery
-- Multi-module projects not fully supported
+- Multi-module projects fully supported
 
 ## Roadmap
 
@@ -702,7 +735,7 @@ A sample Spring Boot test app is available at `tests/TestApp/` (Maven) and `test
 - [x] **Gradle task discovery** — parse `build.gradle` and query `gradle tasks --all` for dynamic task completion
 - [x] **Config diff viewer** — `:SpringConfigDiff` side-by-side comparison of config files
 - [x] **HTTP test client** — `t` on an endpoint sends curl requests with custom args, shows JSON response
-- [ ] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects
+- [x] **Multi-project workspace** — detect and manage multiple independent Spring Boot projects; foldable parent headers, Docker Compose integration, UI auto-adapts
 - [ ] **Profile picker** — select active Spring profiles when starting an app
 
 ## License
