@@ -113,7 +113,7 @@ function M:load_items()
         local is_collapsed = sections:is_collapsed(sk)
         M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = sk, collapsed = is_collapsed, _indent = indent }
         if not is_collapsed then
-          local items = build_bean_items_from(data.grouped, "beans:" .. proj.root .. ":", 1)
+          local items = build_bean_items_from(data.grouped, "beans:" .. proj.root .. ":", indent + 1)
           for _, item in ipairs(items) do
             table.insert(M.items, item)
           end
