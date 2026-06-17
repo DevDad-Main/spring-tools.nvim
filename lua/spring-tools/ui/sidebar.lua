@@ -249,6 +249,7 @@ function M.setup_keymaps()
   bmap("D", [[:lua require('spring-tools.config_diff').open()<CR>]])
   bmap("t", [[:lua require('spring-tools.ui.sidebar').test_endpoint()<CR>]])
   bmap("c", [[:lua require('spring-tools.ui.sidebar').collapse_parent()<CR>]])
+  bmap("O", [[:lua require('spring-tools.ui.sidebar').expand_child()<CR>]])
   bmap("<", [[:lua require('spring-tools.ui.sidebar').jump_fold('prev')<CR>]])
   bmap(">", [[:lua require('spring-tools.ui.sidebar').jump_fold('next')<CR>]])
 end
@@ -276,6 +277,7 @@ function M.show_help()
     { "    D       Config diff viewer", "" },
     { "    t       Test endpoint (curl)", "" },
     { "    c       Collapse nearest parent fold", "" },
+    { "    O       Expand nearest child fold", "" },
     { "    </>     Jump to prev/next foldable header", "" },
     { "    R       Refresh current tab", "" },
     { "    q       Close sidebar", "" },
@@ -379,11 +381,24 @@ function M.collapse_parent()
           M.selected = i
           view:on_activate(i)
         end
-      else
-        M.selected = i
-        M.render()
+        return
       end
-      return
+    end
+  end
+end
+
+function M.expand_child()
+  for i = M.selected + 1, #M.items, 1 do
+    local item = M.items[i]
+    if item and (item.type == "project_header" or item.type == "parent_header" or item.type == "header" or item.type == "section_header") and item.section_key then
+      if item.collapsed then
+        local view = M.get_view()
+        if view and view.on_activate then
+          M.selected = i
+          view:on_activate(i)
+        end
+        return
+      end
     end
   end
 end
