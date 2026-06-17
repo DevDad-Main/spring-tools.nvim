@@ -118,7 +118,7 @@ local function build_multi_items(projs)
       if data then
       local psk = "proj:" .. proj.root
       local proj_collapsed = sections:is_collapsed(psk)
-      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed }
+      M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed, _indent = indent }
       if not proj_collapsed then
         local rest_collapsed = sections:is_collapsed("rest:" .. proj.root)
         M.items[#M.items + 1] = { type = "section_header", section_key = "rest:" .. proj.root, label = "REST Endpoints  (" .. #data.rest .. ")", collapsed = rest_collapsed }
@@ -182,7 +182,6 @@ local function build_multi_items(projs)
     if not is_child[proj.root] then table.insert(top_level, proj) end
     if #proj.children == 0 then proj.children = nil end
   end
-  vim.notify(string.format("top_level=%d", #top_level), vim.log.levels.INFO)
   render_proj_tree(top_level)
 end
 

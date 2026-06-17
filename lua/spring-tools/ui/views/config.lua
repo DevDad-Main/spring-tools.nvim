@@ -126,7 +126,7 @@ function M:load_items()
         end
         local psk = "proj:" .. proj.root
         local proj_collapsed = sections:is_collapsed(psk)
-        M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed }
+        M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed, _indent = indent }
         if not proj_collapsed then
           local prefix = proj.root .. ":"
           local items = build_items_for_properties(data.properties, prefix)
