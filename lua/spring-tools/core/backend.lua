@@ -186,6 +186,9 @@ function ProcessManager.extract_port(_, project, line)
   local proc = ProcessManager.get(nil, project)
   if proc then
     local port = line:match("Tomcat initialized with port[s:]*(%d+)")
+      or line:match("Tomcat started on port[s:]*(%d+)")
+      or line:match("Netty started on port[s:]*(%d+)")
+      or line:match("port[s]?:%s*(%d+)")
     if port then proc.port = port end
     local profile = line:match("The following profiles are active:%s*(%S+)")
     if profile then proc.profile = profile end

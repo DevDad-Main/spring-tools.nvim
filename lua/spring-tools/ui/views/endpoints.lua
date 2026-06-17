@@ -341,7 +341,6 @@ function M._get_port(project_root)
         local be = project.get_backend_for_project(proj)
         if be and be.get_port then
           local p = be:get_port(proj)
-          vim.notify("port for " .. proj.name .. ": " .. (p or "nil"), vim.log.levels.INFO)
           if p and p ~= "" then return p end
         end
       end
@@ -356,7 +355,6 @@ function M._get_port(project_root)
       end
     end
   end
-  vim.notify("no port found, fallback 8080", vim.log.levels.WARN)
   return "8080"
 end
 

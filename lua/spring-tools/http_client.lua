@@ -262,13 +262,10 @@ function M._send_resolved(endpoint, extra_args, path)
         local be = project.get_backend_for_project(proj)
         if be and be.get_port then
           local p = be:get_port(proj)
-          vim.notify("matched " .. proj.name .. " port=" .. (p or "nil"), vim.log.levels.INFO)
           if p and p ~= "" then port = p; break end
         end
       end
     end
-  else
-    vim.notify("endpoint has no project_root", vim.log.levels.WARN)
   end
   if port == "8080" then
     local all_procs = backend.ProcessManager.get_all()
@@ -279,17 +276,14 @@ function M._send_resolved(endpoint, extra_args, path)
       end
     end
   end
-  -- Fallback: read server.port from active project's properties
-  if port == "8080" then
-    local proj = project.get_active_project()
-    if proj then
-      local prop_path = proj.root .. "/src/main/resources/application.properties"
-      local ok, lines = pcall(vim.fn.readfile, prop_path)
-      if ok and lines then
-        for _, line in ipairs(lines) do
-          local p = line:match("^server%.port%s*=%s*(%d+)")
-          if p then port = p; break end
-        end
+  -- Fallback: read server.port from endpoint's project properties
+  if port == "8080" and endpoint.project_root then
+    local prop_path = endpoint.project_root .. "/src/main/resources/application.properties"
+    local ok, lines = pcall(vim.fn.readfile, prop_path)
+    if ok and lines then
+      for _, line in ipairs(lines) do
+        local p = line:match("^server%.port%s*=%s*(%d+)")
+        if p then port = p; break end
       end
     end
   end
