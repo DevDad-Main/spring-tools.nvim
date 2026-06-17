@@ -229,12 +229,17 @@ end
 
 function M:fold_all(open)
   if open then
-    sections:expand_all()
-    sidebar.refresh()
-    vim.schedule(function()
+    local function pass()
       sections:expand_all()
       sidebar.refresh()
-    end)
+      for _, item in ipairs(M.items) do
+        if item.collapsed then
+          vim.schedule(pass)
+          return
+        end
+      end
+    end
+    pass()
   else
     sections:collapse_all()
     sidebar.refresh()
