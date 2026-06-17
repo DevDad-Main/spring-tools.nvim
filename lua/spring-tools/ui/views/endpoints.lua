@@ -120,19 +120,21 @@ local function build_multi_items(projs)
       local proj_collapsed = sections:is_collapsed(psk)
       M.items[#M.items + 1] = { type = "project_header", label = data.name, project_root = proj.root, section_key = psk, collapsed = proj_collapsed, _indent = indent }
       if not proj_collapsed then
-        local rest_collapsed = sections:is_collapsed("rest:" .. proj.root)
-        M.items[#M.items + 1] = { type = "section_header", section_key = "rest:" .. proj.root, label = "REST Endpoints  (" .. #data.rest .. ")", collapsed = rest_collapsed }
-        if not rest_collapsed then
-          local counts = {}
-          for _, ep in ipairs(data.rest) do counts[ep.method] = (counts[ep.method] or 0) + 1 end
-          for _, method in ipairs(method_order) do
-            if counts[method] and counts[method] > 0 then
-              local is_collapsed = sections:is_collapsed(method .. ":" .. proj.root)
-              M.items[#M.items + 1] = { type = "header", method = method, label = method .. "  (" .. counts[method] .. ")", collapsed = is_collapsed, section_key = method .. ":" .. proj.root }
-              if not is_collapsed then
-                for _, ep in ipairs(data.rest) do
-                  if ep.method == method then
-                    M.items[#M.items + 1] = { type = "endpoint", endpoint = ep, method = ep.method, path = ep.path, project_root = proj.root }
+        if #data.rest > 0 then
+          local rest_collapsed = sections:is_collapsed("rest:" .. proj.root)
+          M.items[#M.items + 1] = { type = "section_header", section_key = "rest:" .. proj.root, label = "REST Endpoints  (" .. #data.rest .. ")", collapsed = rest_collapsed }
+          if not rest_collapsed then
+            local counts = {}
+            for _, ep in ipairs(data.rest) do counts[ep.method] = (counts[ep.method] or 0) + 1 end
+            for _, method in ipairs(method_order) do
+              if counts[method] and counts[method] > 0 then
+                local is_collapsed = sections:is_collapsed(method .. ":" .. proj.root)
+                M.items[#M.items + 1] = { type = "header", method = method, label = method .. "  (" .. counts[method] .. ")", collapsed = is_collapsed, section_key = method .. ":" .. proj.root }
+                if not is_collapsed then
+                  for _, ep in ipairs(data.rest) do
+                    if ep.method == method then
+                      M.items[#M.items + 1] = { type = "endpoint", endpoint = ep, method = ep.method, path = ep.path, project_root = proj.root }
+                    end
                   end
                 end
               end
@@ -140,22 +142,25 @@ local function build_multi_items(projs)
           end
         end
 
-        local act_collapsed = sections:is_collapsed("actuator:" .. proj.root)
-        M.items[#M.items + 1] = { type = "section_header", section_key = "actuator:" .. proj.root, label = "Actuator Endpoints  (" .. #actuator_mod.endpoints .. ")", collapsed = act_collapsed }
-        if not act_collapsed then
-          for _, g in ipairs(actuator_mod.endpoints) do
-            local is_collapsed = sections:is_collapsed(g.group .. ":" .. proj.root)
-            M.items[#M.items + 1] = { type = "header", group = g.group, label = g.group .. "  (" .. #g.endpoints .. ")", collapsed = is_collapsed, section_key = g.group .. ":" .. proj.root }
-            if not is_collapsed then
-              for _, ep in ipairs(g.endpoints) do
-                M.items[#M.items + 1] = { type = "actuator_endpoint", path = ep.path, method = ep.method, description = ep.description, group = g.group, project_root = proj.root }
+        if #data.rest > 0 then
+          local act_collapsed = sections:is_collapsed("actuator:" .. proj.root)
+          M.items[#M.items + 1] = { type = "section_header", section_key = "actuator:" .. proj.root, label = "Actuator Endpoints  (" .. #actuator_mod.endpoints .. ")", collapsed = act_collapsed }
+          if not act_collapsed then
+            for _, g in ipairs(actuator_mod.endpoints) do
+              local is_collapsed = sections:is_collapsed(g.group .. ":" .. proj.root)
+              M.items[#M.items + 1] = { type = "header", group = g.group, label = g.group .. "  (" .. #g.endpoints .. ")", collapsed = is_collapsed, section_key = g.group .. ":" .. proj.root }
+              if not is_collapsed then
+                for _, ep in ipairs(g.endpoints) do
+                  M.items[#M.items + 1] = { type = "actuator_endpoint", path = ep.path, method = ep.method, description = ep.description, group = g.group, project_root = proj.root }
+                end
               end
             end
           end
         end
-      end
-      if proj.children and #proj.children > 0 then
-        render_proj_tree(proj.children, indent + 1)
+
+        if proj.children and #proj.children > 0 then
+          render_proj_tree(proj.children, indent + 1)
+        end
       end
       end
     end

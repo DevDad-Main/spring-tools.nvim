@@ -115,9 +115,9 @@ function M:load_items()
           for _, item in ipairs(items) do
             table.insert(M.items, item)
           end
-        end
-        if proj.children and #proj.children > 0 then
-          render_proj_tree(proj.children, indent + 1)
+          if proj.children and #proj.children > 0 then
+            render_proj_tree(proj.children, indent + 1)
+          end
         end
       end
     end
