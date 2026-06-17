@@ -37,6 +37,8 @@ M.defaults = {
       expand_fold = "O",
       jump_fold_prev = "<",
       jump_fold_next = ">",
+      collapse_all = "C",
+      expand_all = "E",
     },
   },
   keymaps = {

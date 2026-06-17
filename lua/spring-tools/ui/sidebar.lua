@@ -260,8 +260,12 @@ function M.setup_keymaps()
   if km.jump_fold_next then
     bmap(km.jump_fold_next, [[:lua require('spring-tools.ui.sidebar').jump_fold('next')<CR>]])
   end
-  bmap("C", [[:lua require('spring-tools.ui.sidebar').collapse_all()<CR>]])
-  bmap("E", [[:lua require('spring-tools.ui.sidebar').expand_all()<CR>]])
+  if km.collapse_all then
+    bmap(km.collapse_all, [[:lua require('spring-tools.ui.sidebar').collapse_all()<CR>]])
+  end
+  if km.expand_all then
+    bmap(km.expand_all, [[:lua require('spring-tools.ui.sidebar').expand_all()<CR>]])
+  end
 end
 
 function M.show_help()

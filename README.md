@@ -328,8 +328,10 @@ use {
 | `d`       | Remove project from cache                            |
 | `D`       | Open Config Diff viewer                              |
 | `t`       | Test endpoint (send curl request)                    |
-| `c`       | Collapse nearest open parent fold                    |
-| `O`       | Expand nearest closed child fold                     |
+| `c`       | Collapse nearest open parent fold                   |
+| `O`       | Expand nearest closed child fold                    |
+| `C`       | Collapse all folds in current view                  |
+| `E`       | Expand all folds in current view                    |
 | `<` / `>` | Jump to prev/next foldable header                    |
 | `R`       | Refresh current view                                 |
 | `q`       | Close sidebar                                        |
@@ -469,6 +471,8 @@ require("spring-tools").setup({
        expand_fold = "O",
        jump_fold_prev = "<",
        jump_fold_next = ">",
+       collapse_all = "C",
+       expand_all = "E",
      },
   },
   highlights = {
