@@ -367,7 +367,7 @@ end
 function M._resolve_and_send(ep)
   local path = ep.path
   local vars = {}
-  for var in path:gmatch("{(%w+)}") do
+  for var in path:gmatch("{([^}]+)}") do
     vars[#vars + 1] = var
   end
 
