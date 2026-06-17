@@ -337,12 +337,16 @@ end
 function M._get_port(project_root)
   if project_root then
     for _, proj in ipairs(project.get_workspace_projects()) do
+      vim.notify(string.format("check: ep=%s proj=%s match=%s", vim.fn.fnamemodify(project_root, ":t"), proj.name, tostring(proj.root == project_root)), vim.log.levels.INFO)
       if proj.root == project_root then
         local be = project.get_backend_for_project(proj)
         if be and be.get_port then
           local p = be:get_port(proj)
           if p and p ~= "" then return p end
         end
+      end
+    end
+  end
       end
     end
   else
