@@ -114,7 +114,7 @@ function ProcessManager.start(_, project, cmd, cwd, callbacks)
           table.insert(logs, partial_err)
           if callbacks.on_stderr then callbacks.on_stderr(partial_err) end
         end
-        local proc = ProcessManager.processes[project.root]
+        local proc = ProcessManager.processes[vim.fn.resolve(project.root)]
         if proc and proc.job_id == my_job_id then
           proc.status = exit_code == 0 and "stopped" or "failed"
           proc.exit_code = exit_code
@@ -126,7 +126,7 @@ function ProcessManager.start(_, project, cmd, cwd, callbacks)
   })
 
   if job_id and job_id > 0 then
-    ProcessManager.processes[project.root] = {
+    ProcessManager.processes[vim.fn.resolve(project.root)] = {
       job_id = job_id,
       status = "running",
       cmd = cmd,
@@ -137,14 +137,14 @@ function ProcessManager.start(_, project, cmd, cwd, callbacks)
       profile = nil,
     }
     state.emit("process_started", project)
-    return job_id, ProcessManager.processes[project.root]
+    return job_id, ProcessManager.processes[vim.fn.resolve(project.root)]
   end
 
   return nil, nil
 end
 
 function ProcessManager.stop(_, project)
-  local proc = ProcessManager.processes[project.root]
+  local proc = ProcessManager.processes[vim.fn.resolve(project.root)]
   if proc and proc.status == "running" then
     vim.fn.jobstop(proc.job_id)
     if proc.port then
@@ -162,7 +162,7 @@ function ProcessManager.stop(_, project)
 end
 
 function ProcessManager.restart(_, project, callbacks)
-  local proc = ProcessManager.processes[project.root]
+  local proc = ProcessManager.processes[vim.fn.resolve(project.root)]
   if proc then
     local cmd = proc.cmd
     local cwd = proc.cwd
@@ -174,7 +174,7 @@ function ProcessManager.restart(_, project, callbacks)
 end
 
 function ProcessManager.get(_, project)
-  return ProcessManager.processes[project.root]
+  return ProcessManager.processes[vim.fn.resolve(project.root)]
 end
 
 function ProcessManager.get_all()
@@ -182,7 +182,7 @@ function ProcessManager.get_all()
 end
 
 function ProcessManager.extract_port(_, project, line)
-  local proc = ProcessManager.processes[project.root]
+  local proc = ProcessManager.processes[vim.fn.resolve(project.root)]
   if proc then
     local port = line:match("Tomcat initialized with port[s:]*(%d+)")
     if port then proc.port = port end

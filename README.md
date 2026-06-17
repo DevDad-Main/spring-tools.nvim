@@ -203,6 +203,11 @@ command_input = {
   <img src="previews/spring-microservices-configs.png" width="900" />
 </p>
 
+<h4 align="center">Microservice Config Diff &mdash; cross-service comparison with project-name labels</h4>
+<p align="center">
+  <img src="previews/spring-microservices-config-diff.png" width="900" />
+</p>
+
 </details>
 
 ## Features
