@@ -81,6 +81,13 @@ command_input = {
   <img src="previews/plugin_demo_config_diff.gif" width="900" />
 </p>
 
+<h4 align="center">Smart Fold Navigation &mdash; collapse parents, expand children, jump between headers</h4>
+<p align="center">
+  <img src="previews/plugin_demo_better_folding.gif" width="900" />
+</p>
+
+> **Tip**: Press `c` to collapse the nearest open fold above your cursor — `O` to expand the nearest closed one below. `<` and `>` jump between foldable headers. All keys are configurable.
+
 > **Tip**: Press `c`/`l`/`r`/`s` to filter by diff type. `a` to show all. `?` for help.
 
 ```lua
