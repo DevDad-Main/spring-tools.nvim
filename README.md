@@ -210,6 +210,17 @@ command_input = {
 
 </details>
 
+## Works out of the box
+
+Zero dependencies required. Shown here with default configs on popular distros:
+
+<p align="center">
+  <img src="previews/spring-tools-default-lazyvim.png" width="48%" />
+  <img src="previews/spring-tools-default-nvchad.png" width="48%" />
+</p>
+
+> **Tip**: NvChad uses `defaults = { lazy = true }` — add `lazy = false` to the plugin spec. Java Tree-sitter parser must be installed (`:TSInstall java`).
+
 ## Features
 
 - **Sidebar UI** — persistent sidebar with 5 tabbed views and `?` help float; position configurable (`left`/`right`)

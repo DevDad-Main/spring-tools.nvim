@@ -248,6 +248,9 @@ function M.setup_keymaps()
   end
   bmap("D", [[:lua require('spring-tools.config_diff').open()<CR>]])
   bmap("t", [[:lua require('spring-tools.ui.sidebar').test_endpoint()<CR>]])
+  bmap("c", [[:lua require('spring-tools.ui.sidebar').collapse_parent()<CR>]])
+  bmap("<", [[:lua require('spring-tools.ui.sidebar').jump_fold('prev')<CR>]])
+  bmap(">", [[:lua require('spring-tools.ui.sidebar').jump_fold('next')<CR>]])
 end
 
 function M.show_help()
@@ -272,6 +275,8 @@ function M.show_help()
     { "    d       Remove from cache", "" },
     { "    D       Config diff viewer", "" },
     { "    t       Test endpoint (curl)", "" },
+    { "    c       Collapse nearest parent fold", "" },
+    { "    </>     Jump to prev/next foldable header", "" },
     { "    R       Refresh current tab", "" },
     { "    q       Close sidebar", "" },
     { "", "" },
@@ -362,6 +367,35 @@ end
 function M.test_endpoint()
   local view = M.get_view()
   if view and view.test_endpoint then view:test_endpoint(M.selected) end
+end
+
+function M.collapse_parent()
+  for i = M.selected - 1, 1, -1 do
+    local item = M.items[i]
+    if item and (item.type == "project_header" or item.type == "parent_header" or item.type == "header" or item.type == "section_header") and item.section_key then
+      local view = M.get_view()
+      if view and view.on_activate then
+        M.selected = i
+        view:on_activate(i)
+      end
+      return
+    end
+  end
+end
+
+function M.jump_fold(dir)
+  local step = dir == "next" and 1 or -1
+  local start = M.selected + step
+  local i = start
+  while i >= 1 and i <= #M.items do
+    local item = M.items[i]
+    if item and (item.type == "project_header" or item.type == "parent_header" or item.type == "header" or item.type == "section_header") then
+      M.selected = i
+      M.render()
+      return
+    end
+    i = i + step
+  end
 end
 
 function M.move_down()
