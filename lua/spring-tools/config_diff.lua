@@ -12,18 +12,32 @@ vim.api.nvim_set_hl(0, "SpringToolsDiffRemoved", { fg = "#e06c75", default = tru
 vim.api.nvim_set_hl(0, "SpringToolsDiffAdded", { fg = "#e06c75", default = true })
 
 function M.open()
-  local proj = project.get_active_project()
-  local root = proj and proj.root or vim.fn.getcwd()
-  local files = config_mod.find_config_files(root)
+  local all_files = {}
+  if project.is_multi_project() then
+    for _, proj in ipairs(project.get_workspace_projects()) do
+      for _, f in ipairs(config_mod.find_config_files(proj.root)) do
+        all_files[#all_files + 1] = { path = f, project = proj.name }
+      end
+    end
+  else
+    local proj = project.get_active_project()
+    local root = proj and proj.root or vim.fn.getcwd()
+    for _, f in ipairs(config_mod.find_config_files(root)) do
+      all_files[#all_files + 1] = { path = f }
+    end
+  end
 
-  if #files < 2 then
-    utils.notify("Need at least 2 config files to diff (found " .. #files .. ")", vim.log.levels.WARN)
+  if #all_files < 2 then
+    utils.notify("Need at least 2 config files to diff (found " .. #all_files .. ")", vim.log.levels.WARN)
     return
   end
 
   local display_names = vim.tbl_map(function(f)
-    return vim.fn.fnamemodify(f, ":t")
-  end, files)
+    if f.project then return f.project .. "  ▸  " .. vim.fn.fnamemodify(f.path, ":t") end
+    return vim.fn.fnamemodify(f.path, ":t")
+  end, all_files)
+
+  local file_paths = vim.tbl_map(function(f) return f.path end, all_files)
 
   vim.ui.select(display_names, {
     prompt = "Select first file (left):",
@@ -34,15 +48,16 @@ function M.open()
       if name == choice_a then a_idx = i; break end
     end
 
-    local remaining, remaining_paths = {}, {}
+    local remaining, remaining_display, remaining_paths = {}, {}, {}
     for i, name in ipairs(display_names) do
       if i ~= a_idx then
         remaining[#remaining + 1] = name
-        remaining_paths[#remaining_paths + 1] = files[i]
+        remaining_display[#remaining_display + 1] = name
+        remaining_paths[#remaining_paths + 1] = file_paths[i]
       end
     end
 
-    vim.ui.select(remaining, {
+    vim.ui.select(remaining_display, {
       prompt = "Compare '" .. choice_a .. "' with:",
     }, function(choice_b)
       if not choice_b then return end
@@ -51,7 +66,7 @@ function M.open()
         if name == choice_b then b_path = remaining_paths[i]; break end
       end
       if b_path then
-        M.show_diff(files[a_idx], b_path, choice_a, choice_b)
+        M.show_diff(file_paths[a_idx], b_path, choice_a, choice_b)
       end
     end)
   end)
