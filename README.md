@@ -74,19 +74,12 @@ command_input = {
   <img src="previews/plugin_demo_actuator.gif" width="900" />
 </p>
 
-> **Tip**: Only <code>health</code> and <code>info</code> are exposed by default. Add <code>management.endpoints.web.exposure.include=*</code> to your <code>application.properties</code> to enable all endpoints.
+> **Tip**: Only <code>health</code> and <code>info</code> are exposed by default. Add <code>management.endpoints.web.exposure.include=\*</code> to your <code>application.properties</code> to enable all endpoints.
 
 <h4 align="center">Config Diff &mdash; side-by-side comparison with color-coded highlights</h4>
 <p align="center">
   <img src="previews/plugin_demo_config_diff.gif" width="900" />
 </p>
-
-<h4 align="center">Smart Fold Navigation &mdash; collapse parents, expand children, jump between headers</h4>
-<p align="center">
-  <img src="previews/plugin_demo_better_folding.gif" width="900" />
-</p>
-
-> **Tip**: Press `c` to collapse the nearest open fold above your cursor — `O` to expand the nearest closed one below. `<` and `>` jump between foldable headers. All keys are configurable.
 
 > **Tip**: Press `c`/`l`/`r`/`s` to filter by diff type. `a` to show all. `?` for help.
 
@@ -101,6 +94,13 @@ diff = {
   },
 }
 ```
+
+<h4 align="center">Smart Fold Navigation &mdash; collapse parents, expand children, jump between headers</h4>
+<p align="center">
+  <img src="previews/plugin_demo_better_folding.gif" width="900" />
+</p>
+
+> **Tip**: Press `c` to collapse the nearest open fold above your cursor — `O` to expand the nearest closed one below. `<` and `>` jump between foldable headers. All keys are configurable.
 
 <h4 align="center">Test Runner &mdash; discover and run JUnit 5 tests, per-method results</h4>
 <p align="center">
@@ -320,7 +320,7 @@ use {
 | --------- | ---------------------------------------------------- |
 | `j` / `k` | Move selection up/down                               |
 | `h` / `l` | Previous/next tab                                    |
-| `1`–`5`   | Jump to tab (Dash/Beans/Endp/Tests/Config)
+| `1`–`5`   | Jump to tab (Dash/Beans/Endp/Tests/Config)           |
 | `<CR>`    | Open nested action menu (commands, logs, stop, etc.) |
 | `o`       | Toggle output panel                                  |
 | `/`       | Unified search across all views                      |
@@ -328,8 +328,8 @@ use {
 | `d`       | Remove project from cache                            |
 | `D`       | Open Config Diff viewer                              |
 | `t`       | Test endpoint (send curl request)                    |
-| `c`       | Collapse nearest open parent fold                   |
-| `O`       | Expand nearest closed child fold                    |
+| `c`       | Collapse nearest open parent fold                    |
+| `O`       | Expand nearest closed child fold                     |
 | `<` / `>` | Jump to prev/next foldable header                    |
 | `R`       | Refresh current view                                 |
 | `q`       | Close sidebar                                        |
