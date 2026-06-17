@@ -21,11 +21,12 @@ local type_labels = {
 }
 
 local function build_bean_items_from(grouped, section_prefix, base_indent)
+  grouped = grouped or {}
   local items = {}
   for _, t in ipairs(type_order) do
     local sub = {}
     if t == "configurations" then
-      for _, bean in ipairs(grouped[t]) do
+      for _, bean in ipairs(grouped[t] or {}) do
         table.insert(sub, { type = "bean", bean = bean, _indent = base_indent })
         for _, b in ipairs(grouped.beans or {}) do
           if b.parent == bean.name then
@@ -34,7 +35,7 @@ local function build_bean_items_from(grouped, section_prefix, base_indent)
         end
       end
     else
-      for _, bean in ipairs(grouped[t]) do
+      for _, bean in ipairs(grouped[t] or {}) do
         if t == "beans" and bean.parent then
           -- skip parented beans (shown under their @Configuration parent)
         else
