@@ -165,6 +165,18 @@ local function build_multi_items(projs)
   for _, proj in ipairs(projs) do
     if proj.is_top_level == nil or proj.is_top_level then table.insert(top_level, proj) end
   end
+  -- Fallback: if children not set, compute from path prefix
+  for _, proj in ipairs(projs) do
+    if not proj.children or #proj.children == 0 then
+      proj.children = {}
+      for _, child in ipairs(projs) do
+        if child.root ~= proj.root and child.root:sub(1, #proj.root) == proj.root then
+          proj.children[#proj.children + 1] = child
+        end
+      end
+      if #proj.children == 0 then proj.children = nil end
+    end
+  end
   render_proj_tree(top_level)
 end
 
