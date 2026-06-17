@@ -319,6 +319,9 @@ use {
 | `d`       | Remove project from cache                            |
 | `D`       | Open Config Diff viewer                              |
 | `t`       | Test endpoint (send curl request)                    |
+| `c`       | Collapse nearest open parent fold                   |
+| `O`       | Expand nearest closed child fold                    |
+| `<` / `>` | Jump to prev/next foldable header                    |
 | `R`       | Refresh current view                                 |
 | `q`       | Close sidebar                                        |
 | `?`       | Toggle help floating window                          |
@@ -451,9 +454,13 @@ require("spring-tools").setup({
       tab_prev = "h",
       show_help = "?",
       search = "/",
-      preview = "p",
-      toggle_output = "o",
-    },
+       preview = "p",
+       toggle_output = "o",
+       collapse_fold = "c",
+       expand_fold = "O",
+       jump_fold_prev = "<",
+       jump_fold_next = ">",
+     },
   },
   highlights = {
     -- Override any highlight group. Can use attributes or link.

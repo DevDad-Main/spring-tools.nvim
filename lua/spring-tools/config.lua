@@ -33,6 +33,10 @@ M.defaults = {
       search = "/",
       preview = "p",
       toggle_output = "o",
+      collapse_fold = "c",
+      expand_fold = "O",
+      jump_fold_prev = "<",
+      jump_fold_next = ">",
     },
   },
   keymaps = {

@@ -248,10 +248,18 @@ function M.setup_keymaps()
   end
   bmap("D", [[:lua require('spring-tools.config_diff').open()<CR>]])
   bmap("t", [[:lua require('spring-tools.ui.sidebar').test_endpoint()<CR>]])
-  bmap("c", [[:lua require('spring-tools.ui.sidebar').collapse_parent()<CR>]])
-  bmap("O", [[:lua require('spring-tools.ui.sidebar').expand_child()<CR>]])
-  bmap("<", [[:lua require('spring-tools.ui.sidebar').jump_fold('prev')<CR>]])
-  bmap(">", [[:lua require('spring-tools.ui.sidebar').jump_fold('next')<CR>]])
+  if km.collapse_fold then
+    bmap(km.collapse_fold, [[:lua require('spring-tools.ui.sidebar').collapse_parent()<CR>]])
+  end
+  if km.expand_fold then
+    bmap(km.expand_fold, [[:lua require('spring-tools.ui.sidebar').expand_child()<CR>]])
+  end
+  if km.jump_fold_prev then
+    bmap(km.jump_fold_prev, [[:lua require('spring-tools.ui.sidebar').jump_fold('prev')<CR>]])
+  end
+  if km.jump_fold_next then
+    bmap(km.jump_fold_next, [[:lua require('spring-tools.ui.sidebar').jump_fold('next')<CR>]])
+  end
 end
 
 function M.show_help()
