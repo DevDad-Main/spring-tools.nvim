@@ -101,20 +101,25 @@ function M:load_items()
       end
     end
 
+    for _, proj in ipairs(projs) do
+      proj.children = {}
+    end
+    local is_child = {}
+    for _, proj in ipairs(projs) do
+      for _, parent in ipairs(projs) do
+        if proj.root ~= parent.root
+          and proj.root:sub(1, #parent.root) == parent.root
+          and proj.root:sub(#parent.root + 1, #parent.root + 1) == "/" then
+          parent.children[#parent.children + 1] = proj
+          is_child[proj.root] = true
+          break
+        end
+      end
+    end
     local top_level = {}
     for _, proj in ipairs(projs) do
-      if proj.is_top_level == nil or proj.is_top_level then table.insert(top_level, proj) end
-    end
-    for _, proj in ipairs(projs) do
-      if not proj.children or #proj.children == 0 then
-        proj.children = {}
-        for _, child in ipairs(projs) do
-          if child.root ~= proj.root and child.root:sub(1, #proj.root) == proj.root then
-            proj.children[#proj.children + 1] = child
-          end
-        end
-        if #proj.children == 0 then proj.children = nil end
-      end
+      if not is_child[proj.root] then table.insert(top_level, proj) end
+      if #proj.children == 0 then proj.children = nil end
     end
     render_proj_tree(top_level)
   end
