@@ -110,8 +110,12 @@ function M:load_items()
 
     for _, proj in ipairs(projs) do
       if not M._project_data[proj.root] then
-        config_mod.build_index(proj.root)
-        M._project_data[proj.root] = { name = proj.name, properties = vim.deepcopy(config_mod.properties) }
+        if proj.is_virtual then
+          M._project_data[proj.root] = { name = proj.name, properties = {} }
+        else
+          config_mod.build_index(proj.root)
+          M._project_data[proj.root] = { name = proj.name, properties = vim.deepcopy(config_mod.properties) }
+        end
       end
     end
 
@@ -120,8 +124,12 @@ function M:load_items()
       for _, proj in ipairs(proj_list) do
         local data = M._project_data[proj.root]
         if not data then
-          config_mod.build_index(proj.root)
-          data = { name = proj.name, properties = vim.deepcopy(config_mod.properties) }
+          if proj.is_virtual then
+            data = { name = proj.name, properties = {} }
+          else
+            config_mod.build_index(proj.root)
+            data = { name = proj.name, properties = vim.deepcopy(config_mod.properties) }
+          end
           M._project_data[proj.root] = data
         end
         local psk = "proj:" .. proj.root

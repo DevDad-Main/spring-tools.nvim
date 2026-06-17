@@ -56,8 +56,9 @@ local function build_bean_items_from(grouped, section_prefix, base_indent)
   return items
 end
 
-local function scan_project(proj_root)
-  beans_mod.build_index(proj_root)
+local function scan_project(proj, is_virtual)
+  if is_virtual then return {} end
+  beans_mod.build_index(proj.root)
   return beans_mod.group_by_type()
 end
 
@@ -103,8 +104,8 @@ function M:load_items()
       for _, proj in ipairs(proj_list) do
         local data = M._project_data[proj.root]
         if not data then
-          local grouped = scan_project(proj.root)
-          M._project_data[proj.root] = { name = proj.name, grouped = grouped, bean_count = #beans_mod.beans }
+          local grouped = scan_project(proj, proj.is_virtual)
+          M._project_data[proj.root] = { name = proj.name, grouped = grouped, bean_count = proj.is_virtual and 0 or #beans_mod.beans }
           data = M._project_data[proj.root]
         end
         local sk = "proj:" .. proj.root
@@ -125,8 +126,8 @@ function M:load_items()
     -- Pre-scan all projects
     for _, proj in ipairs(projs) do
       if not M._project_data[proj.root] then
-        local grouped = scan_project(proj.root)
-        M._project_data[proj.root] = { name = proj.name, grouped = grouped, bean_count = #beans_mod.beans }
+        local grouped = scan_project(proj, proj.is_virtual)
+        M._project_data[proj.root] = { name = proj.name, grouped = grouped, bean_count = proj.is_virtual and 0 or #beans_mod.beans }
       end
     end
 

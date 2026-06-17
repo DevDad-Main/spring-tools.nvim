@@ -65,8 +65,12 @@ function M:load_items()
     -- Pre-scan all projects
     for _, proj in ipairs(projs) do
       if not M._project_classes[proj.root] then
-        local classes = tests_mod.find_test_methods(proj.root)
-        M._project_classes[proj.root] = { name = proj.name, classes = classes }
+        if proj.is_virtual then
+          M._project_classes[proj.root] = { name = proj.name, classes = {} }
+        else
+          local classes = tests_mod.find_test_methods(proj.root)
+          M._project_classes[proj.root] = { name = proj.name, classes = classes }
+        end
       end
     end
 
@@ -75,8 +79,12 @@ function M:load_items()
       for _, proj in ipairs(proj_list) do
         local data = M._project_classes[proj.root]
         if not data then
-          local classes = tests_mod.find_test_methods(proj.root)
-          data = { name = proj.name, classes = classes }
+          if proj.is_virtual then
+            data = { name = proj.name, classes = {} }
+          else
+            local classes = tests_mod.find_test_methods(proj.root)
+            data = { name = proj.name, classes = classes }
+          end
           M._project_classes[proj.root] = data
         end
         local psk = "proj:" .. proj.root

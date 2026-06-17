@@ -100,14 +100,18 @@ local function build_multi_items(projs)
   -- Pre-scan all projects
   for _, proj in ipairs(projs) do
     if not M._project_data[proj.root] then
-      endpoints_mod.scan_endpoints(proj.root)
-      local rest = vim.deepcopy(endpoints_mod.endpoints)
-      table.sort(rest, function(a, b)
-        local oa, ob = method_order[a.method] or 99, method_order[b.method] or 99
-        if oa ~= ob then return oa < ob end
-        return a.path < b.path
-      end)
-      M._project_data[proj.root] = { name = proj.name, rest = rest }
+      if proj.is_virtual then
+        M._project_data[proj.root] = { name = proj.name, rest = {} }
+      else
+        endpoints_mod.scan_endpoints(proj.root)
+        local rest = vim.deepcopy(endpoints_mod.endpoints)
+        table.sort(rest, function(a, b)
+          local oa, ob = method_order[a.method] or 99, method_order[b.method] or 99
+          if oa ~= ob then return oa < ob end
+          return a.path < b.path
+        end)
+        M._project_data[proj.root] = { name = proj.name, rest = rest }
+      end
     end
   end
 
