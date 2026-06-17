@@ -46,7 +46,7 @@ function M.scan_endpoints(dir)
   dir = dir or vim.fn.getcwd()
   local project_root = utils.find_project_root(dir)
   if not project_root then
-    utils.notify("No Spring project root found", vim.log.levels.WARN)
+    utils.notify("No Spring project root found in " .. vim.fn.fnamemodify(dir, ":t"), vim.log.levels.DEBUG)
     return {}
   end
 
