@@ -1042,11 +1042,7 @@ function M.open_config(proj)
 end
 
 function M:fold_all(open)
-  for _, item in ipairs(M.items) do
-    if item.section_key then
-      sections.collapsed[item.section_key] = not open
-    end
-  end
+  if open then sections:expand_all() else sections:collapse_all() end
   sidebar.refresh()
 end
 
