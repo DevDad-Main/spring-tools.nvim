@@ -260,6 +260,8 @@ function M.setup_keymaps()
   if km.jump_fold_next then
     bmap(km.jump_fold_next, [[:lua require('spring-tools.ui.sidebar').jump_fold('next')<CR>]])
   end
+  bmap("C", [[:lua require('spring-tools.ui.sidebar').collapse_all()<CR>]])
+  bmap("E", [[:lua require('spring-tools.ui.sidebar').expand_all()<CR>]])
 end
 
 function M.show_help()
@@ -281,6 +283,8 @@ function M.show_help()
     { "    Enter   Toggle fold open/close", "" },
     { "    c       Collapse nearest open parent", "" },
     { "    O       Expand nearest closed child", "" },
+    { "    C       Collapse all folds in view", "" },
+    { "    E       Expand all folds in view", "" },
     { "", "" },
     { "  Actions", "SpringToolsAccent" },
     { "    Enter   Open nested action menu", "" },
@@ -446,6 +450,16 @@ function M.expand_child()
   if M._last_fold_action and now - M._last_fold_action < 0.15 then return end
   M._last_fold_action = now
   do_fold_action("expand")
+end
+
+function M.collapse_all()
+  local view = M.get_view()
+  if view and view.fold_all then view:fold_all(false) end
+end
+
+function M.expand_all()
+  local view = M.get_view()
+  if view and view.fold_all then view:fold_all(true) end
 end
 
 function M.jump_fold(dir)

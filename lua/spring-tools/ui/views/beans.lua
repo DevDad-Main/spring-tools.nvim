@@ -183,4 +183,13 @@ function M:on_activate(idx)
   sidebar.open_in_main(item.bean.file, item.bean.line)
 end
 
+function M:fold_all(open)
+  for _, item in ipairs(M.items) do
+    if item.section_key then
+      sections.collapsed[item.section_key] = not open
+    end
+  end
+  sidebar.refresh()
+end
+
 return M

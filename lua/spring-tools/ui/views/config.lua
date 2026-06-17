@@ -261,4 +261,13 @@ function M:on_activate(idx)
   end
 end
 
+function M:fold_all(open)
+  for _, item in ipairs(M.items) do
+    if item.section_key then
+      sections.collapsed[item.section_key] = not open
+    end
+  end
+  sidebar.refresh()
+end
+
 return M
