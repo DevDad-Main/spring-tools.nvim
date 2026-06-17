@@ -182,6 +182,7 @@ local function build_multi_items(projs)
     if not is_child[proj.root] then table.insert(top_level, proj) end
     if #proj.children == 0 then proj.children = nil end
   end
+  vim.notify(string.format("top_level=%d", #top_level), vim.log.levels.INFO)
   render_proj_tree(top_level)
 end
 
