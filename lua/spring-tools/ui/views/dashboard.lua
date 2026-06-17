@@ -1042,8 +1042,17 @@ function M.open_config(proj)
 end
 
 function M:fold_all(open)
-  if open then sections:expand_all() else sections:collapse_all() end
-  sidebar.refresh()
+  if open then
+    sections:expand_all()
+    sidebar.refresh()
+    vim.schedule(function()
+      sections:expand_all()
+      sidebar.refresh()
+    end)
+  else
+    sections:collapse_all()
+    sidebar.refresh()
+  end
 end
 
 return M
