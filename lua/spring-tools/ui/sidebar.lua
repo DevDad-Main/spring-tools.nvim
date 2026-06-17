@@ -373,10 +373,15 @@ function M.collapse_parent()
   for i = M.selected - 1, 1, -1 do
     local item = M.items[i]
     if item and (item.type == "project_header" or item.type == "parent_header" or item.type == "header" or item.type == "section_header") and item.section_key then
-      local view = M.get_view()
-      if view and view.on_activate then
+      if not item.collapsed then
+        local view = M.get_view()
+        if view and view.on_activate then
+          M.selected = i
+          view:on_activate(i)
+        end
+      else
         M.selected = i
-        view:on_activate(i)
+        M.render()
       end
       return
     end
