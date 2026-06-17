@@ -112,6 +112,7 @@ end
 function M.detect_projects(start_path)
   M.load_cache()
   start_path = start_path or vim.fn.getcwd()
+  start_path = vim.fn.resolve(start_path)
 
   local all_roots = utils.find_all_project_roots(start_path)
   if #all_roots == 0 then
