@@ -276,15 +276,27 @@ function M._send_resolved(endpoint, extra_args, path)
       end
     end
   end
-  -- Fallback: read server.port from endpoint's project properties
+  -- Fallback: read server.port from endpoint's project properties/YAML
   if port == "8080" and endpoint.project_root then
-    local prop_path = endpoint.project_root .. "/src/main/resources/application.properties"
-    local ok, lines = pcall(vim.fn.readfile, prop_path)
-    if ok and lines then
-      for _, line in ipairs(lines) do
-        local p = line:match("^server%.port%s*=%s*(%d+)")
-        if p then port = p; break end
+    local function try_read_port(file_path)
+      local ok, lines = pcall(vim.fn.readfile, file_path)
+      if not ok or not lines then return nil end
+      if file_path:match("%.ya?ml$") then
+        for _, line in ipairs(lines) do
+          local p = line:match("^%s*port:%s*(%d+)")
+          if p then return p end
+        end
+      else
+        for _, line in ipairs(lines) do
+          local p = line:match("^server%.port%s*=%s*(%d+)")
+          if p then return p end
+        end
       end
+      return nil
+    end
+    for _, ext in ipairs({ "properties", "yml", "yaml" }) do
+      local p = try_read_port(endpoint.project_root .. "/src/main/resources/application." .. ext)
+      if p then port = p; break end
     end
   end
 
