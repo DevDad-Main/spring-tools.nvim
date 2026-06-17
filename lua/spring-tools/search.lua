@@ -39,19 +39,34 @@ local function scan_dir()
 end
 
 function M.collect()
-  local root = scan_dir()
+  local roots = {}
+  if project.is_multi_project() then
+    for _, proj in ipairs(project.get_workspace_projects()) do
+      if not proj.is_virtual then
+        roots[#roots + 1] = { root = proj.root, name = proj.name }
+      end
+    end
+  else
+    local proj = project.get_active_project()
+    local root = proj and proj.root or vim.fn.getcwd()
+    roots[#roots + 1] = { root = root, name = vim.fn.fnamemodify(root, ":t") }
+  end
   local entries = {}
 
-  -- Beans
-  local ok, result = pcall(beans_mod.build_index, root)
-  if ok and beans_mod.beans then
+  for _, proj_info in ipairs(roots) do
+    local root = proj_info.root
+    local prefix = (#roots > 1) and ("[" .. proj_info.name .. "] ") or ""
+
+    -- Beans
+    local ok, result = pcall(beans_mod.build_index, root)
+    if ok and beans_mod.beans then
     local seen_beans = {}
     for _, bean in ipairs(beans_mod.beans) do
       if not bean.parent then
         entries[#entries + 1] = {
           type = "bean",
           icon = get_icon("bean"),
-          label = bean.name,
+          label = prefix .. bean.name,
           detail = bean.type:sub(1, 1):upper() .. bean.type:sub(2),
           file = bean.file,
           line = bean.line,
@@ -64,7 +79,7 @@ function M.collect()
         entries[#entries + 1] = {
           type = "bean_method",
           icon = get_icon("bean_method"),
-          label = bean.name .. "()",
+          label = prefix .. bean.name .. "()",
           detail = bean.parent,
           file = bean.file,
           line = bean.line,
@@ -80,7 +95,7 @@ function M.collect()
       entries[#entries + 1] = {
         type = "endpoint",
         icon = get_icon("endpoint"),
-        label = ep.method .. " " .. ep.path,
+        label = prefix .. ep.method .. " " .. ep.path,
         detail = ep.method_name,
         file = ep.file,
         line = ep.line,
@@ -95,7 +110,7 @@ function M.collect()
       entries[#entries + 1] = {
         type = "test_class",
         icon = get_icon("test_class"),
-        label = test.class,
+          label = prefix .. test.class,
         detail = test.full_class,
         file = test.file,
         line = test.methods and test.methods[1] and test.methods[1].line or 1,
@@ -105,7 +120,7 @@ function M.collect()
           entries[#entries + 1] = {
             type = "test_method",
             icon = get_icon("test_method"),
-            label = method.name .. "()",
+            label = prefix .. method.name .. "()",
             detail = test.class,
             file = test.file,
             line = method.line,
@@ -123,12 +138,14 @@ function M.collect()
       entries[#entries + 1] = {
         type = "config",
         icon = get_icon("config"),
-        label = prop.key,
+        label = prefix .. prop.key,
         detail = (prop.value or "(empty)") .. " — " .. (prop.source or "application.properties"),
         file = prop.file,
         line = prop.line,
       }
     end
+  end
+
   end
 
   return entries
