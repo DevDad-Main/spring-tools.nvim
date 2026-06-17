@@ -58,7 +58,7 @@ function M.parse_lines(lines)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
   vim.bo[bufnr].filetype = "java"
   local ok, parser = pcall(vim.treesitter.get_parser, bufnr, "java")
-  if not ok then
+  if not ok or not parser then
     pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
     return nil
   end
