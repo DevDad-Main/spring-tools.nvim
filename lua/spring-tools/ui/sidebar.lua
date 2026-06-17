@@ -380,6 +380,13 @@ function M.test_endpoint()
 end
 
 function M.collapse_parent()
+  -- Check current position first, then look upward
+  local item = M.items[M.selected]
+  if item and (item.type == "project_header" or item.type == "parent_header" or item.type == "header" or item.type == "section_header") and item.section_key and not item.collapsed then
+    local view = M.get_view()
+    if view and view.on_activate then view:on_activate(M.selected) end
+    return
+  end
   for i = M.selected - 1, 1, -1 do
     local item = M.items[i]
     if item and (item.type == "project_header" or item.type == "parent_header" or item.type == "header" or item.type == "section_header") and item.section_key then
@@ -396,22 +403,32 @@ function M.collapse_parent()
 end
 
 function M.expand_child()
-  -- Look forward first, then backward
-  for _, dir in ipairs({ 1, -1 }) do
-    local i = M.selected + dir
-    while i >= 1 and i <= #M.items do
-      local item = M.items[i]
-      if item and (item.type == "project_header" or item.type == "parent_header" or item.type == "header" or item.type == "section_header") and item.section_key then
-        if item.collapsed then
-          local view = M.get_view()
-          if view and view.on_activate then
-            M.selected = i
-            view:on_activate(i)
-          end
-          return
-        end
+  -- Check current position first, then forward, then backward
+  for _, offset in ipairs({ 0, 1, -1 }) do
+    local dir = offset
+    if offset == 0 then
+      local item = M.items[M.selected]
+      if item and (item.type == "project_header" or item.type == "parent_header" or item.type == "header" or item.type == "section_header") and item.section_key and item.collapsed then
+        local view = M.get_view()
+        if view and view.on_activate then view:on_activate(M.selected) end
+        return
       end
-      i = i + dir
+    else
+      local i = M.selected + dir
+      while i >= 1 and i <= #M.items do
+        local item = M.items[i]
+        if item and (item.type == "project_header" or item.type == "parent_header" or item.type == "header" or item.type == "section_header") and item.section_key then
+          if item.collapsed then
+            local view = M.get_view()
+            if view and view.on_activate then
+              M.selected = i
+              view:on_activate(i)
+            end
+            return
+          end
+        end
+        i = i + dir
+      end
     end
   end
 end
