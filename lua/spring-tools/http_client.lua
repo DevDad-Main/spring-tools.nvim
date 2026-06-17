@@ -262,10 +262,13 @@ function M._send_resolved(endpoint, extra_args, path)
         local be = project.get_backend_for_project(proj)
         if be and be.get_port then
           local p = be:get_port(proj)
+          vim.notify("matched " .. proj.name .. " port=" .. (p or "nil"), vim.log.levels.INFO)
           if p and p ~= "" then port = p; break end
         end
       end
     end
+  else
+    vim.notify("endpoint has no project_root", vim.log.levels.WARN)
   end
   if port == "8080" then
     local all_procs = backend.ProcessManager.get_all()
