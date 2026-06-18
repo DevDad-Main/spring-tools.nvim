@@ -93,6 +93,30 @@ local function line_level(line)
   return nil
 end
 
+M._service_filters = {}
+M._detected_services = {}
+
+local function detect_services()
+  local seen = {}
+  M._detected_services = {}
+  for _, line in ipairs(M._stored_logs) do
+    local svc = line:match("^([%w-]+)%-%d+%s+[|%|]")
+    if svc and not seen[svc] then
+      seen[svc] = true
+      M._detected_services[#M._detected_services + 1] = svc
+      if M._service_filters[svc] == nil then
+        M._service_filters[svc] = true
+      end
+    end
+  end
+  table.sort(M._detected_services)
+end
+
+local function line_service(line)
+  local svc = line:match("^([%w-]+)%-%d+%s+[|%|]")
+  return svc
+end
+
 local function line_passes_filter(line)
   local level = line_level(line)
   if not level then return true end
@@ -249,10 +273,18 @@ function M._render_from_logs(title)
   if not buf_is_valid() then return end
 
   M.title = title or M.title or "Output"
+  detect_services()
   local filtered = {}
   for _, l in ipairs(M._stored_logs) do
     if line_passes_filter(l) then
-      table.insert(filtered, l)
+      local svc = line_service(l)
+      if svc then
+        if M._service_filters[svc] ~= false then
+          table.insert(filtered, l)
+        end
+      else
+        table.insert(filtered, l)
+      end
     end
   end
 
@@ -290,7 +322,19 @@ function M._footer_text()
   end
   local keys = "e/w/i/d/t toggle"
   if M._custom_key then keys = keys .. " · " .. M._custom_key .. " custom" end
-  return "Filter: [" .. table.concat(parts, " ") .. "]  (" .. keys .. " · c copy output)"
+  local result = "Filter: [" .. table.concat(parts, " ") .. "]  (" .. keys .. " · c copy output)"
+  if #M._detected_services > 0 then
+    local svc_parts = {}
+    for i, svc in ipairs(M._detected_services) do
+      if M._service_filters[svc] ~= false then
+        table.insert(svc_parts, i .. ":" .. svc)
+      else
+        table.insert(svc_parts, "·:" .. svc)
+      end
+    end
+    result = result .. "\n  Services: " .. table.concat(svc_parts, " ")
+  end
+  return result
 end
 
 function M.toggle_level(name)
@@ -305,6 +349,16 @@ end
 function M.refresh()
   if #M._stored_logs > 0 then
     M._render_from_logs()
+  end
+end
+
+function M.toggle_service(index)
+  local svc = M._detected_services[index]
+  if svc then
+    M._service_filters[svc] = not (M._service_filters[svc] ~= false)
+    if #M._stored_logs > 0 then
+      M._render_from_logs()
+    end
   end
 end
 
@@ -357,6 +411,11 @@ function M.setup_keymaps()
     local cp = config.options.log and config.options.log.custom
     local desc = cp and cp.pattern and ("Toggle '" .. cp.pattern .. "' filter") or "Toggle custom filter"
     components.set_keymap(M.buf, M._custom_key, function() M.toggle_level(M._custom_key) end, { desc = desc })
+  end
+  -- Number keys toggle service filters
+  for i = 1, #M._detected_services do
+    local svc = M._detected_services[i]
+    components.set_keymap(M.buf, tostring(i), function() M.toggle_service(i) end, { desc = "Toggle " .. svc .. " logs" })
   end
 end
 
