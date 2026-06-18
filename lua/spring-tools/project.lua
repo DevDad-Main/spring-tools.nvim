@@ -118,22 +118,8 @@ end
 function M.detect_projects(start_path)
   start_path = start_path or vim.fn.getcwd()
   start_path = vim.fn.resolve(start_path)
-  if M.workspace_root and M.workspace_root ~= start_path then
-    M.projects = {}
-    M.active_project_root = nil
-  end
   M.load_cache()
   M.workspace_root = start_path
-
-  -- Drop projects from other workspaces (cache is shared across all workspaces)
-  local sp_trail = start_path:sub(-1) == "/" and start_path or start_path .. "/"
-  local filtered = {}
-  for _, proj in ipairs(M.projects) do
-    if proj.root:sub(1, #sp_trail) == sp_trail or proj.root == start_path then
-      filtered[#filtered + 1] = proj
-    end
-  end
-  M.projects = filtered
 
   local all_roots = utils.find_all_project_roots(start_path)
   if #all_roots == 0 then
