@@ -155,7 +155,14 @@ function M:render_item(item, selected)
   end
   if item.type == "docker" then
     local indent = string.rep("  ", item.indent or 1)
-    local is_running = item.is_running
+    local is_running = false
+    local state = require("spring-tools.core.state")
+    for _, p in ipairs(state.get_projects()) do
+      if p.root:find(vim.fn.fnamemodify(item.compose_file, ":h"), 1, true) then
+        local be = project.get_backend_for_project(p)
+        if be and be:get_status(p) == "running" then is_running = true; break end
+      end
+    end
     local dot = is_running and "\u{25cf}" or "\u{25cb}"
     local dot_hl = is_running and "SpringToolsRunning" or "SpringToolsDim"
     local label = item.label or "docker-compose"
@@ -459,7 +466,7 @@ function M:on_activate(idx)
         common_items[#common_items + 1] = { label = "  gradle " .. task, action = function() save_and_run("gradle " .. task) end }
       end
     end
-    if docker_compose or has_dockerfile then
+    if proj.build_type == "docker" or vim.fn.filereadable(proj.root .. "/docker-compose.yml") == 1 then
       local docker_items = {}
       if has_dockerfile then
         docker_items[#docker_items + 1] = { label = "  docker build -t " .. proj.name .. " .", action = function() save_and_run("docker build -t " .. proj.name .. " .") end }
