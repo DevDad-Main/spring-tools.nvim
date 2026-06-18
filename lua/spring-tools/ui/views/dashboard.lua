@@ -154,12 +154,17 @@ function M:render_item(item, selected)
     return { { indent .. icon .. "  " .. item.label, hl } }
   end
   if item.type == "docker" then
-    local indent = "  "
+    local indent = string.rep("  ", item.indent or 1)
     local is_running = item.is_running
     local dot = is_running and "\u{25cf}" or "\u{25cb}"
-    local hl = selected and "SpringToolsSelected" or (is_running and "SpringToolsRunning" or "SpringToolsDashboardProject")
-    local status_text = is_running and " running" or " stopped"
-    return { { indent .. "  " .. dot .. " " .. item.label .. " " .. status_text, hl } }
+    local dot_hl = is_running and "SpringToolsRunning" or "SpringToolsDim"
+    local label = item.label or "docker-compose"
+    local status_tag = is_running and "running" or "stopped"
+    local status_hl = is_running and "SpringToolsRunning" or "SpringToolsDim"
+    if selected then
+      return { { indent .. "  " .. dot .. " " .. label .. " " .. status_tag, "SpringToolsSelected" } }
+    end
+    return { { indent .. "  " .. dot .. " " .. label .. " " .. status_tag, status_hl } }
   end
   local proj = item.project
   local be = item.backend
