@@ -408,17 +408,12 @@ function M.highlight_logs()
         })
       end
     end
-    -- TEST: highlight whole line with ErrorMsg to verify extmarks work
-    if #line > 0 and line:find("INFO") then
-      vim.api.nvim_buf_set_extmark(M.buf, M.ns, line_idx - 1, 0, {
-        end_col = #line,
-        hl_group = "ErrorMsg",
-        priority = 250,
-      })
-    end
   end
-  vim.notify(string.format("[spring-tools] highlight_logs: %d lines, %d matches, %d patterns (first: %s)",
-    #lines, match_count, #get_log_patterns(), (get_log_patterns()[1] or {}).pattern or "nil"), vim.log.levels.INFO)
+  -- Show first log-group colors
+  local si = vim.api.nvim_get_hl(0, { name = "SpringToolsLogInfo" })
+  local se = vim.api.nvim_get_hl(0, { name = "SpringToolsLogError" })
+  vim.notify(string.format("[spring-tools] Info=%s Error=%s matches=%d/%d",
+    vim.inspect(si), vim.inspect(se), match_count, #lines), vim.log.levels.INFO)
 end
 
 function M.setup_keymaps()
