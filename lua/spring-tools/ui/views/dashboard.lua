@@ -453,9 +453,15 @@ function M:on_activate(idx)
     menu[#menu + 1] = { label = "  View logs", action = function() M.show_logs(proj) end }
   end
   if item.status == "running" then
-    menu[#menu + 1] = { label = "  Stop", action = function() require("spring-tools.core.backend").ProcessManager:stop(proj); sidebar.refresh() end }
-    menu[#menu + 1] = { label = "  View logs", action = function() M.show_logs(proj) end }
-    menu[#menu + 1] = { label = "  Restart", action = do_restart }
+    if docker_compose then
+      menu[#menu + 1] = { label = "  Stop (docker compose down)", action = function() save_and_run("docker-compose -f " .. docker_compose .. " down"); sidebar.refresh() end }
+      menu[#menu + 1] = { label = "  View logs", action = function() save_and_run("docker-compose -f " .. docker_compose .. " logs --tail 50"); end }
+      menu[#menu + 1] = { label = "  Restart", action = function() save_and_run("docker-compose -f " .. docker_compose .. " up --build"); end }
+    else
+      menu[#menu + 1] = { label = "  Stop", action = function() require("spring-tools.core.backend").ProcessManager:stop(proj); sidebar.refresh() end }
+      menu[#menu + 1] = { label = "  View logs", action = function() M.show_logs(proj) end }
+      menu[#menu + 1] = { label = "  Restart", action = do_restart }
+    end
     if docker_compose then
       local docker_items = {}
       docker_items[#docker_items + 1] = { label = "  docker ps", action = function() save_and_run("docker ps") end }
@@ -1003,6 +1009,21 @@ function M.extract_cause(logs)
 end
 
 function M.show_logs(proj)
+  -- For docker projects, stream docker compose logs
+  if proj.build_type == "docker" or vim.fn.filereadable(proj.root .. "/docker-compose.yml") == 1 then
+    output.show({ "Fetching docker compose logs..." }, proj.name)
+    local compose_file = vim.fn.filereadable(proj.root .. "/docker-compose.yml") == 1 and (proj.root .. "/docker-compose.yml") or (proj.root .. "/docker-compose.yaml")
+    local cmd = "docker-compose -f " .. vim.fn.shellescape(compose_file) .. " logs --tail 50"
+    vim.fn.jobstart({ "sh", "-c", cmd }, {
+      stdout_buffered = true,
+      on_stdout = function(_, data)
+        vim.schedule(function()
+          output.show(data or { "No logs" }, proj.name, { footer = true })
+        end)
+      end,
+    })
+    return
+  end
   local be = project.get_backend_for_project(proj)
   local logs = (be and be.get_logs and be:get_logs(proj)) or {}
   if #logs == 0 then
