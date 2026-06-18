@@ -142,6 +142,9 @@ function M.detect_projects(start_path)
 
   M.workspace_root = start_path
 
+  vim.notify(string.format("[spring-tools] detect_projects start_path=%s all_roots=%d projects=%d",
+    start_path, #all_roots, #M.projects), vim.log.levels.WARN)
+
   for _, root in ipairs(all_roots) do
     local cached
     for _, p in ipairs(M.projects) do
@@ -211,7 +214,7 @@ function M.detect_projects(start_path)
     end
     if #direct_children >= 2 then
       vim.notify(string.format("[spring-tools] %d direct children for %s",
-        #direct_children, vim.fn.fnamemodify(start_path, ":t")), vim.log.levels.INFO)
+        #direct_children, vim.fn.fnamemodify(start_path, ":t")), vim.log.levels.WARN)
       local has_compose = vim.fn.filereadable(start_path .. "/docker-compose.yml") == 1
                        or vim.fn.filereadable(start_path .. "/docker-compose.yaml") == 1
       local has_services_dir = vim.fn.isdirectory(start_path .. "/services") == 1
@@ -219,7 +222,7 @@ function M.detect_projects(start_path)
                             or vim.fn.isdirectory(start_path .. "/packages") == 1
       if not has_compose and not has_services_dir then
         vim.notify(string.format("[spring-tools] no grouping for %s (compose=%s services=%s)",
-          vim.fn.fnamemodify(start_path, ":t"), tostring(has_compose), tostring(has_services_dir)), vim.log.levels.INFO)
+          vim.fn.fnamemodify(start_path, ":t"), tostring(has_compose), tostring(has_services_dir)), vim.log.levels.WARN)
         -- Without docker-compose or a services/ container, these are independent monorepo projects — keep them flat
       else
         local vp = {
@@ -235,7 +238,7 @@ function M.detect_projects(start_path)
         if #vp.children_roots >= 2 then
           local inserted = false
           vim.notify(string.format("[spring-tools] vp created: %s with %d children",
-            vp.name, #direct_children), vim.log.levels.INFO)
+            vp.name, #direct_children), vim.log.levels.WARN)
           for i, p in ipairs(M.projects) do
             if p.root == start_path then
               M.projects[i] = vp
