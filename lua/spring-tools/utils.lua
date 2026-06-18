@@ -120,7 +120,7 @@ function M.find_all_project_roots(start_path)
       end
       return
     end
-    if depth > 4 then return end
+    if depth > 1 then return end
     local ok, entries = pcall(vim.fn.readdir, dir)
     if not ok then return end
     for _, entry in ipairs(entries) do
