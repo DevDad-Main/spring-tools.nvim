@@ -231,7 +231,7 @@ function M:fold_all(open)
   if open then
     sections._expand_all = true
     sidebar.refresh()
-    sections._expand_all = false
+    vim.defer_fn(function() sections._expand_all = false end, 50)
   else
     sections:collapse_all()
     sidebar.refresh()
