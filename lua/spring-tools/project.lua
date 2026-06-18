@@ -121,6 +121,18 @@ function M.detect_projects(start_path)
   M.load_cache()
   M.workspace_root = start_path
 
+  local config = require("spring-tools.config")
+  if config.options.workspace_filter then
+    local sp_trail = start_path:sub(-1) == "/" and start_path or start_path .. "/"
+    local filtered = {}
+    for _, proj in ipairs(M.projects) do
+      if proj.root:sub(1, #sp_trail) == sp_trail or proj.root == start_path then
+        filtered[#filtered + 1] = proj
+      end
+    end
+    M.projects = filtered
+  end
+
   local all_roots = utils.find_all_project_roots(start_path)
   if #all_roots == 0 then
     local state = require("spring-tools.core.state")
