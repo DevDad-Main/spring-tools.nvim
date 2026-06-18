@@ -89,7 +89,8 @@ end
 
 local function line_level(line)
   for _, pat in ipairs(get_log_patterns()) do
-    if line:find(pat.pattern, 1, true) then
+    local matched = pat.plain and line:find(pat.pattern, 1, true) or line:find(pat.pattern)
+    if matched then
       if pat.is_custom then return M._custom_key end
       local name = pat.hl:match("Log(%a+)$")
       if name then return name:lower() end
