@@ -261,7 +261,13 @@ function M:on_activate(idx)
         cwd = st.get_workspace_root(),
         on_stdout = function(_, data)
           if data then vim.schedule(function()
-            for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
+            for _, l in ipairs(data) do if #l > 0 then
+              output.append(l)
+              -- Auto-refresh sidebar when a service starts
+              if l:find("Started .+ in %d+") then
+                sidebar.refresh()
+              end
+            end end
           end) end
         end,
         on_stderr = function(_, data)
@@ -270,26 +276,6 @@ function M:on_activate(idx)
           end) end
         end,
       })
-      -- Poll for status updates while compose starts
-      local polls = 0
-      local timer = vim.fn.timer_start(3000, function()
-        polls = polls + 1
-        if polls > 20 then pcall(vim.fn.timer_stop, timer); return end
-        vim.schedule(function()
-          if sidebar.win and vim.api.nvim_win_is_valid(sidebar.win) then
-            sidebar.refresh()
-            -- Stop early if all siblings are running
-            local all_up = true
-            for _, p in ipairs(st.get_projects()) do
-              if p.root:find(vim.fn.fnamemodify(item.compose_file, ":h"), 1, true) and not (p.is_virtual or p.is_aggregate) then
-                local be = project.get_backend_for_project(p)
-                if not be or be:get_status(p) ~= "running" then all_up = false; break end
-              end
-            end
-            if all_up then pcall(vim.fn.timer_stop, timer) end
-          end
-        end)
-      end, { ["repeat"] = 3000 })
     end
 
     if is_running then
