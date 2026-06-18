@@ -15,6 +15,11 @@ local builtin_patterns = {
   { pattern = "[INFO]", hl = "SpringToolsLogInfo" },
   { pattern = "[DEBUG]", hl = "SpringToolsLogDebug" },
   { pattern = "[TRACE]", hl = "SpringToolsLogTrace" },
+  -- Docker compose service prefix patterns
+  { pattern = "api-gateway", hl = "SpringToolsLogInfo" },
+  { pattern = "user-service", hl = "SpringToolsAccent" },
+  { pattern = "product-service", hl = "SpringToolsLogInfo" },
+  { pattern = "order-service", hl = "SpringToolsLogWarn" },
 }
 
 
@@ -322,9 +327,8 @@ function M.highlight_logs()
         vim.api.nvim_buf_set_extmark(M.buf, M.ns, line_idx - 1, s - 1, {
           end_col = e,
           hl_group = lp.hl,
-          priority = 150,
+          priority = lp.is_custom and 200 or (lp.hl:find("Log") and 150 or 100),
         })
-        break
       end
     end
   end
