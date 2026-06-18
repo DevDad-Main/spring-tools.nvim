@@ -403,7 +403,7 @@ function M.highlight_logs()
         match_count = match_count + 1
         vim.api.nvim_buf_set_extmark(M.buf, M.ns, line_idx - 1, s - 1, {
           end_col = e,
-          hl_group = lp.hl,
+          hl_group = "ErrorMsg", -- TEMP: force ErrorMsg to verify extmark positions
           priority = lp.is_custom and 200 or (lp.hl:find("Log") and 150 or 100),
         })
       end
@@ -411,9 +411,8 @@ function M.highlight_logs()
   end
   -- Show first log-group colors
   local si = vim.api.nvim_get_hl(0, { name = "SpringToolsLogInfo" })
-  local se = vim.api.nvim_get_hl(0, { name = "SpringToolsLogError" })
-  vim.notify(string.format("[spring-tools] Info=%s Error=%s matches=%d/%d",
-    vim.inspect(si), vim.inspect(se), match_count, #lines), vim.log.levels.INFO)
+  vim.notify(string.format("[spring-tools] LogInfo fg=%s bg=%s matches=%d",
+    si.fg, si.bg, match_count), vim.log.levels.INFO)
 end
 
 function M.setup_keymaps()
