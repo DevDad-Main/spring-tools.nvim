@@ -79,14 +79,38 @@ end
 
 function SpringBootBackend:get_status(proj)
   local proc = backend.ProcessManager:get(proj)
-  if not proc then return "stopped" end
-  if proc.exit_code and proc.exit_code ~= 0 then return "failed" end
-  if proc.status == "failed" and not proc.exit_code then
-    -- stale entry with no exit code recorded — clear it
-    backend.ProcessManager.processes[proj.root] = nil
-    return "stopped"
+  if proc then
+    if proc.exit_code and proc.exit_code ~= 0 then return "failed" end
+    if proc.status == "failed" and not proc.exit_code then
+      backend.ProcessManager.processes[proj.root] = nil
+      return "stopped"
+    end
+    return proc.status
   end
-  return proc.status
+  -- No tracked process — check if port is listening (Docker/external)
+  local port = self:get_port(proj) or self:_read_config_port(proj)
+  if port and self:_port_listening(port) then return "running" end
+  return "stopped"
+end
+
+function SpringBootBackend:_read_config_port(proj)
+  if not proj or not proj.root then return nil end
+  local prop_path = proj.root .. "/src/main/resources/application.properties"
+  local ok, lines = pcall(vim.fn.readfile, prop_path)
+  if not ok or not lines then return nil end
+  for _, line in ipairs(lines) do
+    local p = line:match("^server%.port%s*=%s*(%d+)")
+    if p then return p end
+  end
+end
+
+function SpringBootBackend:_port_listening(port)
+  if not port then return false end
+  local handle = io.popen("ss -tlnp 2>/dev/null | grep -q :" .. port .. " && echo yes || echo no")
+  if not handle then return false end
+  local result = handle:read("*a"):gsub("%s+", "")
+  handle:close()
+  return result == "yes"
 end
 
 function SpringBootBackend:get_logs(proj)
