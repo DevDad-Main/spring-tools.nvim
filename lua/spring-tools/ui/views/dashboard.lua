@@ -270,6 +270,17 @@ function M:on_activate(idx)
           end) end
         end,
       })
+      -- Poll for status updates while compose starts
+      local polls = 0
+      local timer = vim.fn.timer_start(3000, function()
+        polls = polls + 1
+        if polls > 20 then pcall(vim.fn.timer_stop, timer); return end
+        vim.schedule(function()
+          if sidebar.win and vim.api.nvim_win_is_valid(sidebar.win) then
+            sidebar.refresh()
+          end
+        end)
+      end, { ["repeat"] = 3000 })
     end
 
     if is_running then
