@@ -103,15 +103,7 @@ function M:load_items()
     end
   end
 
-  local ws_is_project = false
   if ws and #projs > 1 then
-    local ws_resolved = vim.fn.resolve(ws)
-    for _, proj in ipairs(projs) do
-      if proj.is_top_level and vim.fn.resolve(proj.root) == ws_resolved then
-        ws_is_project = true
-        break
-      end
-    end
     local top_level = {}
     for _, proj in ipairs(projs) do
       if proj.is_top_level == nil or proj.is_top_level then table.insert(top_level, proj) end
