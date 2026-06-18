@@ -182,7 +182,7 @@ function M:render_item(item, selected)
     if profile ~= "" and profile ~= "default" then table.insert(parts, profile) end
     if uptime ~= "" then table.insert(parts, uptime) end
     table.insert(parts, "running")
-    status_tag = table.concat(parts, "  ")
+    status_tag = table.concat(parts, " ")
     status_hl = "SpringToolsRunning"
   elseif is_failed then
     local code = proc and proc.exit_code or "?"
@@ -200,16 +200,16 @@ function M:render_item(item, selected)
   local active_mark = item.is_active and "\u{2605} " or "  "
 
   if selected then
-    local line = indent .. active_mark .. dot .. "  " .. proj.name .. "  " .. auto_restart .. status_tag .. (build_type and "  " .. build_type or "")
+    local line = indent .. active_mark .. dot .. " " .. proj.name .. " " .. auto_restart .. status_tag .. (build_type and " " .. build_type or "")
     return { { line, "SpringToolsSelected" } }
   end
 
   return { {
     segments = {
-      { indent .. active_mark .. dot .. "  ", dot_hl },
+      { indent .. active_mark .. dot .. " ", dot_hl },
       { proj.name, "SpringToolsDashboardProject" },
-      { "  " .. auto_restart .. status_tag, status_hl },
-      { build_type and "  " .. build_type or "", build_type and "SpringToolsDashboardBuildType" or nil },
+      { " " .. auto_restart .. status_tag, status_hl },
+      { build_type and " " .. build_type or "", build_type and "SpringToolsDashboardBuildType" or nil },
     },
   } }
 end
