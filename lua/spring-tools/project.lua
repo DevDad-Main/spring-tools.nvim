@@ -175,6 +175,9 @@ function M.detect_projects(start_path)
         local child_name = vim.fn.fnamemodify(proj.root, ":t")
         local pmodules = parent_modules[parent.root]
         local is_direct = proj.root:sub(#proot + 1):find("^[^/]+/?$") ~= nil
+                       or proj.root:sub(#proot + 1):find("^services/[^/]+/?$") ~= nil
+                       or proj.root:sub(#proot + 1):find("^apps/[^/]+/?$") ~= nil
+                       or proj.root:sub(#proot + 1):find("^packages/[^/]+/?$") ~= nil
         if (pmodules == nil and is_direct) or (pmodules and pmodules[child_name]) then
           if not parent.children then parent.children = {} end
           parent.children[#parent.children + 1] = proj
