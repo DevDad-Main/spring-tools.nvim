@@ -261,14 +261,13 @@ function M:on_activate(idx)
         cwd = st.get_workspace_root(),
         on_stdout = function(_, data)
           if data then vim.schedule(function()
-            for _, l in ipairs(data) do if #l > 0 then
-              output.append(l)
-              table.insert(output._stored_logs, l)
-              -- Auto-refresh sidebar when a service starts
-              if l:find("Started .+ in %d+") then
-                sidebar.refresh()
+            for _, l in ipairs(data) do
+              if #l > 0 then
+                table.insert(output._stored_logs, l)
+                if l:find("Started .+ in %d+") then sidebar.refresh() end
               end
-            end end
+            end
+            output.update_from_logs(output._stored_logs, "docker-compose")
           end) end
         end,
         on_stderr = function(_, data)
