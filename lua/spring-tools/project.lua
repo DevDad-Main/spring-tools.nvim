@@ -171,8 +171,9 @@ function M.detect_projects(start_path)
       end
     end
   end
-  -- If workspace root is not a project but has sub-projects under it,
-  -- create a virtual parent entry so it persists across workspace switches
+  -- If workspace root is not a project but has direct sub-projects under it,
+  -- create a virtual parent entry so it persists across workspace switches.
+  -- Only count CHILDREN (one level deep), not arbitrarily nested descendants.
   local ws_is_project = false
   for _, proj in ipairs(M.projects) do
     if proj.root == M.workspace_root or proj.root == start_path then
@@ -181,24 +182,24 @@ function M.detect_projects(start_path)
     end
   end
   if not ws_is_project then
-    local sub_count = 0
+    local sp = start_path:sub(-1) == "/" and start_path or start_path .. "/"
+    local direct_children = {}
     for _, proj in ipairs(M.projects) do
-      if proj.root:sub(1, #start_path) == start_path and proj.root:sub(#start_path + 1, #start_path + 1) == "/" then
-        sub_count = sub_count + 1
+      if proj.root:sub(1, #sp) == sp
+         and proj.root:sub(#sp + 1):find("^[^/]+/$") then
+        direct_children[#direct_children + 1] = proj
       end
     end
-    if sub_count >= 2 then
+    if #direct_children >= 2 then
       local vp = {
         name = vim.fn.fnamemodify(start_path, ":t"),
         root = start_path,
         is_virtual = true,
         children_roots = {},
       }
-      for _, proj in ipairs(M.projects) do
-        if proj.root:sub(1, #start_path) == start_path and proj.root:sub(#start_path + 1, #start_path + 1) == "/" then
-          vp.children_roots[#vp.children_roots + 1] = proj.root
-          child_roots[proj.root] = true
-        end
+      for _, proj in ipairs(direct_children) do
+        vp.children_roots[#vp.children_roots + 1] = proj.root
+        child_roots[proj.root] = true
       end
       if #vp.children_roots >= 2 then
         local inserted = false
