@@ -150,8 +150,19 @@ function M:render_item(item, selected)
   end
   if item.type == "docker" then
     local indent = string.rep("  ", item.indent or 0)
-    local hl = selected and "SpringToolsSelected" or "SpringToolsDashboardProject"
-    return { { indent .. "  " .. "\u{f308}  " .. item.label, hl } }
+    -- Check if any docker containers are running
+    local is_running = false
+    local state = require("spring-tools.core.state")
+    for _, p in ipairs(state.get_projects()) do
+      if p.root:find(vim.fn.fnamemodify(item.compose_file, ":h"), 1, true) then
+        local be = project.get_backend_for_project(p)
+        if be and be:get_status(p) == "running" then is_running = true; break end
+      end
+    end
+    local dot = is_running and "\u{25cf}" or "\u{25cb}"
+    local hl = selected and "SpringToolsSelected" or (is_running and "SpringToolsRunning" or "SpringToolsDashboardProject")
+    local status_text = is_running and " running" or " stopped"
+    return { { indent .. "  " .. dot .. " " .. "\u{f308}  " .. item.label .. status_text, hl } }
   end
   local proj = item.project
   local be = item.backend
