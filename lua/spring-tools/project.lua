@@ -194,29 +194,41 @@ function M.detect_projects(start_path)
       end
     end
     if #direct_children >= 2 then
-      local vp = {
-        name = vim.fn.fnamemodify(start_path, ":t"),
-        root = start_path,
-        is_virtual = true,
-        children_roots = {},
-      }
-      for _, proj in ipairs(direct_children) do
-        vp.children_roots[#vp.children_roots + 1] = proj.root
-        child_roots[proj.root] = true
-      end
-      if #vp.children_roots >= 2 then
-        local inserted = false
-        for i, p in ipairs(M.projects) do
-          if p.root == start_path then
-            M.projects[i] = vp
-            inserted = true
-            break
+      local has_compose = vim.fn.filereadable(start_path .. "/docker-compose.yml") == 1
+                       or vim.fn.filereadable(start_path .. "/docker-compose.yaml") == 1
+      if not has_compose then
+        -- Without docker-compose, these are independent monorepo projects — keep them flat
+      else
+        local vp = {
+          name = vim.fn.fnamemodify(start_path, ":t"),
+          root = start_path,
+          is_virtual = true,
+          children_roots = {},
+        }
+        for _, proj in ipairs(direct_children) do
+          vp.children_roots[#vp.children_roots + 1] = proj.root
+          child_roots[proj.root] = true
+        end
+        if #vp.children_roots >= 2 then
+          local inserted = false
+          for i, p in ipairs(M.projects) do
+            if p.root == start_path then
+              M.projects[i] = vp
+              inserted = true
+              break
+            end
           end
+          if not inserted then
+            table.insert(M.projects, vp)
+          end
+          -- Assign children to the newly created virtual parent
+          vp.children = {}
+          for _, proj in ipairs(direct_children) do
+            vp.children[#vp.children + 1] = proj
+            child_roots[proj.root] = true
+          end
+          M.save_cache()
         end
-        if not inserted then
-          table.insert(M.projects, vp)
-        end
-        M.save_cache()
       end
     end
   end
