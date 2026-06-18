@@ -263,6 +263,7 @@ function M:on_activate(idx)
           if data then vim.schedule(function()
             for _, l in ipairs(data) do if #l > 0 then
               output.append(l)
+              table.insert(output._stored_logs, l)
               -- Auto-refresh sidebar when a service starts
               if l:find("Started .+ in %d+") then
                 sidebar.refresh()
