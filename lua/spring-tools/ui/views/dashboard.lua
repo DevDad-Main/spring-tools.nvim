@@ -162,7 +162,7 @@ function M:render_item(item, selected)
     local dot = is_running and "\u{25cf}" or "\u{25cb}"
     local hl = selected and "SpringToolsSelected" or (is_running and "SpringToolsRunning" or "SpringToolsDashboardProject")
     local status_text = is_running and " running" or " stopped"
-    return { { indent .. dot .. " " .. "\u{f308}  " .. item.label .. status_text, hl } }
+    return { { indent .. "  " .. dot .. " " .. "\u{f308} " .. item.label .. status_text, hl } }
   end
   local proj = item.project
   local be = item.backend
