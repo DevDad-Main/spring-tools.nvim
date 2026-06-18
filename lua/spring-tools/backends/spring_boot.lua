@@ -95,12 +95,35 @@ end
 
 function SpringBootBackend:_read_config_port(proj)
   if not proj or not proj.root then return nil end
-  local prop_path = proj.root .. "/src/main/resources/application.properties"
-  local ok, lines = pcall(vim.fn.readfile, prop_path)
-  if not ok or not lines then return nil end
+  local base = proj.root .. "/src/main/resources/application"
+  -- Try .properties
+  for _, ext in ipairs({ ".properties", ".yml", ".yaml" }) do
+    local ok, lines = pcall(vim.fn.readfile, base .. ext)
+    if ok and lines then
+      if ext == ".properties" then
+        for _, line in ipairs(lines) do
+          local p = line:match("^server%.port%s*=%s*(%d+)")
+          if p then return p end
+        end
+      else
+        local port = self:_parse_yaml_port(lines)
+        if port then return port end
+      end
+    end
+  end
+end
+
+function SpringBootBackend:_parse_yaml_port(lines)
+  local in_server = false
   for _, line in ipairs(lines) do
-    local p = line:match("^server%.port%s*=%s*(%d+)")
-    if p then return p end
+    local trimmed = line:gsub("^%s+", "")
+    if trimmed:match("^server:%s*$") then
+      in_server = true
+    elseif in_server and trimmed:match("^port:%s*(%d+)") then
+      return trimmed:match("port:%s*(%d+)")
+    elseif in_server and trimmed:find("^%S") and not trimmed:find("^%s") then
+      in_server = false
+    end
   end
 end
 
