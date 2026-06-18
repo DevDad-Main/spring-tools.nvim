@@ -484,7 +484,7 @@ function M:on_activate(idx)
     menu[#menu + 1] = { label = "  View logs", action = function() M.show_logs(proj) end }
   end
   if item.status == "running" then
-    if docker_compose then
+    if proj.build_type == "docker" or vim.fn.filereadable(proj.root .. "/docker-compose.yml") == 1 then
       menu[#menu + 1] = { label = "  Stop (docker compose down)", action = function() save_and_run("docker-compose -f " .. docker_compose .. " down"); sidebar.refresh() end }
       menu[#menu + 1] = { label = "  View logs", action = function() save_and_run("docker-compose -f " .. docker_compose .. " logs --tail 50"); end }
       menu[#menu + 1] = { label = "  Restart", action = function() save_and_run("docker-compose -f " .. docker_compose .. " up --build"); end }
@@ -493,7 +493,7 @@ function M:on_activate(idx)
       menu[#menu + 1] = { label = "  View logs", action = function() M.show_logs(proj) end }
       menu[#menu + 1] = { label = "  Restart", action = do_restart }
     end
-    if docker_compose then
+    if proj.build_type == "docker" or vim.fn.filereadable(proj.root .. "/docker-compose.yml") == 1 then
       local docker_items = {}
       docker_items[#docker_items + 1] = { label = "  docker ps", action = function() save_and_run("docker ps") end }
       docker_items[#docker_items + 1] = { label = "  docker logs " .. proj.name, action = function() save_and_run("docker logs -f " .. proj.name) end }
