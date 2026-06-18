@@ -305,8 +305,18 @@ function M._render_from_logs(title)
     table.insert(display, " " .. strip_ansi(tostring(l)))
   end
   table.insert(display, " " .. string.rep("─", 60))
-  for _, fl in ipairs(vim.split(M._footer_text(), "\n")) do
+  local footer_lines = vim.split(M._footer_text(), "\n")
+  for _, fl in ipairs(footer_lines) do
     table.insert(display, "  " .. fl)
+  end
+
+  if M.win and vim.api.nvim_win_is_valid(M.win) then
+    local pad = vim.api.nvim_win_get_height(M.win) - #display
+    if pad > 0 then
+      for _ = 1, pad do
+        table.insert(display, 1, "")
+      end
+    end
   end
 
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, display)
