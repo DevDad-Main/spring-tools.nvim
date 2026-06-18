@@ -84,7 +84,7 @@ function M:load_items()
             for _, f in ipairs({ "docker-compose.yml", "docker-compose.yaml" }) do
               local p = proj.root .. "/" .. f
               if vim.fn.filereadable(p) == 1 then
-                M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = p, indent = indent + 1 }
+                 M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = p, indent = indent }
                 break
               end
             end
@@ -162,7 +162,7 @@ function M:render_item(item, selected)
     local dot = is_running and "\u{25cf}" or "\u{25cb}"
     local hl = selected and "SpringToolsSelected" or (is_running and "SpringToolsRunning" or "SpringToolsDashboardProject")
     local status_text = is_running and " running" or " stopped"
-    return { { indent .. "  " .. dot .. " " .. "\u{f308}  " .. item.label .. status_text, hl } }
+    return { { indent .. dot .. " " .. "\u{f308}  " .. item.label .. status_text, hl } }
   end
   local proj = item.project
   local be = item.backend
@@ -235,35 +235,53 @@ function M:on_activate(idx)
   end
   if item.type == "docker" then
     local docker_menu = {}
-    for _, cmd in ipairs({ "up", "down", "build", "up -d", "logs -f", "ps", "restart", "pull", "stop", "start", "exec", "run", "top", "config", "rm" }) do
-      docker_menu[#docker_menu + 1] = {
-        label = "  docker-compose " .. cmd,
-        action = function()
-          local full_cmd = "docker-compose -f " .. item.compose_file .. " " .. cmd
-          output.show({ "Running: " .. full_cmd }, "docker-compose")
-          vim.fn.jobstart(vim.split(full_cmd, " "), {
-            cwd = state.get_workspace_root(),
-            on_stdout = function(_, data)
-              if data then vim.schedule(function()
-                for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
-              end) end
-            end,
-            on_stderr = function(_, data)
-              if data then vim.schedule(function()
-                for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
-              end) end
-            end,
-          })
+    -- Check if running (containers up)
+    local is_running = false
+    local st = require("spring-tools.core.state")
+    for _, p in ipairs(st.get_projects()) do
+      if p.root:find(vim.fn.fnamemodify(item.compose_file, ":h"), 1, true) then
+        local be = project.get_backend_for_project(p)
+        if be and be:get_status(p) == "running" then is_running = true; break end
+      end
+    end
+
+    local function run_compose(cmd)
+      local full_cmd = "docker-compose -f " .. item.compose_file .. " " .. cmd
+      output.show({ "Running: " .. full_cmd }, "docker-compose")
+      vim.fn.jobstart(vim.split(full_cmd, " "), {
+        cwd = st.get_workspace_root(),
+        on_stdout = function(_, data)
+          if data then vim.schedule(function()
+            for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
+          end) end
         end,
-      }
+        on_stderr = function(_, data)
+          if data then vim.schedule(function()
+            for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
+          end) end
+        end,
+      })
+    end
+
+    if is_running then
+      docker_menu[#docker_menu + 1] = { label = "  Stop (docker compose down)", action = function() run_compose("down"); sidebar.refresh() end }
+      docker_menu[#docker_menu + 1] = { label = "  View logs", action = function() run_compose("logs --tail 100"); end }
+      docker_menu[#docker_menu + 1] = { label = "  Restart", action = function() run_compose("down"); run_compose("up --build"); end }
+    else
+      for _, cmd in ipairs({ "up --build", "up -d", "down", "build", "logs -f", "ps", "restart", "pull" }) do
+        docker_menu[#docker_menu + 1] = {
+          label = "  docker-compose " .. cmd,
+          action = function() run_compose(cmd) end,
+        }
+      end
     end
     docker_menu[#docker_menu + 1] = { label = "  Custom command...", action = function()
-      local ws = state.get_workspace_root()
-      M._show_command_input(state.get_projects()[1] or {}, "docker-compose ", function(input)
+      local ws = st.get_workspace_root()
+      M._show_command_input(st.get_projects()[1] or {}, "docker-compose ", function(input)
         if input == "" then return end
         output.show({ "Running: " .. input }, "docker-compose")
         vim.fn.jobstart(vim.split(input, " "), {
-          cwd = state.get_workspace_root(),
+          cwd = ws,
           on_stdout = function(_, data)
             if data then vim.schedule(function()
               for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
