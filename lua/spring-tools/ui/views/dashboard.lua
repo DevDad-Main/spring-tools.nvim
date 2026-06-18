@@ -325,7 +325,7 @@ function M:on_activate(idx)
 
   local function save_and_run(input)
     if input == "" then return end
-    if default_str and input ~= default_str then
+    if not default_str or input ~= default_str then
       recent[#recent + 1] = input
       if #recent > 10 then table.remove(recent, 1) end
       if not utils.cache.data then utils.cache.data = {} end
