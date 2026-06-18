@@ -256,6 +256,15 @@ function M:on_activate(idx)
 
     local function run_compose(cmd)
       local full_cmd = "docker-compose -f " .. item.compose_file .. " " .. cmd
+      local compose_root = vim.fn.fnamemodify(item.compose_file, ":h")
+      if cmd:find("^up") then
+        for _, p in ipairs(st.get_projects()) do
+          if p.root == compose_root then
+            project.set_active_project(p)
+            break
+          end
+        end
+      end
       output.show({ "Running: " .. full_cmd }, "docker-compose")
       vim.fn.jobstart(vim.split(full_cmd, " "), {
         cwd = st.get_workspace_root(),

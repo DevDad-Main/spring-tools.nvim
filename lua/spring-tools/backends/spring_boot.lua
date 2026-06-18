@@ -94,7 +94,7 @@ function SpringBootBackend:get_status(proj)
   if self:_is_docker_compose(proj) then
     local state = require("spring-tools.core.state")
     for _, sibling in ipairs(state.get_projects()) do
-      if sibling.root ~= proj.root and sibling.root:find(vim.fn.fnamemodify(proj.root, ":h"), 1, true) then
+      if sibling.root ~= proj.root and sibling.root:find(proj.root, 1, true) == 1 then
         local sp = self:get_port(sibling) or self:_read_config_port(sibling)
         if sp and self:_port_listening(sp) then return "running" end
       end

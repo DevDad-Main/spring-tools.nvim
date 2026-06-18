@@ -69,6 +69,7 @@ M.defaults = {
     levels = {},   -- extra patterns: { pattern = "[AUDIT]", hl = "SpringToolsLogWarn" }
     custom = {},   -- one toggleable: { pattern = "[AUDIT]", hl = "SpringToolsLogWarn", key = "a" }
                    --   pick a key not already used (not e, w, i, d, t, c)
+    service_colors = {},  -- { ["user-service"] = "SpringToolsAccent", ["api-gateway"] = "SpringToolsLogInfo" }
   },
   diff = {
     highlights = {

@@ -2,24 +2,23 @@ local components = require("spring-tools.ui.components")
 local utils = require("spring-tools.utils")
 local config = require("spring-tools.config")
 local builtin_patterns = {
-  { pattern = " ERROR ", hl = "SpringToolsLogError" },
-  { pattern = " WARN  ", hl = "SpringToolsLogWarn" },
-  { pattern = " INFO  ", hl = "SpringToolsLogInfo" },
-  { pattern = " DEBUG ", hl = "SpringToolsLogDebug" },
-  { pattern = " TRACE ", hl = "SpringToolsLogTrace" },
-  { pattern = " FATAL ", hl = "SpringToolsLogError" },
-  { pattern = " SEVERE ", hl = "SpringToolsLogError" },
-  { pattern = "[ERROR]", hl = "SpringToolsLogError" },
-  { pattern = "[WARNING]", hl = "SpringToolsLogWarn" },
-  { pattern = "[WARN]", hl = "SpringToolsLogWarn" },
-  { pattern = "[INFO]", hl = "SpringToolsLogInfo" },
-  { pattern = "[DEBUG]", hl = "SpringToolsLogDebug" },
-  { pattern = "[TRACE]", hl = "SpringToolsLogTrace" },
-  -- Docker compose service prefix patterns
-  { pattern = "api-gateway", hl = "SpringToolsLogInfo" },
-  { pattern = "user-service", hl = "SpringToolsAccent" },
-  { pattern = "product-service", hl = "SpringToolsLogInfo" },
-  { pattern = "order-service", hl = "SpringToolsLogWarn" },
+  { pattern = "%sERROR%s", hl = "SpringToolsLogError" },
+  { pattern = "%sWARN%s", hl = "SpringToolsLogWarn" },
+  { pattern = "%sINFO%s", hl = "SpringToolsLogInfo" },
+  { pattern = "%sDEBUG%s", hl = "SpringToolsLogDebug" },
+  { pattern = "%sTRACE%s", hl = "SpringToolsLogTrace" },
+  { pattern = "%sFATAL%s", hl = "SpringToolsLogError" },
+  { pattern = "%sSEVERE%s", hl = "SpringToolsLogError" },
+  { pattern = "%[ERROR%]", hl = "SpringToolsLogError" },
+  { pattern = "%[WARNING%]", hl = "SpringToolsLogWarn" },
+  { pattern = "%[WARN%]", hl = "SpringToolsLogWarn" },
+  { pattern = "%[INFO%]", hl = "SpringToolsLogInfo" },
+  { pattern = "%[DEBUG%]", hl = "SpringToolsLogDebug" },
+  { pattern = "%[TRACE%]", hl = "SpringToolsLogTrace" },
+}
+local service_hl_colors = {
+  "SpringToolsLogInfo", "SpringToolsAccent", "SpringToolsLogWarn",
+  "SpringToolsRunning", "SpringToolsLogDebug", "SpringToolsLogError", "SpringToolsLogInfo"
 }
 
 
@@ -44,16 +43,22 @@ end
 local function get_log_patterns()
   ensure_custom_init()
   local all = {}
-  -- Custom toggleable pattern checked FIRST
+  -- Custom toggleable pattern checked FIRST (plain matching)
   local cp = config.options.log and config.options.log.custom
   if cp and cp.pattern and cp.hl then
-    all[#all + 1] = { pattern = cp.pattern, hl = cp.hl, is_custom = true }
+    all[#all + 1] = { pattern = cp.pattern, hl = cp.hl, is_custom = true, plain = true }
   end
-  -- Then extra patterns from config
+  -- Then extra patterns from config (plain matching)
   local custom = config.options.log and config.options.log.levels or {}
-  for _, p in ipairs(custom) do all[#all + 1] = p end
-  -- Then built-in patterns
+  for _, p in ipairs(custom) do all[#all + 1] = { pattern = p.pattern, hl = p.hl, plain = true } end
+  -- Then built-in patterns (Lua pattern matching)
   for _, p in ipairs(builtin_patterns) do all[#all + 1] = p end
+  -- Dynamic docker compose service patterns (plain matching, configurable)
+  local svc_colors = config.options.log and config.options.log.service_colors or {}
+  for i, svc in ipairs(M._detected_services or {}) do
+    local hl = svc_colors[svc] or service_hl_colors[(i - 1) % #service_hl_colors + 1]
+    all[#all + 1] = { pattern = svc, hl = hl, plain = true }
+  end
   return all
 end
 
@@ -391,7 +396,7 @@ function M.highlight_logs()
   local lines = vim.api.nvim_buf_get_lines(M.buf, 0, -1, false)
   for line_idx, line in ipairs(lines) do
     for _, lp in ipairs(get_log_patterns()) do
-      local s, e = line:find(lp.pattern, 1, true)
+      local s, e = lp.plain and line:find(lp.pattern, 1, true) or line:find(lp.pattern)
       if s then
         vim.api.nvim_buf_set_extmark(M.buf, M.ns, line_idx - 1, s - 1, {
           end_col = e,
