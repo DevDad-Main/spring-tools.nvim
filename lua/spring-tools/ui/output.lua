@@ -2,6 +2,8 @@ local components = require("spring-tools.ui.components")
 local utils = require("spring-tools.utils")
 local config = require("spring-tools.config")
 local builtin_patterns = {
+  { pattern = " WARN ", hl = "SpringToolsLogWarn" },
+  { pattern = " INFO ", hl = "SpringToolsLogInfo" },
   { pattern = " ERROR ", hl = "SpringToolsLogError" },
   { pattern = " WARN  ", hl = "SpringToolsLogWarn" },
   { pattern = " INFO  ", hl = "SpringToolsLogInfo" },
