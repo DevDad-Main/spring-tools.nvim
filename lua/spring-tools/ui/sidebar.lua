@@ -392,6 +392,7 @@ end
 
 local function is_foldable(item)
   if not item then return false end
+  if not (item.section_key or item.key) then return false end
   local t = item.type
   return t == "header" or t == "section_header" or t == "project_header" or t == "parent_header"
       or t == "file_section" or t == "section" or t == "class" or t == "run_header" or t == "common_header"
@@ -400,14 +401,14 @@ end
 local function do_fold_action(direction)
   if direction == "collapse" then
     local item = M.items[M.selected]
-    if item and is_foldable(item) and item.section_key and not item.collapsed then
+    if item and is_foldable(item) and not item.collapsed then
       local view = M.get_view()
       if view and view.on_activate then view:on_activate(M.selected) end
       return
     end
     for i = M.selected - 1, 1, -1 do
       local item = M.items[i]
-      if item and is_foldable(item) and item.section_key then
+      if item and is_foldable(item) then
         if not item.collapsed then
           local view = M.get_view()
           if view and view.on_activate then
@@ -423,7 +424,7 @@ local function do_fold_action(direction)
       local dir = offset
       if offset == 0 then
         local item = M.items[M.selected]
-        if item and is_foldable(item) and item.section_key and item.collapsed then
+        if item and is_foldable(item) and item.collapsed then
           local view = M.get_view()
           if view and view.on_activate then view:on_activate(M.selected) end
           return
@@ -432,7 +433,7 @@ local function do_fold_action(direction)
         local i = M.selected + dir
         while i >= 1 and i <= #M.items do
           local item = M.items[i]
-          if item and is_foldable(item) and item.section_key then
+          if item and is_foldable(item) then
             if item.collapsed then
               local view = M.get_view()
               if view and view.on_activate then
