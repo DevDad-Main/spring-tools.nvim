@@ -224,7 +224,7 @@ function M.detect_projects(start_path)
   if not M.active_project_root then
     local cwd = vim.fn.getcwd()
     for _, proj in ipairs(M.projects) do
-      if not proj.is_virtual and cwd:find(proj.root, 1, true) == 1 then
+      if not proj.is_virtual and (proj.root == cwd or proj.root:find(cwd .. "/", 1, true) == 1) then
         M.active_project_root = proj.root
         break
       end
