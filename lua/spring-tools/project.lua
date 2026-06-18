@@ -254,6 +254,9 @@ function M.detect_projects(start_path)
     proj.is_top_level = not child_roots[proj.root]
   end
 
+  -- Sort by name for predictable display order
+  table.sort(M.projects, function(a, b) return a.name:lower() < b.name:lower() end)
+
   if not M.active_project_root then
     local cwd = vim.fn.getcwd()
     for _, proj in ipairs(M.projects) do
