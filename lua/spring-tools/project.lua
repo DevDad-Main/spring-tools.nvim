@@ -207,13 +207,13 @@ function M.detect_projects(start_path)
         direct_children[#direct_children + 1] = proj
       end
     end
-    if #direct_children >= 2 then
+    if #direct_children >= 1 then
       local has_compose = vim.fn.filereadable(start_path .. "/docker-compose.yml") == 1
                        or vim.fn.filereadable(start_path .. "/docker-compose.yaml") == 1
       local has_services_dir = vim.fn.isdirectory(start_path .. "/services") == 1
                             or vim.fn.isdirectory(start_path .. "/apps") == 1
                             or vim.fn.isdirectory(start_path .. "/packages") == 1
-      if has_compose or has_services_dir then
+      if has_compose or (has_services_dir and #direct_children >= 2) then
         local vp = {
           name = vim.fn.fnamemodify(start_path, ":t"),
           root = start_path,
@@ -224,7 +224,8 @@ function M.detect_projects(start_path)
           vp.children_roots[#vp.children_roots + 1] = proj.root
           child_roots[proj.root] = true
         end
-        if #vp.children_roots >= 2 then
+        local min_children = has_compose and 1 or 2
+        if #vp.children_roots >= min_children then
           local inserted = false
           for i, p in ipairs(M.projects) do
             if p.root == start_path then
