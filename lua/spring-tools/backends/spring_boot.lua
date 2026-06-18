@@ -145,10 +145,17 @@ end
 
 function SpringBootBackend:_port_listening(port)
   if not port then return false end
+  local cache = SpringBootBackend._port_cache or {}
+  SpringBootBackend._port_cache = cache
+  local now = os.time()
+  if cache[port] and now - cache[port].time < 3 then
+    return cache[port].result
+  end
   local handle = io.popen("ss -tlnp 2>/dev/null | grep -q :" .. port .. " && echo yes || echo no")
   if not handle then return false end
   local result = handle:read("*a"):gsub("%s+", "")
   handle:close()
+  cache[port] = { time = now, result = result == "yes" }
   return result == "yes"
 end
 

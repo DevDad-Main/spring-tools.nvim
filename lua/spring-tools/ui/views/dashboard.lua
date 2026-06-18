@@ -84,7 +84,12 @@ function M:load_items()
             for _, f in ipairs({ "docker-compose.yml", "docker-compose.yaml" }) do
               local p = proj.root .. "/" .. f
               if vim.fn.filereadable(p) == 1 then
-                 M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = p, indent = indent }
+                local docker_running = false
+                for _, cp in ipairs(proj_list) do
+                  local be = project.get_backend_for_project(cp)
+                  if be and be:get_status(cp) == "running" then docker_running = true; break end
+                end
+                M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = p, indent = indent, is_running = docker_running }
                 break
               end
             end
@@ -162,7 +167,7 @@ function M:render_item(item, selected)
     local dot = is_running and "\u{25cf}" or "\u{25cb}"
     local hl = selected and "SpringToolsSelected" or (is_running and "SpringToolsRunning" or "SpringToolsDashboardProject")
     local status_text = is_running and " running" or " stopped"
-    return { { indent .. "  " .. dot .. " " .. "\u{f308} " .. item.label .. status_text, hl } }
+    return { { indent .. "  " .. dot .. "\u{f308} " .. item.label .. "  " .. status_text, hl } }
   end
   local proj = item.project
   local be = item.backend
