@@ -196,7 +196,7 @@ function M.open()
   vim.api.nvim_create_autocmd("WinResized", {
     group = M._resize_group,
     callback = function(args)
-      if vim.api.nvim_win_is_valid(M.win) and args.win == M.win and #M._stored_logs > 0 then
+      if M.win and pcall(vim.api.nvim_win_is_valid, M.win) and args.win == M.win and #M._stored_logs > 0 then
         M._render_from_logs()
       end
     end,
@@ -209,6 +209,10 @@ function M.open()
 end
 
 function M.close()
+  if M._resize_group then
+    pcall(vim.api.nvim_del_augroup_by_id, M._resize_group)
+    M._resize_group = nil
+  end
   if win_is_valid() then
     pcall(vim.api.nvim_win_close, M.win, true)
   end
