@@ -467,6 +467,7 @@ Times vary by hardware, JVM warm-up, and project size — larger projects will s
 require("spring-tools").setup({
   java_command = "java",       -- Java binary path
   auto_refresh = true,         -- re-index on file save
+  workspace_filter = false,    -- true = only show projects under cwd (less noise)
   icons = {
     running = "\u{f144}",      -- playing icon
     stopped = "\u{f04d}",      -- pause icon

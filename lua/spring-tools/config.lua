@@ -104,6 +104,7 @@ M.defaults = {
     },
   },
   auto_refresh = true,
+  workspace_filter = false,          -- true = only show projects under cwd (less noise)
   auto_restart = {
     enable = true,       -- master switch (off = disabled for all projects)
     delay = 500,         -- debounce delay in ms
