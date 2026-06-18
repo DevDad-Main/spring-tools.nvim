@@ -198,7 +198,21 @@ command_input = {
   <img src="previews/plugin_demo_microservices_filter_logs.gif" width="900" />
 </p>
 
-> **Tip**: Press `1`&ndash;`9` to toggle individual services off/on, then narrow further with `e`/`w`/`i`/`d`/`t` level filters. Combine both to zero in on exactly the data you need &mdash; no noise.
+> **Tip**: Press `1`&ndash;`9` to toggle individual services off/on, then narrow further with `e`/`w`/`i`/`d`/`t` level filters. Combine both to zero in on exactly the data you need &mdash; no noise. Services are ordered alphabetically — position 1 = first service by name, position 2 = second, etc.
+
+```lua
+-- Assign a highlight group per service position
+log = {
+  service_colors = {
+    "Function",              -- 1st service (alpha-sorted)
+    "MyAccent",              -- 2nd
+    "SpringToolsLogWarn",    -- 3rd
+  },
+}
+highlights = {
+  MyAccent = { fg = "#ff79c6" },
+}
+```
 
 <h4 align="center">Microservice Dashboard &mdash; foldable parent header, nested services, Docker Compose widget</h4>
 <p align="center">
