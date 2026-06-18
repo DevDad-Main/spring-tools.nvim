@@ -2,19 +2,19 @@ local components = require("spring-tools.ui.components")
 local utils = require("spring-tools.utils")
 local config = require("spring-tools.config")
 local builtin_patterns = {
-  { pattern = "%sERROR%s", hl = "SpringToolsLogError" },
-  { pattern = "%sWARN%s", hl = "SpringToolsLogWarn" },
-  { pattern = "%sINFO%s", hl = "SpringToolsLogInfo" },
-  { pattern = "%sDEBUG%s", hl = "SpringToolsLogDebug" },
-  { pattern = "%sTRACE%s", hl = "SpringToolsLogTrace" },
-  { pattern = "%sFATAL%s", hl = "SpringToolsLogError" },
-  { pattern = "%sSEVERE%s", hl = "SpringToolsLogError" },
-  { pattern = "%[ERROR%]", hl = "SpringToolsLogError" },
-  { pattern = "%[WARNING%]", hl = "SpringToolsLogWarn" },
-  { pattern = "%[WARN%]", hl = "SpringToolsLogWarn" },
-  { pattern = "%[INFO%]", hl = "SpringToolsLogInfo" },
-  { pattern = "%[DEBUG%]", hl = "SpringToolsLogDebug" },
-  { pattern = "%[TRACE%]", hl = "SpringToolsLogTrace" },
+  { pattern = " ERROR ", hl = "SpringToolsLogError" },
+  { pattern = " WARN  ", hl = "SpringToolsLogWarn" },
+  { pattern = " INFO  ", hl = "SpringToolsLogInfo" },
+  { pattern = " DEBUG ", hl = "SpringToolsLogDebug" },
+  { pattern = " TRACE ", hl = "SpringToolsLogTrace" },
+  { pattern = " FATAL ", hl = "SpringToolsLogError" },
+  { pattern = " SEVERE ", hl = "SpringToolsLogError" },
+  { pattern = "[ERROR]", hl = "SpringToolsLogError" },
+  { pattern = "[WARNING]", hl = "SpringToolsLogWarn" },
+  { pattern = "[WARN]", hl = "SpringToolsLogWarn" },
+  { pattern = "[INFO]", hl = "SpringToolsLogInfo" },
+  { pattern = "[DEBUG]", hl = "SpringToolsLogDebug" },
+  { pattern = "[TRACE]", hl = "SpringToolsLogTrace" },
 }
 local service_hl_colors = {
   "SpringToolsLogInfo", "SpringToolsAccent", "SpringToolsLogWarn",
@@ -43,21 +43,22 @@ end
 local function get_log_patterns()
   ensure_custom_init()
   local all = {}
-  -- Custom toggleable pattern checked FIRST (plain matching)
+  -- Custom toggleable pattern checked FIRST
   local cp = config.options.log and config.options.log.custom
   if cp and cp.pattern and cp.hl then
-    all[#all + 1] = { pattern = cp.pattern, hl = cp.hl, is_custom = true, plain = true }
+    all[#all + 1] = { pattern = cp.pattern, hl = cp.hl, is_custom = true }
   end
-  -- Then extra patterns from config (plain matching)
+  -- Then extra patterns from config
   local custom = config.options.log and config.options.log.levels or {}
-  for _, p in ipairs(custom) do all[#all + 1] = { pattern = p.pattern, hl = p.hl, plain = true } end
-  -- Then built-in patterns (Lua pattern matching)
+  for _, p in ipairs(custom) do all[#all + 1] = { pattern = p.pattern, hl = p.hl } end
+  -- Then built-in patterns
   for _, p in ipairs(builtin_patterns) do all[#all + 1] = p end
-  -- Dynamic docker compose service patterns (plain matching, configurable)
+  -- Dynamic docker compose service patterns
   local svc_colors = config.options.log and config.options.log.service_colors or {}
   for i, svc in ipairs(M._detected_services or {}) do
     local hl = svc_colors[i] or service_hl_colors[(i - 1) % #service_hl_colors + 1]
-    all[#all + 1] = { pattern = svc, hl = hl, plain = true }
+    all[#all + 1] = { pattern = svc .. "-", hl = hl }
+    all[#all + 1] = { pattern = svc, hl = hl }
   end
   return all
 end
@@ -89,8 +90,7 @@ end
 
 local function line_level(line)
   for _, pat in ipairs(get_log_patterns()) do
-    local matched = pat.plain and line:find(pat.pattern, 1, true) or line:find(pat.pattern)
-    if matched then
+    if line:find(pat.pattern, 1, true) then
       if pat.is_custom then return M._custom_key end
       local name = pat.hl:match("Log(%a+)$")
       if name then return name:lower() end
@@ -395,28 +395,18 @@ function M.highlight_logs()
   if not buf_is_valid() then return end
   vim.api.nvim_buf_clear_namespace(M.buf, M.ns, 0, -1)
   local lines = vim.api.nvim_buf_get_lines(M.buf, 0, -1, false)
-  local match_count = 0
   for line_idx, line in ipairs(lines) do
     for _, lp in ipairs(get_log_patterns()) do
-      local s, e = lp.plain and line:find(lp.pattern, 1, true) or line:find(lp.pattern)
+      local s, e = line:find(lp.pattern, 1, true)
       if s then
-        match_count = match_count + 1
-        if match_count <= 3 and e then
-          vim.notify(string.format("  match: [%s] s=%d e=%d line_len=%d hl=%s plain=%s",
-            line:sub(s, e or s), s, e or -1, #line, lp.hl, tostring(lp.plain)), vim.log.levels.INFO)
-        end
         vim.api.nvim_buf_set_extmark(M.buf, M.ns, line_idx - 1, s - 1, {
-          end_col = e or s,
-          hl_group = "ErrorMsg",
-          priority = 250,
+          end_col = e,
+          hl_group = lp.hl,
+          priority = lp.is_custom and 200 or (lp.hl:find("Log") and 150 or 100),
         })
       end
     end
   end
-  -- Show first log-group colors
-  local si = vim.api.nvim_get_hl(0, { name = "SpringToolsLogInfo" })
-  vim.notify(string.format("[spring-tools] LogInfo fg=%s bg=%s matches=%d",
-    si.fg, si.bg, match_count), vim.log.levels.INFO)
 end
 
 function M.setup_keymaps()
