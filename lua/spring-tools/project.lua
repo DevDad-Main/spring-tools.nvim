@@ -157,13 +157,14 @@ function M.detect_projects(start_path)
   end
   for _, proj in ipairs(M.projects) do
     for _, parent in ipairs(M.projects) do
-      if proj.root ~= parent.root and proj.root:sub(1, #parent.root) == parent.root and proj.root:sub(#parent.root + 1, #parent.root + 1) == "/" then
+      local proot = parent.root:sub(-1) == "/" and parent.root or parent.root .. "/"
+      if proj.root ~= parent.root and proj.root:sub(1, #proot) == proot then
         local child_name = vim.fn.fnamemodify(proj.root, ":t")
         local pmodules = parent_modules[parent.root]
         -- pmodules == nil → no module file (virtual parent / container dir)
         --   Only accept DIRECT children (one level down), not all descendants.
         -- pmodules ~= nil → only accept if child_name is declared as a module.
-        local is_direct = proj.root:sub(#parent.root + 2):find("^[^/]+/$") ~= nil
+        local is_direct = proj.root:sub(#proot + 1):find("^[^/]+/$") ~= nil
         if (pmodules == nil and is_direct) or (pmodules and pmodules[child_name]) then
           if not parent.children then parent.children = {} end
           parent.children[#parent.children + 1] = proj
