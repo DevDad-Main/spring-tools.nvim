@@ -189,15 +189,21 @@ function M.detect_projects(start_path)
     local direct_children = {}
     for _, proj in ipairs(M.projects) do
       if proj.root:sub(1, #sp) == sp
-         and proj.root:sub(#sp + 1):find("^[^/]+/$") then
+         and (proj.root:sub(#sp + 1):find("^[^/]+/$")
+              or proj.root:sub(#sp + 1):find("^services/[^/]+/$")
+              or proj.root:sub(#sp + 1):find("^apps/[^/]+/$")
+              or proj.root:sub(#sp + 1):find("^packages/[^/]+/$")) then
         direct_children[#direct_children + 1] = proj
       end
     end
     if #direct_children >= 2 then
       local has_compose = vim.fn.filereadable(start_path .. "/docker-compose.yml") == 1
                        or vim.fn.filereadable(start_path .. "/docker-compose.yaml") == 1
-      if not has_compose then
-        -- Without docker-compose, these are independent monorepo projects — keep them flat
+      local has_services_dir = vim.fn.isdirectory(start_path .. "/services") == 1
+                            or vim.fn.isdirectory(start_path .. "/apps") == 1
+                            or vim.fn.isdirectory(start_path .. "/packages") == 1
+      if not has_compose and not has_services_dir then
+        -- Without docker-compose or a services/ container, these are independent monorepo projects — keep them flat
       else
         local vp = {
           name = vim.fn.fnamemodify(start_path, ":t"),
