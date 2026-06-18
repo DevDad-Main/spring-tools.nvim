@@ -118,17 +118,18 @@ end
 function M.detect_projects(start_path)
   start_path = start_path or vim.fn.getcwd()
   start_path = vim.fn.resolve(start_path)
-  vim.notify(string.format("[spring-tools] DEBUG: entering detect_projects(%s)", start_path), vim.log.levels.WARN)
   if M.workspace_root and M.workspace_root ~= start_path then
     M.projects = {}
     M.active_project_root = nil
   end
   M.load_cache()
+  M.workspace_root = start_path
+
   -- Drop projects from other workspaces (cache is shared across all workspaces)
+  local sp_trail = start_path:sub(-1) == "/" and start_path or start_path .. "/"
   local filtered = {}
-  local sp_ = start_path:sub(-1) == "/" and start_path or start_path .. "/"
   for _, proj in ipairs(M.projects) do
-    if proj.root:sub(1, #sp_) == sp_ or proj.root == start_path then
+    if proj.root:sub(1, #sp_trail) == sp_trail or proj.root == start_path then
       filtered[#filtered + 1] = proj
     end
   end
@@ -140,11 +141,6 @@ function M.detect_projects(start_path)
     state.set_projects(M.projects, M.workspace_root)
     return M.projects
   end
-
-  M.workspace_root = start_path
-
-  vim.notify(string.format("[spring-tools] detect_projects start_path=%s all_roots=%d projects=%d",
-    start_path, #all_roots, #M.projects), vim.log.levels.WARN)
 
   for _, root in ipairs(all_roots) do
     local cached
@@ -162,7 +158,7 @@ function M.detect_projects(start_path)
     M.add_entry(entry)
   end
 
-  -- Build parent-child tree: a root nested under another root is a child
+  -- Build parent-child tree
   for _, proj in ipairs(M.projects) do
     proj.children = nil
   end
@@ -178,10 +174,7 @@ function M.detect_projects(start_path)
       if proj.root ~= parent.root and proj.root:sub(1, #proot) == proot then
         local child_name = vim.fn.fnamemodify(proj.root, ":t")
         local pmodules = parent_modules[parent.root]
-        -- pmodules == nil → no module file (virtual parent / container dir)
-        --   Only accept DIRECT children (one level down), not all descendants.
-        -- pmodules ~= nil → only accept if child_name is declared as a module.
-        local is_direct = proj.root:sub(#proot + 1):find("^[^/]+/$") ~= nil
+        local is_direct = proj.root:sub(#proot + 1):find("^[^/]+/?$") ~= nil
         if (pmodules == nil and is_direct) or (pmodules and pmodules[child_name]) then
           if not parent.children then parent.children = {} end
           parent.children[#parent.children + 1] = proj
@@ -191,9 +184,9 @@ function M.detect_projects(start_path)
       end
     end
   end
-  -- If workspace root is not a project but has direct sub-projects under it,
-  -- create a virtual parent entry so it persists across workspace switches.
-  -- Only count CHILDREN (one level deep), not arbitrarily nested descendants.
+
+  -- Create virtual parent for workspace root if it's a container (docker-compose
+  -- or services/ dir) with direct project children.
   local ws_is_project = false
   for _, proj in ipairs(M.projects) do
     if proj.root == M.workspace_root or proj.root == start_path then
@@ -201,39 +194,26 @@ function M.detect_projects(start_path)
       break
     end
   end
-  vim.notify(string.format("[spring-tools] past parent-child, ws_is_project=%s #projects=%d",
-    tostring(ws_is_project), #M.projects), vim.log.levels.WARN)
   if not ws_is_project then
-    vim.notify("[spring-tools] inside ws_is_project block", vim.log.levels.WARN)
     local sp = start_path:sub(-1) == "/" and start_path or start_path .. "/"
     local direct_children = {}
     for _, proj in ipairs(M.projects) do
-      local starts_with = proj.root:sub(1, #sp) == sp
       local tail = proj.root:sub(#sp + 1)
-      local is_direct = tail:find("^[^/]+/$") ~= nil
-      if starts_with and is_direct then
+      if proj.root:sub(1, #sp) == sp
+         and (tail:find("^[^/]+/?$")
+              or tail:find("^services/[^/]+/?$")
+              or tail:find("^apps/[^/]+/?$")
+              or tail:find("^packages/[^/]+/?$")) then
         direct_children[#direct_children + 1] = proj
       end
-      vim.notify(string.format("[spring-tools] proj=%s starts=%s tail=[%s] direct=%s",
-        proj.name, tostring(starts_with), tail, tostring(is_direct)), vim.log.levels.WARN)
     end
-    vim.notify(string.format("[spring-tools] direct_children=%d sp_=%s",
-      #direct_children, sp), vim.log.levels.WARN)
     if #direct_children >= 2 then
-      vim.notify(string.format("[spring-tools] %d direct children for %s",
-        #direct_children, vim.fn.fnamemodify(start_path, ":t")), vim.log.levels.WARN)
       local has_compose = vim.fn.filereadable(start_path .. "/docker-compose.yml") == 1
                        or vim.fn.filereadable(start_path .. "/docker-compose.yaml") == 1
       local has_services_dir = vim.fn.isdirectory(start_path .. "/services") == 1
                             or vim.fn.isdirectory(start_path .. "/apps") == 1
                             or vim.fn.isdirectory(start_path .. "/packages") == 1
-      vim.notify(string.format("[spring-tools] has_compose=%s has_services=%s",
-        tostring(has_compose), tostring(has_services_dir)), vim.log.levels.WARN)
-      if not has_compose and not has_services_dir then
-        vim.notify(string.format("[spring-tools] no grouping for %s (compose=%s services=%s)",
-          vim.fn.fnamemodify(start_path, ":t"), tostring(has_compose), tostring(has_services_dir)), vim.log.levels.WARN)
-        -- Without docker-compose or a services/ container, these are independent monorepo projects — keep them flat
-      else
+      if has_compose or has_services_dir then
         local vp = {
           name = vim.fn.fnamemodify(start_path, ":t"),
           root = start_path,
@@ -246,8 +226,6 @@ function M.detect_projects(start_path)
         end
         if #vp.children_roots >= 2 then
           local inserted = false
-          vim.notify(string.format("[spring-tools] vp created: %s with %d children",
-            vp.name, #direct_children), vim.log.levels.WARN)
           for i, p in ipairs(M.projects) do
             if p.root == start_path then
               M.projects[i] = vp
@@ -258,7 +236,6 @@ function M.detect_projects(start_path)
           if not inserted then
             table.insert(M.projects, vp)
           end
-          -- Assign children to the newly created virtual parent
           vp.children = {}
           for _, proj in ipairs(direct_children) do
             vp.children[#vp.children + 1] = proj
@@ -269,6 +246,7 @@ function M.detect_projects(start_path)
       end
     end
   end
+
   -- Mark top-level status
   for _, proj in ipairs(M.projects) do
     proj.is_top_level = not child_roots[proj.root]
