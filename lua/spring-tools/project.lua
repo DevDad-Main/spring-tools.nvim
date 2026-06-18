@@ -118,6 +118,7 @@ end
 function M.detect_projects(start_path)
   start_path = start_path or vim.fn.getcwd()
   start_path = vim.fn.resolve(start_path)
+  vim.notify(string.format("[spring-tools] DEBUG: entering detect_projects(%s)", start_path), vim.log.levels.WARN)
   if M.workspace_root and M.workspace_root ~= start_path then
     M.projects = {}
     M.active_project_root = nil
@@ -200,7 +201,10 @@ function M.detect_projects(start_path)
       break
     end
   end
+  vim.notify(string.format("[spring-tools] past parent-child, ws_is_project=%s #projects=%d",
+    tostring(ws_is_project), #M.projects), vim.log.levels.WARN)
   if not ws_is_project then
+    vim.notify("[spring-tools] inside ws_is_project block", vim.log.levels.WARN)
     local sp = start_path:sub(-1) == "/" and start_path or start_path .. "/"
     local direct_children = {}
     for _, proj in ipairs(M.projects) do
@@ -212,6 +216,8 @@ function M.detect_projects(start_path)
         direct_children[#direct_children + 1] = proj
       end
     end
+    vim.notify(string.format("[spring-tools] direct_children=%d sp_=%s",
+      #direct_children, sp), vim.log.levels.WARN)
     if #direct_children >= 2 then
       vim.notify(string.format("[spring-tools] %d direct children for %s",
         #direct_children, vim.fn.fnamemodify(start_path, ":t")), vim.log.levels.WARN)
@@ -220,6 +226,8 @@ function M.detect_projects(start_path)
       local has_services_dir = vim.fn.isdirectory(start_path .. "/services") == 1
                             or vim.fn.isdirectory(start_path .. "/apps") == 1
                             or vim.fn.isdirectory(start_path .. "/packages") == 1
+      vim.notify(string.format("[spring-tools] has_compose=%s has_services=%s",
+        tostring(has_compose), tostring(has_services_dir)), vim.log.levels.WARN)
       if not has_compose and not has_services_dir then
         vim.notify(string.format("[spring-tools] no grouping for %s (compose=%s services=%s)",
           vim.fn.fnamemodify(start_path, ":t"), tostring(has_compose), tostring(has_services_dir)), vim.log.levels.WARN)
