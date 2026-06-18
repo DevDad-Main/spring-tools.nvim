@@ -225,7 +225,9 @@ function M.show(lines, title, opts)
 
   if opts and opts.footer then
     table.insert(display, " " .. string.rep("─", 60))
-    table.insert(display, "  " .. M._footer_text())
+    for _, fl in ipairs(vim.split(M._footer_text(), "\n")) do
+      table.insert(display, "  " .. fl)
+    end
   end
 
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, display)
@@ -302,7 +304,9 @@ function M._render_from_logs(title)
     table.insert(display, " " .. strip_ansi(tostring(l)))
   end
   table.insert(display, " " .. string.rep("─", 60))
-  table.insert(display, "  " .. M._footer_text())
+  for _, fl in ipairs(vim.split(M._footer_text(), "\n")) do
+    table.insert(display, "  " .. fl)
+  end
 
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, display)
   vim.bo[M.buf].modifiable = false
