@@ -128,7 +128,7 @@ function M:render_item(item, selected)
   if item.type == "parent_header" then
     local icon = item.collapsed and "\u{25b8}" or "\u{25be}"
     local indent = string.rep("  ", item.indent or 0)
-    local hl = selected and "SpringToolsSelected" or "SpringToolsAccent"
+    local hl = selected and "SpringToolsSelected" or "SpringToolsParentHeader"
     return { { indent .. icon .. "  " .. item.label, hl } }
   end
   if item.type == "docker" then
@@ -142,14 +142,20 @@ function M:render_item(item, selected)
       end
     end
     local dot = is_running and "\u{25cf}" or "\u{25cb}"
-    local dot_hl = is_running and "SpringToolsRunning" or "SpringToolsDim"
+    local dot_hl = is_running and "SpringToolsRunning" or "SpringToolsDashboardStatus"
     local label = item.label or "docker-compose"
     local status_tag = is_running and "running" or "stopped"
-    local status_hl = is_running and "SpringToolsRunning" or "SpringToolsDim"
+    local status_hl = is_running and "SpringToolsRunning" or "SpringToolsDashboardStatus"
     if selected then
       return { { indent .. "  " .. dot .. " " .. label .. " " .. status_tag, "SpringToolsSelected" } }
     end
-    return { { indent .. "  " .. dot .. " " .. label .. " " .. status_tag, status_hl } }
+    return { {
+      segments = {
+        { indent .. "  " .. dot .. " ", dot_hl },
+        { label, "SpringToolsDashboardProject" },
+        { " " .. status_tag, status_hl },
+      },
+    } }
   end
   local proj = item.project
   local be = item.backend

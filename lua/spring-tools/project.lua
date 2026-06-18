@@ -133,6 +133,30 @@ function M.detect_projects(start_path)
     M.projects = filtered
   end
 
+  -- Always rebuild children from children_roots, even when no new roots found.
+  -- children_roots survives JSON serialization; children (object refs) does not.
+  local child_roots = {}
+  for _, proj in ipairs(M.projects) do
+    proj.children = nil
+    if proj.children_roots and #proj.children_roots > 0 then
+      proj.children = {}
+      for _, child_root in ipairs(proj.children_roots) do
+        for _, child in ipairs(M.projects) do
+          if child.root == child_root then
+            proj.children[#proj.children + 1] = child
+            child_roots[child.root] = true
+            break
+          end
+        end
+      end
+    end
+  end
+
+  -- Mark top-level status immediately so cached views are correct
+  for _, proj in ipairs(M.projects) do
+    proj.is_top_level = not child_roots[proj.root]
+  end
+
   local all_roots = utils.find_all_project_roots(start_path)
   if #all_roots == 0 then
     local state = require("spring-tools.core.state")
@@ -156,17 +180,14 @@ function M.detect_projects(start_path)
     M.add_entry(entry)
   end
 
-  -- Build parent-child tree
-  for _, proj in ipairs(M.projects) do
-    proj.children = nil
-  end
+  -- Run parent-child matching for newly detected projects
   table.sort(M.projects, function(a, b) return #a.root < #b.root end)
-  local child_roots = {}
   local parent_modules = {}
   for _, proj in ipairs(M.projects) do
     parent_modules[proj.root] = utils.get_child_modules(proj.root)
   end
   for _, proj in ipairs(M.projects) do
+    if not child_roots[proj.root] then
     for _, parent in ipairs(M.projects) do
       local proot = parent.root:sub(-1) == "/" and parent.root or parent.root .. "/"
       if proj.root ~= parent.root and proj.root:sub(1, #proot) == proot then
@@ -183,6 +204,7 @@ function M.detect_projects(start_path)
           break
         end
       end
+    end
     end
   end
 

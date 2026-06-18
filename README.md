@@ -616,6 +616,7 @@ All highlights derive from your active colorscheme via `nvim_get_hl` at startup:
 | `SpringToolsDashboardProject`   | Inherits `Normal` (bold)      | Project name in dashboard                            |
 | `SpringToolsDashboardStatus`    | Inherits `SpringToolsDim`     | Status text (stopped/running/failed)                 |
 | `SpringToolsDashboardBuildType` | Inherits `SpringToolsDim`     | Build type (maven/gradle)                            |
+| `SpringToolsParentHeader`       | Inherits `SpringToolsHeader`  | Collapsible workspace / microservice parent header    |
 | `SpringToolsLogError`           | `ErrorMsg`                    | Log ERROR, FATAL, SEVERE levels                      |
 | `SpringToolsLogWarn`            | `Special`                     | Log WARN, WARNING levels                             |
 | `SpringToolsLogInfo`            | `DiagnosticOk`                | Log INFO level                                       |
@@ -669,6 +670,7 @@ require("spring-tools").setup({
     SpringToolsDashboardProject   = { fg = "#ffffff", bold = true }, -- Project name
     SpringToolsDashboardStatus    = { fg = "#888888" },             -- stopped/running/failed
     SpringToolsDashboardBuildType = { fg = "#666666" },             -- maven/gradle
+    SpringToolsParentHeader = { fg = "#ffffff", bold = true },       -- workspace / microservice parent
 
     -- Log output
     SpringToolsLogError   = { fg = "#ff0000", bold = true },        -- ERROR, FATAL, SEVERE
