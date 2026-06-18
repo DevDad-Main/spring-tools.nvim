@@ -143,7 +143,11 @@ local function scroll_to_bottom()
   pcall(function()
     local line_count = vim.api.nvim_buf_line_count(M.buf)
     vim.api.nvim_win_call(M.win, function()
+      local saved_so = vim.wo.scrolloff
+      vim.wo.scrolloff = 0
       vim.api.nvim_win_set_cursor(0, { line_count, 0 })
+      vim.cmd("normal! zb")
+      vim.wo.scrolloff = saved_so
     end)
   end)
 end
@@ -185,6 +189,18 @@ function M.open()
   vim.bo[M.buf].filetype = "springtools-output"
 
   M.setup_keymaps()
+  if M._resize_group then
+    pcall(vim.api.nvim_del_augroup_by_id, M._resize_group)
+  end
+  M._resize_group = vim.api.nvim_create_augroup("SpringToolsOutputResize", { clear = true })
+  vim.api.nvim_create_autocmd("WinResized", {
+    group = M._resize_group,
+    callback = function(args)
+      if vim.api.nvim_win_is_valid(M.win) and args.win == M.win and #M._stored_logs > 0 then
+        M._render_from_logs()
+      end
+    end,
+  })
   if #M._stored_logs > 0 then
     M._render_from_logs()
   else
