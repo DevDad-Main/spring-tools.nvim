@@ -90,7 +90,23 @@ function SpringBootBackend:get_status(proj)
   -- No tracked process — check if port is listening (Docker/external)
   local port = self:get_port(proj) or self:_read_config_port(proj)
   if port and self:_port_listening(port) then return "running" end
+  -- For docker-compose parent projects, check if any sibling has a listening port
+  if self:_is_docker_compose(proj) then
+    local state = require("spring-tools.core.state")
+    for _, sibling in ipairs(state.get_projects()) do
+      if sibling.root ~= proj.root and sibling.root:find(vim.fn.fnamemodify(proj.root, ":h"), 1, true) then
+        local sp = self:get_port(sibling) or self:_read_config_port(sibling)
+        if sp and self:_port_listening(sp) then return "running" end
+      end
+    end
+  end
   return "stopped"
+end
+
+function SpringBootBackend:_is_docker_compose(proj)
+  if not proj or not proj.root then return false end
+  return vim.fn.filereadable(proj.root .. "/docker-compose.yml") == 1
+      or vim.fn.filereadable(proj.root .. "/docker-compose.yaml") == 1
 end
 
 function SpringBootBackend:_read_config_port(proj)
@@ -143,7 +159,8 @@ end
 
 function SpringBootBackend:get_port(proj)
   local proc = backend.ProcessManager:get(proj)
-  return proc and proc.port
+  if proc and proc.port then return proc.port end
+  return self:_read_config_port(proj)
 end
 
 function SpringBootBackend:get_profile(proj)
