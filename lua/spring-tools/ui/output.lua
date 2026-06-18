@@ -395,10 +395,12 @@ function M.highlight_logs()
   if not buf_is_valid() then return end
   vim.api.nvim_buf_clear_namespace(M.buf, M.ns, 0, -1)
   local lines = vim.api.nvim_buf_get_lines(M.buf, 0, -1, false)
+  local match_count = 0
   for line_idx, line in ipairs(lines) do
     for _, lp in ipairs(get_log_patterns()) do
       local s, e = lp.plain and line:find(lp.pattern, 1, true) or line:find(lp.pattern)
       if s then
+        match_count = match_count + 1
         vim.api.nvim_buf_set_extmark(M.buf, M.ns, line_idx - 1, s - 1, {
           end_col = e,
           hl_group = lp.hl,
@@ -407,6 +409,9 @@ function M.highlight_logs()
       end
     end
   end
+  local pats = get_log_patterns()
+  vim.notify(string.format("[spring-tools] highlight_logs: %d lines, %d matches, %d patterns (first: %s)",
+    #lines, match_count, #pats, pats[1] and pats[1].pattern or "nil"), vim.log.levels.INFO)
 end
 
 function M.setup_keymaps()
