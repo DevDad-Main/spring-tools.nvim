@@ -401,12 +401,12 @@ function M.highlight_logs()
       local s, e = lp.plain and line:find(lp.pattern, 1, true) or line:find(lp.pattern)
       if s then
         match_count = match_count + 1
-        if match_count <= 3 then
+        if match_count <= 3 and e then
           vim.notify(string.format("  match: [%s] s=%d e=%d line_len=%d hl=%s plain=%s",
-            line:sub(s, e), s, e, #line, lp.hl, tostring(lp.plain)), vim.log.levels.INFO)
+            line:sub(s, e or s), s, e or -1, #line, lp.hl, tostring(lp.plain)), vim.log.levels.INFO)
         end
         vim.api.nvim_buf_set_extmark(M.buf, M.ns, line_idx - 1, s - 1, {
-          end_col = e,
+          end_col = e or s,
           hl_group = "ErrorMsg",
           priority = 250,
         })
