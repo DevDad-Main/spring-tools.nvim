@@ -278,6 +278,15 @@ function M:on_activate(idx)
         vim.schedule(function()
           if sidebar.win and vim.api.nvim_win_is_valid(sidebar.win) then
             sidebar.refresh()
+            -- Stop early if all siblings are running
+            local all_up = true
+            for _, p in ipairs(st.get_projects()) do
+              if p.root:find(vim.fn.fnamemodify(item.compose_file, ":h"), 1, true) and not (p.is_virtual or p.is_aggregate) then
+                local be = project.get_backend_for_project(p)
+                if not be or be:get_status(p) ~= "running" then all_up = false; break end
+              end
+            end
+            if all_up then pcall(vim.fn.timer_stop, timer) end
           end
         end)
       end, { ["repeat"] = 3000 })
