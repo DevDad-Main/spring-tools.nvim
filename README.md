@@ -149,13 +149,6 @@ highlights = {
   <img src="previews/plugin_demo_log_highlighting_2.gif" width="900" />
 </p>
 
-<h4 align="center">Microservices &mdash; per-service log filtering, color-coded by service</h4>
-<p align="center">
-  <img src="previews/plugin_demo_microservices_filter_logs.gif" width="900" />
-</p>
-
-> **Tip**: Press `1`&ndash;`9` to toggle individual services off/on, then narrow further with `e`/`w`/`i`/`d`/`t` level filters. Combine both to zero in on exactly the data you need &mdash; no noise.
-
 <h4 align="center">HTTP Client &mdash; curl requests from endpoints with JSON responses, live log streaming</h4>
 <p align="center">
   <img src="previews/curl-request-json-filtered-logs.png" width="900" />
@@ -199,6 +192,13 @@ command_input = {
 <br>
 
 > **Tip**: The sidebar dynamically detects when you're in a multi-project workspace — a parent header groups child microservices, Section keys are scoped per project, and Docker Compose integration surfaces in both the project menu and as a clickable widget. The UI adapts automatically whether you're working in a monorepo or a microservice cluster.
+
+<h4 align="center">Microservice Log Filtering &mdash; per-service toggle (1&ndash;9), color-coded, combine with level filters</h4>
+<p align="center">
+  <img src="previews/plugin_demo_microservices_filter_logs.gif" width="900" />
+</p>
+
+> **Tip**: Press `1`&ndash;`9` to toggle individual services off/on, then narrow further with `e`/`w`/`i`/`d`/`t` level filters. Combine both to zero in on exactly the data you need &mdash; no noise.
 
 <h4 align="center">Microservice Dashboard &mdash; foldable parent header, nested services, Docker Compose widget</h4>
 <p align="center">
