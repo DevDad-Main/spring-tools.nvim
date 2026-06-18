@@ -100,7 +100,7 @@ local function detect_services()
   local seen = {}
   M._detected_services = {}
   for _, line in ipairs(M._stored_logs) do
-    local svc = line:match("^%s-([%w-]+)%-%d+%s+")
+    local svc = line:match("^%s-([a-zA-Z][%w-]+)%-%d+%s+|")
     if svc and not seen[svc] then
       seen[svc] = true
       M._detected_services[#M._detected_services + 1] = svc
@@ -113,7 +113,7 @@ local function detect_services()
 end
 
 local function line_service(line)
-  local svc = line:match("^%s-([%w-]+)%-%d+%s+[|%|]")
+  local svc = line:match("^%s-([a-zA-Z][%w-]+)%-%d+%s+|")
   return svc
 end
 
