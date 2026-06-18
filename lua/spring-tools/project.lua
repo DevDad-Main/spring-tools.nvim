@@ -219,6 +219,22 @@ function M.detect_projects(start_path)
       end
     end
   end
+  -- Remove virtual parents that no longer have direct children
+  local clean = {}
+  local dirty = false
+  for _, proj in ipairs(M.projects) do
+    if proj.is_virtual and (not proj.children or #proj.children == 0) then
+      dirty = true
+      if M.active_project_root == proj.root then M.active_project_root = nil end
+    else
+      clean[#clean + 1] = proj
+    end
+  end
+  if dirty then
+    M.projects = clean
+    M.save_cache()
+  end
+
   -- Mark top-level status
   for _, proj in ipairs(M.projects) do
     proj.is_top_level = not child_roots[proj.root]
