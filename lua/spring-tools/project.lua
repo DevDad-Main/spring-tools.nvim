@@ -208,13 +208,14 @@ function M.detect_projects(start_path)
     local sp = start_path:sub(-1) == "/" and start_path or start_path .. "/"
     local direct_children = {}
     for _, proj in ipairs(M.projects) do
-      if proj.root:sub(1, #sp) == sp
-         and (proj.root:sub(#sp + 1):find("^[^/]+/$")
-              or proj.root:sub(#sp + 1):find("^services/[^/]+/$")
-              or proj.root:sub(#sp + 1):find("^apps/[^/]+/$")
-              or proj.root:sub(#sp + 1):find("^packages/[^/]+/$")) then
+      local starts_with = proj.root:sub(1, #sp) == sp
+      local tail = proj.root:sub(#sp + 1)
+      local is_direct = tail:find("^[^/]+/$") ~= nil
+      if starts_with and is_direct then
         direct_children[#direct_children + 1] = proj
       end
+      vim.notify(string.format("[spring-tools] proj=%s starts=%s tail=[%s] direct=%s",
+        proj.name, tostring(starts_with), tail, tostring(is_direct)), vim.log.levels.WARN)
     end
     vim.notify(string.format("[spring-tools] direct_children=%d sp_=%s",
       #direct_children, sp), vim.log.levels.WARN)
