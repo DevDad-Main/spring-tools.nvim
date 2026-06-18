@@ -134,9 +134,9 @@ log = {
     pattern = "[DEMO]", hl = "SpringToolsLogWarn", key = "x",
   },
   service_colors = {
-    ["user-service"] = "SpringToolsAccent",
-    ["api-gateway"] = "SpringToolsLogInfo",
-    ["order-service"] = "SpringToolsLogWarn",
+    "SpringToolsAccent",       -- 1st service
+    "SpringToolsLogInfo",      -- 2nd service
+    "SpringToolsLogWarn",      -- 3rd service
   },
 }
 ```
@@ -512,7 +512,7 @@ require("spring-tools").setup({
   log = {
     levels = {},                 -- extra patterns: { pattern = "[AUDIT]", hl = "SpringToolsLogWarn" }
     custom = {},                 -- one toggleable: { pattern = "[DEMO]", hl = "SpringToolsLogWarn", key = "x" }
-    service_colors = {},         -- { ["user-service"] = "SpringToolsAccent" }
+    service_colors = {},         -- { "SpringToolsAccent", "SpringToolsLogInfo", "SpringToolsLogWarn" }
   },
   diff = {
     highlights = {

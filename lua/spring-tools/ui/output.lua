@@ -56,7 +56,7 @@ local function get_log_patterns()
   -- Dynamic docker compose service patterns (plain matching, configurable)
   local svc_colors = config.options.log and config.options.log.service_colors or {}
   for i, svc in ipairs(M._detected_services or {}) do
-    local hl = svc_colors[svc] or service_hl_colors[(i - 1) % #service_hl_colors + 1]
+    local hl = svc_colors[i] or service_hl_colors[(i - 1) % #service_hl_colors + 1]
     all[#all + 1] = { pattern = svc, hl = hl, plain = true }
   end
   return all
