@@ -134,10 +134,13 @@ log = {
     pattern = "[DEMO]", hl = "SpringToolsLogWarn", key = "x",
   },
   service_colors = {
-    "SpringToolsAccent",       -- 1st service
-    "SpringToolsLogInfo",      -- 2nd service
-    "SpringToolsLogWarn",      -- 3rd service
+    "Function",                    -- theme group
+    "SpringToolsLogInfo",          -- plugin group
+    "MyCustomRed",                 -- custom hex (define in highlights below)
   },
+},
+highlights = {
+  MyCustomRed = { fg = "#ff6b6b" },
 }
 ```
 
