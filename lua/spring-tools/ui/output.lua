@@ -174,6 +174,10 @@ function M.toggle()
   end
 end
 
+local function strip_ansi(str)
+  return str:gsub("\27%[[%d;]*[ABCDEFGHJKSTfminsuhl]", ""):gsub("\r", "")
+end
+
 function M.show(lines, title, opts)
   if not buf_is_valid() then
     if M._suppress_open then return end
@@ -187,7 +191,7 @@ function M.show(lines, title, opts)
 
   local display = { " " .. M.title, " " .. string.rep("─", 60) }
   for _, l in ipairs(lines) do
-    table.insert(display, " " .. tostring(l))
+    table.insert(display, " " .. strip_ansi(tostring(l)))
   end
 
   if opts and opts.footer then
@@ -202,7 +206,7 @@ function M.show(lines, title, opts)
 end
 
 function M.store_logs(all_logs)
-  M._stored_logs = all_logs
+  M._stored_logs = vim.tbl_map(strip_ansi, all_logs)
 end
 
 function M.append(line)
@@ -210,7 +214,7 @@ function M.append(line)
   local was_at_bottom = is_at_bottom()
   vim.bo[M.buf].modifiable = true
   local lines = vim.api.nvim_buf_get_lines(M.buf, 0, -1, false)
-  table.insert(lines, " " .. tostring(line))
+  table.insert(lines, " " .. strip_ansi(tostring(line)))
   vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, lines)
   vim.bo[M.buf].modifiable = false
   M.highlight_logs()
@@ -220,7 +224,7 @@ function M.append(line)
 end
 
 function M.update_from_logs(all_logs, title)
-  M._stored_logs = all_logs
+  M._stored_logs = vim.tbl_map(strip_ansi, all_logs)
   M._pending_title = title or M._pending_title
   if not M._render_scheduled then
     M._render_scheduled = true
@@ -258,7 +262,7 @@ function M._render_from_logs(title)
 
   local display = { " " .. M.title, " " .. string.rep("─", 60) }
   for _, l in ipairs(recent) do
-    table.insert(display, " " .. tostring(l))
+    table.insert(display, " " .. strip_ansi(tostring(l)))
   end
   table.insert(display, " " .. string.rep("─", 60))
   table.insert(display, "  " .. M._footer_text())
