@@ -275,6 +275,9 @@ function M:on_activate(idx)
             for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
           end) end
         end,
+        on_exit = function()
+          vim.schedule(function() sidebar.refresh() end)
+        end,
       })
     end
 
