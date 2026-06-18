@@ -116,21 +116,7 @@ function M:load_items()
     for _, proj in ipairs(projs) do
       if proj.is_top_level == nil or proj.is_top_level then table.insert(top_level, proj) end
     end
-    if ws_is_project then
-      add_project_items(top_level)
-    else
-      local ws_name = vim.fn.fnamemodify(ws, ":t")
-      local sk = "parent:" .. ws
-      local is_collapsed = sections:is_collapsed(sk)
-      M.items[#M.items + 1] = { type = "parent_header", label = ws_name, section_key = sk, collapsed = is_collapsed, indent = 0 }
-      if not is_collapsed then
-        for _, proj in ipairs(top_level) do
-          local item = build_project_item(proj)
-          item.indent = 1
-          table.insert(M.items, item)
-        end
-      end
-    end
+    add_project_items(top_level)
   else
     add_project_items(projs)
   end
