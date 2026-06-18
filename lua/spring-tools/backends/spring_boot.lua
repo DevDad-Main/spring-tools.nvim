@@ -170,7 +170,7 @@ end
 
 function SpringBootBackend:get_uptime(proj)
   local proc = backend.ProcessManager:get(proj)
-  if not proc or not proc.start_time then return "--" end
+  if not proc or not proc.start_time then return "" end
   local elapsed = os.difftime(os.time(), proc.start_time)
   if elapsed < 60 then return math.floor(elapsed) .. "s"
   elseif elapsed < 3600 then return math.floor(elapsed / 60) .. "m"
