@@ -149,6 +149,13 @@ highlights = {
   <img src="previews/plugin_demo_log_highlighting_2.gif" width="900" />
 </p>
 
+<h4 align="center">Microservices &mdash; per-service log filtering, color-coded by service</h4>
+<p align="center">
+  <img src="previews/plugin_demo_microservices_filter_logs.gif" width="900" />
+</p>
+
+> **Tip**: Press `1`&ndash;`9` to toggle individual services off/on, then narrow further with `e`/`w`/`i`/`d`/`t` level filters. Combine both to zero in on exactly the data you need &mdash; no noise.
+
 <h4 align="center">HTTP Client &mdash; curl requests from endpoints with JSON responses, live log streaming</h4>
 <p align="center">
   <img src="previews/curl-request-json-filtered-logs.png" width="900" />
