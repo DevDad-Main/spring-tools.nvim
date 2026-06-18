@@ -276,6 +276,7 @@ function M._render_from_logs(title)
 
   M.title = title or M.title or "Output"
   detect_services()
+  M.setup_keymaps()
   local filtered = {}
   for _, l in ipairs(M._stored_logs) do
     if line_passes_filter(l) then
