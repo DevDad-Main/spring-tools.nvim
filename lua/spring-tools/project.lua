@@ -169,6 +169,10 @@ function M.detect_projects(start_path)
           if not parent.children then parent.children = {} end
           parent.children[#parent.children + 1] = proj
           child_roots[proj.root] = true
+          if parent.is_virtual then
+            vim.notify(string.format("[spring-tools] parent-child: %s -> %s (direct=%s, pmodules=%s)",
+              parent.name, proj.name, tostring(is_direct), pmodules and "table" or "nil"), vim.log.levels.INFO)
+          end
           break
         end
       end
@@ -218,6 +222,13 @@ function M.detect_projects(start_path)
         end
         M.save_cache()
       end
+    end
+  end
+  -- Debug: show oliverm children count
+  for _, proj in ipairs(M.projects) do
+    if proj.name == "oliverm" then
+      vim.notify(string.format("[spring-tools] oliverm: %d children, is_virtual=%s",
+        proj.children and #proj.children or 0, tostring(proj.is_virtual)), vim.log.levels.INFO)
     end
   end
   -- Remove virtual parents that no longer have direct children
