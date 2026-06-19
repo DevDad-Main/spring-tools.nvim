@@ -85,9 +85,12 @@ function M:load_items()
               local p = proj.root .. "/" .. f
               if vim.fn.filereadable(p) == 1 then
                 local docker_running = false
-                for _, cp in ipairs(proj_list) do
-                  local be = project.get_backend_for_project(cp)
-                  if be and be:get_status(cp) == "running" then docker_running = true; break end
+                local handle = io.popen("docker compose -f " .. p .. " ps --format '{{.Status}}' 2>/dev/null")
+                if handle then
+                  for line in handle:lines() do
+                    if line:find("Up", 1, true) then docker_running = true; break end
+                  end
+                  handle:close()
                 end
                 M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = p, indent = 1, is_running = docker_running }
                 break
