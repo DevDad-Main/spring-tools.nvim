@@ -320,41 +320,43 @@ function M:on_activate(idx)
   local cache_key = "recent_cmds:" .. proj.root
   local recent = (utils.cache.data and utils.cache.data[cache_key]) or {}
 
+  local function log_stdout(line)
+    require("spring-tools.core.backend").ProcessManager:extract_port(proj, line)
+    local logs = be:get_logs(proj)
+    if #logs > 0 then
+      vim.schedule(function() output.update_from_logs(logs, proj.name) end)
+    end
+  end
+
+  local function log_exit(exit_code, ok_msg)
+    vim.schedule(function()
+      local log_lines = be:get_logs(proj)
+      if #log_lines == 0 then log_lines = { "(no output captured)" } end
+      local start = math.max(1, #log_lines - 100)
+      local out = {}
+      for i = start, #log_lines do table.insert(out, log_lines[i]) end
+      local cause = M.extract_cause(out)
+      table.insert(out, "")
+      table.insert(out, exit_code == 0 and ok_msg or ok_msg .. " failed with code " .. exit_code)
+      local final = {}
+      for _, l in ipairs(cause) do table.insert(final, l) end
+      if #cause > 0 then table.insert(final, '═' .. '═' .. '═' .. " Full output " .. '═' .. '═' .. '═') end
+      for _, l in ipairs(out) do table.insert(final, l) end
+      if output.win and vim.api.nvim_win_is_valid(output.win) then
+        output.show(final, proj.name .. (exit_code == 0 and "" or " (exit " .. exit_code .. ")"), { footer = true })
+      end
+      if exit_code ~= 0 and exit_code ~= 143 then
+        utils.notify(proj.name .. " " .. ok_msg:lower() .. " (exit " .. exit_code .. ")", vim.log.levels.ERROR)
+      end
+      sidebar.refresh()
+    end)
+  end
+
   local function run_cmd(cmd)
     output.show({ "Starting " .. proj.name .. " with: " .. table.concat(cmd, " ") }, proj.name)
     local ok = require("spring-tools.core.backend").ProcessManager:start(proj, cmd, proj.root, {
-      on_stdout = function(line)
-        require("spring-tools.core.backend").ProcessManager:extract_port(proj, line)
-        local logs = be:get_logs(proj)
-        if #logs > 0 then
-          vim.schedule(function()
-            output.update_from_logs(logs, proj.name)
-          end)
-        end
-      end,
-      on_exit = function(exit_code)
-        vim.schedule(function()
-          local log_lines = be:get_logs(proj)
-          if #log_lines == 0 then log_lines = { "(no output captured)" } end
-          local start = math.max(1, #log_lines - 100)
-          local out = {}
-          for i = start, #log_lines do table.insert(out, log_lines[i]) end
-          local cause = M.extract_cause(out)
-          table.insert(out, "")
-          table.insert(out, exit_code == 0 and "Process exited cleanly" or "Process exited with code " .. exit_code)
-          local final = {}
-          for _, l in ipairs(cause) do table.insert(final, l) end
-          if #cause > 0 then table.insert(final, '═' .. '═' .. '═' .. " Full output " .. '═' .. '═' .. '═') end
-          for _, l in ipairs(out) do table.insert(final, l) end
-          if output.win and vim.api.nvim_win_is_valid(output.win) then
-            output.show(final, proj.name .. " (exit " .. exit_code .. ")", { footer = true })
-          end
-          if exit_code ~= 0 and exit_code ~= 143 then
-            utils.notify(proj.name .. " exited with code " .. exit_code, vim.log.levels.ERROR)
-          end
-          sidebar.refresh()
-        end)
-      end,
+      on_stdout = function(line) log_stdout(line) end,
+      on_exit = function(exit_code) log_exit(exit_code, "Process exited cleanly") end,
     })
     if not ok then
       utils.notify("Failed to start " .. proj.name, vim.log.levels.ERROR)
@@ -379,37 +381,8 @@ function M:on_activate(idx)
   local function do_restart()
     output.show({ "Restarting " .. proj.name .. "..." }, proj.name)
     require("spring-tools.core.backend").ProcessManager:restart(proj, {
-      on_stdout = function(line)
-        require("spring-tools.core.backend").ProcessManager:extract_port(proj, line)
-        local logs = be:get_logs(proj)
-        if #logs > 0 then
-          vim.schedule(function()
-            output.update_from_logs(logs, proj.name)
-          end)
-        end
-      end,
-      on_exit = function(exit_code)
-        vim.schedule(function()
-          local log_lines = be:get_logs(proj)
-          local start = math.max(1, #log_lines - 100)
-          local out = {}
-          for i = start, #log_lines do table.insert(out, log_lines[i]) end
-          local cause = M.extract_cause(out)
-          table.insert(out, "")
-          table.insert(out, exit_code == 0 and "Restarted successfully" or "Restart failed with code " .. exit_code)
-          local final = {}
-          for _, l in ipairs(cause) do table.insert(final, l) end
-          if #cause > 0 then table.insert(final, '═' .. '═' .. '═' .. " Full output " .. '═' .. '═' .. '═') end
-          for _, l in ipairs(out) do table.insert(final, l) end
-          if output.win and vim.api.nvim_win_is_valid(output.win) then
-            output.show(final, proj.name .. (exit_code == 0 and "" or " (exit " .. exit_code .. ")"), { footer = true })
-          end
-          if exit_code ~= 0 and exit_code ~= 143 then
-            utils.notify(proj.name .. " restart failed", vim.log.levels.ERROR)
-          end
-          sidebar.refresh()
-        end)
-      end,
+      on_stdout = function(line) log_stdout(line) end,
+      on_exit = function(exit_code) log_exit(exit_code, "Restarted successfully") end,
     })
   end
 
