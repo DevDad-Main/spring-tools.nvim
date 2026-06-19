@@ -34,7 +34,12 @@ function M.setup_highlights()
   local ok = get("DiagnosticOk")
   local ok_fg = ok.fg or (vim.o.background == "dark" and "#a6e3a1" or "#40a02b")
 
+  local rainbow = vim.o.background == "dark"
+    and { "#f38ba8", "#fab387", "#f9e2af", "#a6e3a1", "#94e2d5", "#89b4fa", "#cba6f7" }
+    or  { "#d20f39", "#fe640b", "#df8e1d", "#40a02b", "#04a5e5", "#1e66f5", "#8839ef" }
+
   local specs = {
+    SpringToolsNormal = { fg = fg, bg = bg },
     SpringToolsNormal = { fg = fg, bg = bg },
     SpringToolsHeader = { fg = title_fg, bold = true, bg = bg },
     SpringToolsSelected = { fg = fg, bg = sel_bg, bold = true },
@@ -72,6 +77,13 @@ function M.setup_highlights()
     SpringToolsLogInfo = { fg = ok_fg, bg = bg },
     SpringToolsLogDebug = { fg = dim_fg, bg = bg },
     SpringToolsLogTrace = { fg = dim_fg, bg = bg },
+    SpringToolsRainbow1 = { fg = rainbow[1], bg = bg },
+    SpringToolsRainbow2 = { fg = rainbow[2], bg = bg },
+    SpringToolsRainbow3 = { fg = rainbow[3], bg = bg },
+    SpringToolsRainbow4 = { fg = rainbow[4], bg = bg },
+    SpringToolsRainbow5 = { fg = rainbow[5], bg = bg },
+    SpringToolsRainbow6 = { fg = rainbow[6], bg = bg },
+    SpringToolsRainbow7 = { fg = rainbow[7], bg = bg },
   }
 
   for name, spec in pairs(specs) do

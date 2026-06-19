@@ -19,8 +19,8 @@ local builtin_patterns = {
   { pattern = "[TRACE]", hl = "SpringToolsLogTrace" },
 }
 local service_hl_colors = {
-  "SpringToolsLogInfo", "SpringToolsAccent", "SpringToolsLogWarn",
-  "SpringToolsRunning", "SpringToolsLogDebug", "SpringToolsLogError", "SpringToolsLogInfo"
+  "SpringToolsRainbow1", "SpringToolsRainbow2", "SpringToolsRainbow3",
+  "SpringToolsRainbow4", "SpringToolsRainbow5", "SpringToolsRainbow6", "SpringToolsRainbow7",
 }
 
 
