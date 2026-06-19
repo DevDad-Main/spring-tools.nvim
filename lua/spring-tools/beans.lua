@@ -11,7 +11,6 @@ function M.build_index(dir)
   dir = dir or vim.fn.getcwd()
   local project_root = utils.find_project_root(dir)
   if not project_root then
-    utils.notify("No Spring project root found in " .. vim.fn.fnamemodify(dir, ":t"), vim.log.levels.DEBUG)
     return {}
   end
 

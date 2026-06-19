@@ -90,11 +90,11 @@ function M:load_items()
       M.items = { { type = "loading", label = "Indexing beans..." } }
       vim.defer_fn(function()
         beans_mod.build_index(scan_dir())
-        M._indexed = nil
         sidebar.refresh()
       end, 1)
       return
     end
+    M._indexed = nil
     local grouped = beans_mod.group_by_type()
     M.items = {}
     local items = build_bean_items_from(grouped)

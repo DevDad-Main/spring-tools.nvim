@@ -208,11 +208,11 @@ function M:load_items()
       M.items = { { type = "loading", label = "Indexing endpoints..." } }
       vim.defer_fn(function()
         endpoints_mod.scan_endpoints(scan_dir())
-        M._indexed = nil
         sidebar.refresh()
       end, 1)
       return
     end
+    M._indexed = nil
     build_single_items()
   else
     build_multi_items(projs)
