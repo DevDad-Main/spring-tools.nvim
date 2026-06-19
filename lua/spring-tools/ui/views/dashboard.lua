@@ -1015,18 +1015,34 @@ function M:on_remove(idx)
     utils.notify("No item selected", vim.log.levels.WARN)
     return
   end
-  local proj = item.project
-  local was_active = item.is_active
-  local ok = project.remove_project(proj.root)
-  if ok then
-    utils.notify("Removed " .. proj.name .. " from project cache")
-    if was_active then
-      project.set_active_project(nil)
-    end
-    sidebar.refresh()
-  else
-    utils.notify("Could not remove " .. proj.name .. " (not in cache)", vim.log.levels.WARN)
+  if item.type == "docker" then
+    utils.notify("Cannot remove docker-compose entry — it belongs to the parent project", vim.log.levels.WARN)
+    return
   end
+  local proj = item.project
+  if not proj then
+    utils.notify("Cannot remove this item", vim.log.levels.WARN)
+    return
+  end
+  local was_active = item.is_active
+  -- If deleting a parent, remove children first
+  local to_remove = { proj.root }
+  if proj.children then
+    for _, child in ipairs(proj.children) do
+      to_remove[#to_remove + 1] = child.root
+    end
+  end
+  local all_ok = true
+  for _, root in ipairs(to_remove) do
+    if not project.remove_project(root) then all_ok = false end
+  end
+  if not all_ok then
+    utils.notify("Some projects could not be removed from cache", vim.log.levels.WARN)
+  end
+  if was_active then
+    project.set_active_project(nil)
+  end
+  sidebar.refresh()
 end
 
 function M.extract_cause(logs)

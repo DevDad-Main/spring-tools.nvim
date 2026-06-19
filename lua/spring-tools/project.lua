@@ -121,18 +121,6 @@ function M.detect_projects(start_path)
   M.load_cache()
   M.workspace_root = start_path
 
-  local config = require("spring-tools.config")
-  if config.options.workspace_filter then
-    local sp_trail = start_path:sub(-1) == "/" and start_path or start_path .. "/"
-    local filtered = {}
-    for _, proj in ipairs(M.projects) do
-      if proj.root:sub(1, #sp_trail) == sp_trail or proj.root == start_path then
-        filtered[#filtered + 1] = proj
-      end
-    end
-    M.projects = filtered
-  end
-
   -- Always rebuild children from children_roots, even when no new roots found.
   -- children_roots survives JSON serialization; children (object refs) does not.
   local child_roots = {}
@@ -161,8 +149,7 @@ function M.detect_projects(start_path)
   if #all_roots == 0 then
     local state = require("spring-tools.core.state")
     state.set_projects(M.projects, M.workspace_root)
-    return M.projects
-  end
+  else
 
   for _, root in ipairs(all_roots) do
     local cached
@@ -197,6 +184,7 @@ function M.detect_projects(start_path)
                        or proj.root:sub(#proot + 1):find("^services/[^/]+/?$") ~= nil
                        or proj.root:sub(#proot + 1):find("^apps/[^/]+/?$") ~= nil
                        or proj.root:sub(#proot + 1):find("^packages/[^/]+/?$") ~= nil
+                       or proj.root:sub(#proot + 1):find("^tests/[^/]+/?$") ~= nil
         if (pmodules == nil and is_direct) or (pmodules and pmodules[child_name]) then
           if not parent.children then parent.children = {} end
           parent.children[#parent.children + 1] = proj
@@ -226,7 +214,8 @@ function M.detect_projects(start_path)
          and (tail:find("^[^/]+/?$")
               or tail:find("^services/[^/]+/?$")
               or tail:find("^apps/[^/]+/?$")
-              or tail:find("^packages/[^/]+/?$")) then
+              or tail:find("^packages/[^/]+/?$")
+              or tail:find("^tests/[^/]+/?$")) then
         direct_children[#direct_children + 1] = proj
       end
     end
@@ -296,9 +285,23 @@ function M.detect_projects(start_path)
       end
     end
   end
+  end  -- if #all_roots > 0 else
 
   local state = require("spring-tools.core.state")
   state.set_projects(M.projects, M.workspace_root)
+
+  local config = require("spring-tools.config")
+  if config.options.workspace_filter then
+    local sp_trail = start_path:sub(-1) == "/" and start_path or start_path .. "/"
+    local filtered = {}
+    for _, proj in ipairs(M.projects) do
+      if proj.root:sub(1, #sp_trail) == sp_trail or proj.root == start_path then
+        filtered[#filtered + 1] = proj
+      end
+    end
+    return filtered
+  end
+
   return M.projects
 end
 

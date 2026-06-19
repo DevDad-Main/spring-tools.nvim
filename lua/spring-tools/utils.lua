@@ -122,7 +122,7 @@ function M.find_all_project_roots(start_path)
     end
     if depth >= 1 then
       local name = vim.fn.fnamemodify(dir, ":t")
-      if depth == 1 and (name == "services" or name == "apps" or name == "modules" or name == "packages") then
+      if depth == 1 and (name == "services" or name == "apps" or name == "modules" or name == "packages" or name == "tests") then
         -- common microservice container dir — scan one more level
       else
         return
