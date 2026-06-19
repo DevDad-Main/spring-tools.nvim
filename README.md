@@ -276,7 +276,9 @@ Zero dependencies required. Shown here with default configs on popular distros:
 - **Config Diff** — `:SpringConfigDiff` or `D` in sidebar opens two config files side-by-side with explicit color-coded highlights (green same, amber changed, red one-sided) and filter toggles via a floating toolbar
 - **HTTP Client** — `t` on an endpoint sends a curl request; auto-detects port from running process; supports custom headers/args; pretty-prints JSON responses with syntax highlighting
 - **Process Manager** — unbuffered I/O, port extraction, exit code tracking
-- **Multi-Project Workspace** — detects projects under CWD + one level down; groups microservices under parent headers when a `docker-compose.yml` or `services/`/`apps/`/`packages/` container dir exists; independent monorepo projects stay flat; `workspace_filter` (off by default) limits to just current directory
+- **Multi-Project Workspace** — detects projects under CWD + one level down (`services/`/`apps/`/`packages/`/`modules/`/`tests/`); groups microservices under parent headers when `docker-compose.yml` or a container dir exists; independent monorepo projects stay flat; `workspace_filter` limits to current directory (off by default)
+- **Docker Compose** — builds + starts containers inline via `--force-recreate`; detects status via `docker ps` for services without host port mapping; streams stderr + stdout merged; auto-refreshes sidebar on build completion
+- **Service Log Filtering** — per-service toggle with `1`&ndash;`9` keys; color-coded by position; combines with level filters (`e`/`w`/`i`/`d`/`t`) to isolate exactly what you need
 - **Unified Search** — `:SpringSearch` opens a fuzzy picker across all beans, endpoints, tests, and config properties with nerd-font icons — jumps directly to the definition on selection
 - **Auto-restart** — save any file and the app restarts automatically; skips test files, debounces rapid saves, shows changed filename in success line; per-project toggle persists across sessions; optional clean rebuild
 
