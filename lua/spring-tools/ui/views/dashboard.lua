@@ -255,6 +255,7 @@ function M:on_activate(idx)
         job_cmd = "sh"
       end
       local job_opts = {
+        stdout_buffered = false,
         cwd = compose_root,
         on_stdout = function(_, data)
           if data then vim.schedule(function()
