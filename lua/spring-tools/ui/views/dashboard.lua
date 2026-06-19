@@ -87,9 +87,7 @@ function M:load_items()
                 local docker_running = false
                 local ok = pcall(function()
                   local function try_format(fmt)
-                    vim.notify("trying format: " .. fmt)
                     local lines = vim.fn.systemlist({ "docker-compose", "-f", p, "ps", "--format", fmt })
-                    vim.notify("shell_error=" .. tostring(vim.v.shell_error) .. " lines=" .. vim.inspect(lines))
                     if vim.v.shell_error == 0 then
                       for _, status in ipairs(lines) do
                         if status:find("^Up") then return true end
@@ -98,7 +96,6 @@ function M:load_items()
                     return false
                   end
                   docker_running = try_format("{{.Status}}") or try_format("{{.State}}")
-                  vim.notify("after try_format docker_running=" .. tostring(docker_running))
                   if not docker_running then
                     local out = vim.fn.system({ "docker-compose", "-f", p, "ps" })
                     if vim.v.shell_error == 0 and out:find("Up", 1, true) then
@@ -117,7 +114,6 @@ function M:load_items()
                     if #out > 0 then docker_running = true end
                   end
                 end)
-                vim.notify("docker_running=" .. tostring(docker_running) .. " p=" .. p)
                 M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = p, indent = 1, is_running = docker_running }
                 break
               end
@@ -162,14 +158,7 @@ function M:render_item(item, selected)
   end
   if item.type == "docker" then
     local indent = string.rep("  ", item.indent or 1)
-    local is_running = false
-    local state = require("spring-tools.core.state")
-    for _, p in ipairs(state.get_projects()) do
-      if p.root:find(vim.fn.fnamemodify(item.compose_file, ":h"), 1, true) then
-        local be = project.get_backend_for_project(p)
-        if be and be:get_status(p) == "running" then is_running = true; break end
-      end
-    end
+    local is_running = item.is_running or false
     local dot = is_running and "\u{25cf}" or "\u{25cb}"
     local dot_hl = is_running and "SpringToolsRunning" or "SpringToolsDashboardStatus"
     local label = item.label or "docker-compose"
