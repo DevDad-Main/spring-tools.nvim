@@ -133,15 +133,8 @@ log = {
   custom = {
     pattern = "[DEMO]", hl = "SpringToolsLogWarn", key = "x",
   },
-  service_colors = {
-    "Function",                    -- theme group
-    "SpringToolsLogInfo",          -- plugin group
-    "MyCustomRed",                 -- custom hex (define in highlights below)
-  },
+  service_colors = {},               -- defaults to rainbow (SpringToolsRainbow1-7)
 },
-highlights = {
-  MyCustomRed = { fg = "#ff6b6b" },
-}
 ```
 
 <h4 align="center">Log Filtering (multiple projects) &mdash; switch between project logs while filtering</h4>
@@ -201,16 +194,18 @@ command_input = {
 > **Tip**: Press `1`&ndash;`9` to toggle individual services off/on, then narrow further with `e`/`w`/`i`/`d`/`t` level filters. Combine both to zero in on exactly the data you need &mdash; no noise. Services are ordered alphabetically — position 1 = first service by name, position 2 = second, etc.
 
 ```lua
--- Assign a highlight group per service position
+-- Assign a highlight group per service position (defaults to rainbow SpringToolsRainbow1-7)
 log = {
   service_colors = {
-    "Function",              -- 1st service (alpha-sorted)
-    "MyAccent",              -- 2nd
-    "SpringToolsLogWarn",    -- 3rd
+    "MyRed",                 -- 1st service (alpha-sorted) — override default rainbow
+    "MyGreen",               -- 2nd
+    "MyBlue",                -- 3rd
   },
 }
 highlights = {
-  MyAccent = { fg = "#ff79c6" },
+  MyRed = { fg = "#ff6b6b" },
+  MyGreen = { fg = "#51cf66" },
+  MyBlue = { fg = "#339af0" },
 }
 ```
 
@@ -277,8 +272,8 @@ Zero dependencies required. Shown here with default configs on popular distros:
 - **HTTP Client** — `t` on an endpoint sends a curl request; auto-detects port from running process; supports custom headers/args; pretty-prints JSON responses with syntax highlighting
 - **Process Manager** — unbuffered I/O, port extraction, exit code tracking
 - **Multi-Project Workspace** — detects projects under CWD + one level down (`services/`/`apps/`/`packages/`/`modules/`/`tests/`); groups microservices under parent headers when `docker-compose.yml` or a container dir exists; independent monorepo projects stay flat; `workspace_filter` limits to current directory (off by default)
-- **Docker Compose** — builds + starts containers inline via `--force-recreate`; detects status via `docker ps` for services without host port mapping; streams stderr + stdout merged; auto-refreshes sidebar on build completion
-- **Service Log Filtering** — per-service toggle with `1`&ndash;`9` keys; color-coded by position; combines with level filters (`e`/`w`/`i`/`d`/`t`) to isolate exactly what you need
+- **Docker Compose** — builds + starts containers inline via `--force-recreate`; detects running state via `docker-compose ps` with v1/v2 fallbacks; streams stderr + stdout merged; auto-refreshes sidebar on build completion
+- **Service Log Filtering** — per-service toggle with `1`&ndash;`9` keys; rainbow color-coded by position; combines with level filters (`e`/`w`/`i`/`d`/`t`) to isolate exactly what you need
 - **Unified Search** — `:SpringSearch` opens a fuzzy picker across all beans, endpoints, tests, and config properties with nerd-font icons — jumps directly to the definition on selection
 - **Auto-restart** — save any file and the app restarts automatically; skips test files, debounces rapid saves, shows changed filename in success line; per-project toggle persists across sessions; optional clean rebuild
 
@@ -542,7 +537,7 @@ require("spring-tools").setup({
   log = {
     levels = {},                 -- extra patterns: { pattern = "[AUDIT]", hl = "SpringToolsLogWarn" }
     custom = {},                 -- one toggleable: { pattern = "[DEMO]", hl = "SpringToolsLogWarn", key = "x" }
-    service_colors = {},         -- { "SpringToolsAccent", "SpringToolsLogInfo", "SpringToolsLogWarn" }
+    service_colors = {},         -- defaults to rainbow (SpringToolsRainbow1 through SpringToolsRainbow7)
   },
   diff = {
     highlights = {
@@ -635,6 +630,13 @@ All highlights derive from your active colorscheme via `nvim_get_hl` at startup:
 | `SpringToolsLogInfo`            | `DiagnosticOk`                | Log INFO level                                       |
 | `SpringToolsLogDebug`           | `Comment`                     | Log DEBUG level                                      |
 | `SpringToolsLogTrace`           | `Comment`                     | Log TRACE level                                      |
+| `SpringToolsRainbow1`           | Red                           | 1st docker-compose service in rainbow cycle          |
+| `SpringToolsRainbow2`           | Orange                        | 2nd docker-compose service                           |
+| `SpringToolsRainbow3`           | Yellow                        | 3rd docker-compose service                           |
+| `SpringToolsRainbow4`           | Green                         | 4th docker-compose service                           |
+| `SpringToolsRainbow5`           | Cyan                          | 5th docker-compose service                           |
+| `SpringToolsRainbow6`           | Blue                          | 6th docker-compose service                           |
+| `SpringToolsRainbow7`           | Purple                        | 7th docker-compose service                           |
 | `SpringToolsDim`                | `Comment`                     | Stopped, inactive tab                                |
 
 </details>
@@ -691,6 +693,15 @@ require("spring-tools").setup({
     SpringToolsLogInfo    = { fg = "#00ff00" },                     -- INFO
     SpringToolsLogDebug   = { fg = "#888888" },                     -- DEBUG
     SpringToolsLogTrace   = { fg = "#555555" },                     -- TRACE
+
+    -- Rainbow service log colors (1-7 indexed, recycled for more services)
+    SpringToolsRainbow1   = { fg = "#ff6b6b" },                     -- red
+    SpringToolsRainbow2   = { fg = "#ffa94d" },                     -- orange
+    SpringToolsRainbow3   = { fg = "#ffd43b" },                     -- yellow
+    SpringToolsRainbow4   = { fg = "#69db7c" },                     -- green
+    SpringToolsRainbow5   = { fg = "#38d9a9" },                     -- cyan
+    SpringToolsRainbow6   = { fg = "#74c0fc" },                     -- blue
+    SpringToolsRainbow7   = { fg = "#b197fc" },                     -- purple
   },
 })
 ```
