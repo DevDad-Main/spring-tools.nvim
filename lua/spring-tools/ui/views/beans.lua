@@ -82,9 +82,15 @@ function M:load_items()
 
   if not multi then
     if not beans_mod.index_built and #beans_mod.beans == 0 then
+      if M._indexed then
+        M.items = { { type = "loading", label = "No project detected" } }
+        return
+      end
+      M._indexed = true
       M.items = { { type = "loading", label = "Indexing beans..." } }
       vim.defer_fn(function()
         beans_mod.build_index(scan_dir())
+        M._indexed = nil
         sidebar.refresh()
       end, 1)
       return

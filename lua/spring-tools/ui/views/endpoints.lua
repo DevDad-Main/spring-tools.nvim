@@ -200,9 +200,15 @@ function M:load_items()
 
   if not multi then
     if #endpoints_mod.endpoints == 0 then
+      if M._indexed then
+        M.items = { { type = "loading", label = "No project detected" } }
+        return
+      end
+      M._indexed = true
       M.items = { { type = "loading", label = "Indexing endpoints..." } }
       vim.defer_fn(function()
         endpoints_mod.scan_endpoints(scan_dir())
+        M._indexed = nil
         sidebar.refresh()
       end, 1)
       return
