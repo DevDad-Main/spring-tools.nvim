@@ -257,7 +257,7 @@ function M:on_activate(idx)
             for _, l in ipairs(data) do
               if #l > 0 then
                 table.insert(output._stored_logs, l)
-                if l:find("Started .+ in %d+") then sidebar.refresh() end
+                if l:find("Started .+ in %d+") or l:find("Successfully built") then sidebar.refresh() end
               end
             end
             output.update_from_logs(output._stored_logs, "docker-compose")
