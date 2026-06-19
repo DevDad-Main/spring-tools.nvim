@@ -1009,6 +1009,19 @@ function M:on_remove(idx)
   for _, root in ipairs(to_remove) do
     if not project.remove_project(root) then all_ok = false end
   end
+  -- Prune orphaned virtual parents (empty after children were removed)
+  for _, p in ipairs(state.get_projects()) do
+    if p.is_virtual then
+      local has_children = false
+      for _, c in ipairs(state.get_projects()) do
+        if c.root ~= p.root and c.root:find(p.root .. "/", 1, true) == 1 then
+          has_children = true
+          break
+        end
+      end
+      if not has_children then project.remove_project(p.root) end
+    end
+  end
   if not all_ok then
     utils.notify("Some projects could not be removed from cache", vim.log.levels.WARN)
   end
