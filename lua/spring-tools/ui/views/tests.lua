@@ -48,7 +48,7 @@ function M:load_items()
     end
     M.items = {}
     table.insert(M.items, { type = "all", label = "Run all tests" })
-    for _, test in ipairs(M._test_classes) do
+    for _, test in ipairs(M._test_classes or {}) do
       local is_collapsed = sections:is_collapsed(test.class)
       M.items[#M.items + 1] = { type = "class", test = test, label = test.class, section_key = test.class, collapsed = is_collapsed }
       if not is_collapsed then
