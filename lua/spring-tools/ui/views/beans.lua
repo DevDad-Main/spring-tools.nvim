@@ -71,6 +71,9 @@ function M.header()
         count = count + #(data.grouped[t] or {})
       end
     end
+  elseif not project.get_active_project() then
+    beans_mod.beans = {}
+    return { { "Spring Beans (0)", "SpringToolsHeader" } }
   else
     count = beans_mod.beans and #beans_mod.beans or 0
   end

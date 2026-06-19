@@ -39,6 +39,10 @@ function M.header()
       total = total + #g.endpoints * n
     end
   else
+    if not project.get_active_project() then
+      endpoints_mod.endpoints = {}
+      return { { "Endpoints (0)", "SpringToolsHeader" } }
+    end
     total = (endpoints_mod.endpoints and #endpoints_mod.endpoints or 0)
     for _, g in ipairs(actuator_mod.endpoints) do
       total = total + #g.endpoints
@@ -201,6 +205,7 @@ function M:load_items()
   if not multi then
     if #endpoints_mod.endpoints == 0 then
       if M._indexed then
+        endpoints_mod.endpoints = {}
         M.items = { { type = "loading", label = "No project detected" } }
         return
       end
