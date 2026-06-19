@@ -353,6 +353,17 @@ end
 
 function M.get_workspace_projects()
   if M.workspace_root and #M.projects > 0 then
+    local config = require("spring-tools.config")
+    if config.options.workspace_filter then
+      local sp_trail = M.workspace_root:sub(-1) == "/" and M.workspace_root or M.workspace_root .. "/"
+      local filtered = {}
+      for _, proj in ipairs(M.projects) do
+        if proj.root:sub(1, #sp_trail) == sp_trail or proj.root == M.workspace_root then
+          filtered[#filtered + 1] = proj
+        end
+      end
+      return filtered
+    end
     return M.projects
   end
   return {}
