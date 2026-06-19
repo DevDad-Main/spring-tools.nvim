@@ -90,6 +90,8 @@ function SpringBootBackend:get_status(proj)
   -- No tracked process — check if port is listening (Docker/external)
   local port = self:get_port(proj) or self:_read_config_port(proj)
   if port and self:_port_listening(port) then return "running" end
+  -- Check if Docker container is running (covers services without host port mappings)
+  if self:_docker_running(proj.name) then return "running" end
   -- For docker-compose parent projects, check if any sibling has a listening port
   if self:_is_docker_compose(proj) then
     local state = require("spring-tools.core.state")
@@ -107,6 +109,23 @@ function SpringBootBackend:_is_docker_compose(proj)
   if not proj or not proj.root then return false end
   return vim.fn.filereadable(proj.root .. "/docker-compose.yml") == 1
       or vim.fn.filereadable(proj.root .. "/docker-compose.yaml") == 1
+end
+
+SpringBootBackend._dc_cache = {}
+function SpringBootBackend:_docker_running(service_name)
+  if not service_name then return false end
+  local now = os.time()
+  local cache = SpringBootBackend._dc_cache
+  if cache[service_name] and now - cache[service_name].time < 3 then
+    return cache[service_name].result
+  end
+  local handle = io.popen("docker ps --filter name=" .. service_name .. " --format '{{.Names}}' 2>/dev/null")
+  if not handle then return false end
+  local output = handle:read("*a"):gsub("%s+", " ")
+  handle:close()
+  local running = output:find(service_name, 1, true) ~= nil
+  cache[service_name] = { time = now, result = running }
+  return running
 end
 
 function SpringBootBackend:_read_config_port(proj)
