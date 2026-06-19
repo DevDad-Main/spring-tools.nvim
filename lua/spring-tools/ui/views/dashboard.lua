@@ -86,8 +86,10 @@ function M:load_items()
               if vim.fn.filereadable(p) == 1 then
                 local docker_running = false
                 local ok = pcall(function()
-                  local function try_format(f)
-                    local lines = vim.fn.systemlist({ "docker-compose", "-f", p, "ps", "--format", f })
+                  local function try_format(fmt)
+                    vim.notify("trying format: " .. fmt)
+                    local lines = vim.fn.systemlist({ "docker-compose", "-f", p, "ps", "--format", fmt })
+                    vim.notify("shell_error=" .. tostring(vim.v.shell_error) .. " lines=" .. vim.inspect(lines))
                     if vim.v.shell_error == 0 then
                       for _, status in ipairs(lines) do
                         if status:find("^Up") then return true end
@@ -96,24 +98,26 @@ function M:load_items()
                     return false
                   end
                   docker_running = try_format("{{.Status}}") or try_format("{{.State}}")
+                  vim.notify("after try_format docker_running=" .. tostring(docker_running))
                   if not docker_running then
-                    -- fallback: raw ps output (very old docker-compose without --format)
                     local out = vim.fn.system({ "docker-compose", "-f", p, "ps" })
                     if vim.v.shell_error == 0 and out:find("Up", 1, true) then
                       docker_running = true
                     end
                   end
                   if not docker_running then
-                    -- fallback: check docker ps with compose project label directly
                     local dir = vim.fn.fnamemodify(p, ":h")
                     local name = vim.fn.fnamemodify(dir, ":t"):lower()
-                    local lines = vim.fn.systemlist({ "docker", "ps", "--filter",
-                      "label=com.docker.compose.project=" .. name, "--format", "{{.Names}}" })
-                    if vim.v.shell_error == 0 and #lines > 0 then
-                      docker_running = true
-                    end
+                    local out = vim.fn.system({ "docker", "ps", "--filter",
+                      "label=com.docker.compose.project=" .. name, "-q" })
+                    if #out > 0 then docker_running = true end
+                  end
+                  if not docker_running then
+                    local out = vim.fn.system({ "docker", "ps", "-q" })
+                    if #out > 0 then docker_running = true end
                   end
                 end)
+                vim.notify("docker_running=" .. tostring(docker_running) .. " p=" .. p)
                 M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = p, indent = 1, is_running = docker_running }
                 break
               end
