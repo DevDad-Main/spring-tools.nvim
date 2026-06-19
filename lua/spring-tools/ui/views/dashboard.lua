@@ -250,7 +250,11 @@ function M:on_activate(idx)
         end
       end
       output.show({ "Running: " .. full_cmd }, "docker-compose")
-      vim.fn.jobstart(vim.split(full_cmd, " "), {
+      local job_cmd
+      if cmd:find("&&") or cmd:find("||") or cmd:find(";") then
+        job_cmd = "sh"
+      end
+      local job_opts = {
         cwd = compose_root,
         on_stdout = function(_, data)
           if data then vim.schedule(function()
@@ -275,7 +279,12 @@ function M:on_activate(idx)
         on_exit = function()
           vim.schedule(function() sidebar.refresh() end)
         end,
-      })
+      }
+      if job_cmd then
+        vim.fn.jobstart({ job_cmd, "-c", full_cmd }, job_opts)
+      else
+        vim.fn.jobstart(vim.split(full_cmd, " "), job_opts)
+      end
     end
 
     if is_running then
