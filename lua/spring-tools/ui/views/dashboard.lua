@@ -291,9 +291,9 @@ function M:on_activate(idx)
     if is_running then
       docker_menu[#docker_menu + 1] = { label = "  Stop (docker compose down)", action = function() run_compose("down"); sidebar.refresh() end }
       docker_menu[#docker_menu + 1] = { label = "  View logs", action = function() run_compose("logs --tail 100"); end }
-      docker_menu[#docker_menu + 1] = { label = "  Restart", action = function() run_compose("down && docker-compose -f " .. item.compose_file .. " up --build") end }
+      docker_menu[#docker_menu + 1] = { label = "  Restart", action = function() run_compose("down && docker-compose -f " .. item.compose_file .. " up --build --force-recreate") end }
     else
-      for _, cmd in ipairs({ "up --build", "up -d", "down", "build", "logs -f", "ps", "restart", "pull" }) do
+      for _, cmd in ipairs({ "up --build --force-recreate", "up -d --force-recreate", "down", "build", "logs -f", "ps", "restart", "pull" }) do
         docker_menu[#docker_menu + 1] = {
           label = "  docker-compose " .. cmd,
           action = function() run_compose(cmd) end,
