@@ -35,6 +35,7 @@ function M.setup_highlights()
   local ok_fg = ok.fg or (vim.o.background == "dark" and "#a6e3a1" or "#40a02b")
 
   local specs = {
+    SpringToolsNormal = { fg = fg, bg = bg },
     SpringToolsHeader = { fg = title_fg, bold = true, bg = bg },
     SpringToolsSelected = { fg = fg, bg = sel_bg, bold = true },
     SpringToolsRunning = { fg = ok_fg, bg = bg },

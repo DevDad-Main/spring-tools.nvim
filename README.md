@@ -466,6 +466,8 @@ Times vary by hardware, JVM warm-up, and project size — larger projects will s
 ```lua
 require("spring-tools").setup({
   java_command = "java",       -- Java binary path
+  terminal = "float",          -- "float" or "tab" for Maven/Gradle output
+  cache_dir = nil,             -- custom cache path (defaults to stdpath("cache"))
   auto_refresh = true,         -- re-index on file save
   workspace_filter = false,    -- true = only show projects under cwd (less noise)
   icons = {
@@ -495,14 +497,14 @@ require("spring-tools").setup({
       tab_prev = "h",
       show_help = "?",
       search = "/",
-       preview = "p",
-       toggle_output = "o",
-       collapse_fold = "c",
-       expand_fold = "O",
-       jump_fold_prev = "<",
-       jump_fold_next = ">",
-       collapse_all = "C",
-       expand_all = "E",
+      preview = "p",
+      toggle_output = "o",
+      collapse_fold = "c",
+      expand_fold = "O",
+      jump_fold_prev = "<",
+      jump_fold_next = ">",
+      collapse_all = "C",
+      expand_all = "E",
      },
   },
   highlights = {
@@ -568,14 +570,18 @@ require("spring-tools").setup({
   },
   search = {
     icons = {
-      bean = " ",              -- bean class
-      bean_method = " ",       -- @Bean method
-      endpoint = " ",          -- REST endpoint
-      test_class = " ",        -- test class
-      test_method = " ",       -- test method
-      config = " ",            -- config property
+      bean = "",              -- bean class
+      bean_method = "",       -- @Bean method
+      endpoint = "",          -- REST endpoint
+      test_class = "",        -- test class
+      test_method = "",       -- test method
+      config = "",            -- config property
     },
   },
+  jdtls = {
+    enable = false,            -- experimental Spring Boot LSP integration
+  },
+  log_level = vim.log.levels.INFO,  -- plugin log verbosity
 })
 ```
 
@@ -592,8 +598,12 @@ All highlights derive from your active colorscheme via `nvim_get_hl` at startup:
 | Group                           | Derives from                  | Description                                          |
 | ------------------------------- | ----------------------------- | ---------------------------------------------------- |
 | `SpringToolsNormal`             | `Normal`                      | Default text                                         |
+| `SpringToolsHeader`             | `Title`                       | Sidebar / popup titles                               |
 | `SpringToolsSelected`           | `Visual`                      | Selected line                                        |
 | `SpringToolsAccent`             | `Special`                     | ? help window section headers                        |
+| `SpringToolsStopped`            | Inherits `SpringToolsDim`     | Sidebar ⏸ icon when stopped                         |
+| `SpringToolsBorder`             | Inherits `SpringToolsDim`     | Floating window borders                              |
+| `SpringToolsSectionHeader`      | `Title`                       | Collapsible section headers (Controllers, GET, etc.) |
 | `SpringToolsMethodHeader`       | Inherits `SpringToolsAccent`  | Endpoint method section headers (GET, POST)          |
 | `SpringToolsBeanHeader`         | Inherits `SpringToolsAccent`  | Bean type section headers (Controllers, Services)    |
 | `SpringToolsBeanName`           | Inherits `Normal`             | Individual bean names (UserController, UserService)  |
