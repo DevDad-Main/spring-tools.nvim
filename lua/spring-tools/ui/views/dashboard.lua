@@ -251,7 +251,7 @@ function M:on_activate(idx)
       end
       output.show({ "Running: " .. full_cmd }, "docker-compose")
       vim.fn.jobstart(vim.split(full_cmd, " "), {
-        cwd = st.get_workspace_root(),
+        cwd = compose_root,
         on_stdout = function(_, data)
           if data then vim.schedule(function()
             for _, l in ipairs(data) do
@@ -287,12 +287,11 @@ function M:on_activate(idx)
       end
     end
     docker_menu[#docker_menu + 1] = { label = "  Custom command...", action = function()
-      local ws = st.get_workspace_root()
       M._show_command_input(st.get_projects()[1] or {}, "docker-compose ", function(input)
         if input == "" then return end
         output.show({ "Running: " .. input }, "docker-compose")
         vim.fn.jobstart(vim.split(input, " "), {
-          cwd = ws,
+          cwd = compose_root,
           on_stdout = function(_, data)
             if data then vim.schedule(function()
               for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
