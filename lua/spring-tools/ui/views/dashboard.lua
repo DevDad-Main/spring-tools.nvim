@@ -246,15 +246,8 @@ function M:on_activate(idx)
   end
   if item.type == "docker" then
     local docker_menu = {}
-    -- Check if running (containers up)
-    local is_running = false
     local st = require("spring-tools.core.state")
-    for _, p in ipairs(st.get_projects()) do
-      if p.root:find(vim.fn.fnamemodify(item.compose_file, ":h"), 1, true) then
-        local be = project.get_backend_for_project(p)
-        if be and be:get_status(p) == "running" then is_running = true; break end
-      end
-    end
+    local is_running = item.is_running or false
 
     local function run_compose(cmd)
       local full_cmd = "docker-compose -f " .. item.compose_file .. " " .. cmd
