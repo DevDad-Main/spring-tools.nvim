@@ -256,6 +256,7 @@ function M:on_activate(idx)
       end
       local job_opts = {
         stdout_buffered = false,
+        stderr_buffered = false,
         cwd = compose_root,
         on_stdout = function(_, data)
           if data then vim.schedule(function()
@@ -274,7 +275,12 @@ function M:on_activate(idx)
         end,
         on_stderr = function(_, data)
           if data then vim.schedule(function()
-            for _, l in ipairs(data) do if #l > 0 then output.append(l) end end
+            for _, l in ipairs(data) do
+              if #l > 0 then
+                table.insert(output._stored_logs, l)
+              end
+            end
+            output.update_from_logs(output._stored_logs, "docker-compose")
           end) end
         end,
         on_exit = function()
