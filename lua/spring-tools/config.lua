@@ -54,6 +54,7 @@ M.defaults = {
     enable = true,
   },
   output = {
+    height = 0.3,  -- fraction of vim.o.lines (default 30%). Use integer for fixed rows.
     keymaps = {
       close = "q",
       close_alt = "<Esc>",

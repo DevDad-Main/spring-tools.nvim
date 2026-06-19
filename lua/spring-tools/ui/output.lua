@@ -178,7 +178,15 @@ function M.open()
 
   vim.cmd("belowright split")
   M.win = vim.api.nvim_get_current_win()
-  local height = math.max(12, math.floor(vim.o.lines * 0.3))
+  local out_cfg = config.options.output
+  local height
+  if type(out_cfg.height) == "number" and out_cfg.height > 0 and out_cfg.height < 1 then
+    height = math.max(4, math.floor(vim.o.lines * out_cfg.height))
+  elseif type(out_cfg.height) == "number" and out_cfg.height >= 1 then
+    height = out_cfg.height
+  else
+    height = math.max(12, math.floor(vim.o.lines * 0.3))
+  end
   vim.api.nvim_win_set_height(M.win, height)
   vim.wo[M.win].winfixheight = true
 
