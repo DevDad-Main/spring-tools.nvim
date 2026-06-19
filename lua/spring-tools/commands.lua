@@ -61,7 +61,12 @@ function M.setup()
     utils.invalidate_cache()
     require("spring-tools.build_completion").invalidate_cache()
     require("spring-tools.project")._excluded = {}
-    utils.notify("Spring Tools caches cleared")
+    os.remove(vim.fn.stdpath("data") .. "/spring-tools/projects.json")
+    require("spring-tools.project").projects = {}
+    vim.schedule(function()
+      require("spring-tools.ui.sidebar").refresh()
+    end)
+    utils.notify("Spring Tools caches cleared — sidebar refreshed")
   end, { desc = "Clear all Spring Tools caches (project cache + dynamic goals)" })
 
   vim.api.nvim_create_user_command("SpringTestClass", function()

@@ -227,6 +227,7 @@ function M.detect_projects(start_path)
       local has_services_dir = vim.fn.isdirectory(start_path .. "/services") == 1
                             or vim.fn.isdirectory(start_path .. "/apps") == 1
                             or vim.fn.isdirectory(start_path .. "/packages") == 1
+                            or vim.fn.isdirectory(start_path .. "/modules") == 1
       if has_compose or (has_services_dir and #direct_children >= 2) then
         local vp = {
           name = vim.fn.fnamemodify(start_path, ":t"),
