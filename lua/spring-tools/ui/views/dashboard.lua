@@ -85,13 +85,14 @@ function M:load_items()
               local p = proj.root .. "/" .. f
               if vim.fn.filereadable(p) == 1 then
                 local docker_running = false
-                local handle = io.popen("docker compose -f " .. p .. " ps --format '{{.Status}}' 2>/dev/null")
-                if handle then
-                  for line in handle:lines() do
-                    if line:find("Up", 1, true) then docker_running = true; break end
+                local ok = pcall(function()
+                  local lines = vim.fn.systemlist({ "docker-compose", "-f", p, "ps", "--format", "{{.Status}}" })
+                  if vim.v.shell_error == 0 then
+                    for _, status in ipairs(lines) do
+                      if status:find("^Up") then docker_running = true; break end
+                    end
                   end
-                  handle:close()
-                end
+                end)
                 M.items[#M.items + 1] = { type = "docker", label = "docker-compose", compose_file = p, indent = 1, is_running = docker_running }
                 break
               end
