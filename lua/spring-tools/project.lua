@@ -185,6 +185,7 @@ function M.detect_projects(start_path)
                        or proj.root:sub(#proot + 1):find("^apps/[^/]+/?$") ~= nil
                        or proj.root:sub(#proot + 1):find("^packages/[^/]+/?$") ~= nil
                        or proj.root:sub(#proot + 1):find("^tests/[^/]+/?$") ~= nil
+                       or proj.root:sub(#proot + 1):find("^modules/[^/]+/?$") ~= nil
         if (pmodules == nil and is_direct) or (pmodules and pmodules[child_name]) then
           if not parent.children then parent.children = {} end
           parent.children[#parent.children + 1] = proj
@@ -215,7 +216,8 @@ function M.detect_projects(start_path)
               or tail:find("^services/[^/]+/?$")
               or tail:find("^apps/[^/]+/?$")
               or tail:find("^packages/[^/]+/?$")
-              or tail:find("^tests/[^/]+/?$")) then
+              or tail:find("^tests/[^/]+/?$")
+              or tail:find("^modules/[^/]+/?$")) then
         direct_children[#direct_children + 1] = proj
       end
     end
