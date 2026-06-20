@@ -64,6 +64,7 @@ M.defaults = {
       filter_info = "i",
       filter_debug = "d",
       filter_trace = "t",
+      toggle_fullscreen = "f",
     },
   },
   log = {

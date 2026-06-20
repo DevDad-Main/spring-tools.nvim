@@ -257,7 +257,7 @@ Zero dependencies required. Shown here with default configs on popular distros:
 ## Features
 
 - **Sidebar UI** — persistent sidebar with 5 tabbed views and `?` help float; position configurable (`left`/`right`)
-- **Output Panel** — bottom split for live log streaming; toggle with `o`; height configurable (`output.height`)
+- **Output Panel** — bottom split for live log streaming; toggle with `o`; height configurable (`output.height`); fullscreen toggle with `f` (`output.keymaps.toggle_fullscreen`)
 - **Dashboard** — project list with ★ active marker, ●/○ status dots, auto-selects CWD project
 - **Nested Action Menu** — Enter on a project opens a structured picker: Recent & default commands, Common commands, Custom run, View logs, Restart/Stop, Open config — recent commands can be deleted inline
 - **Command History** — `:SpringCommands` browses all saved custom commands across projects; re-run, copy, or delete
@@ -532,6 +532,7 @@ require("spring-tools").setup({
       filter_info = "i",
       filter_debug = "d",
       filter_trace = "t",
+      toggle_fullscreen = "f",
     },
   },
   log = {

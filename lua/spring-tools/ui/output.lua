@@ -103,6 +103,7 @@ end
 
 M._service_filters = {}
 M._detected_services = {}
+M._fullscreen = false
 
 local function detect_services()
   local seen = {}
@@ -239,6 +240,32 @@ function M.toggle()
   end
 end
 
+function M.toggle_fullscreen()
+  if not win_is_valid() then return end
+  local out_cfg = config.options.output
+  if M._fullscreen then
+    -- restore
+    local h
+    if type(out_cfg.height) == "number" and out_cfg.height > 0 and out_cfg.height < 1 then
+      h = math.max(4, math.floor(vim.o.lines * out_cfg.height))
+    elseif type(out_cfg.height) == "number" and out_cfg.height >= 1 then
+      h = out_cfg.height
+    else
+      h = math.max(12, math.floor(vim.o.lines * 0.3))
+    end
+    vim.wo[M.win].winfixheight = false
+    vim.api.nvim_win_set_height(M.win, h)
+    vim.wo[M.win].winfixheight = true
+    M._fullscreen = false
+  else
+    vim.wo[M.win].winfixheight = false
+    vim.api.nvim_win_set_height(M.win, vim.o.lines - 4)
+    vim.wo[M.win].winfixheight = true
+    M._fullscreen = true
+  end
+  M._render_from_logs()
+end
+
 local function strip_ansi(str)
   return str:gsub("\27%[[%d;]*[ABCDEFGHJKSTfminsuhl]", ""):gsub("\r", "")
 end
@@ -373,7 +400,9 @@ function M._footer_text()
   end
   local keys = "e/w/i/d/t toggle"
   if M._custom_key then keys = keys .. " · " .. M._custom_key .. " custom" end
-  local result = "Filter: [" .. table.concat(parts, " ") .. "]  (" .. keys .. " · c copy output)"
+  local km = config.options.output.keymaps
+  local fullscreen_key = km and km.toggle_fullscreen or "f"
+  local result = "Filter: [" .. table.concat(parts, " ") .. "]  (" .. keys .. " · c copy · " .. fullscreen_key .. " fullscreen)"
   if #M._detected_services > 0 then
     local svc_parts = {}
     for i, svc in ipairs(M._detected_services) do
@@ -458,6 +487,9 @@ function M.setup_keymaps()
   components.set_keymap(M.buf, km.filter_info, function() M.toggle_level("info") end, { desc = "Toggle INFO filter" })
   components.set_keymap(M.buf, km.filter_debug, function() M.toggle_level("debug") end, { desc = "Toggle DEBUG filter" })
   components.set_keymap(M.buf, km.filter_trace, function() M.toggle_level("trace") end, { desc = "Toggle TRACE filter" })
+  if km.toggle_fullscreen then
+    components.set_keymap(M.buf, km.toggle_fullscreen, function() M.toggle_fullscreen() end, { desc = "Toggle fullscreen" })
+  end
   if M._custom_key then
     local cp = config.options.log and config.options.log.custom
     local desc = cp and cp.pattern and ("Toggle '" .. cp.pattern .. "' filter") or "Toggle custom filter"
