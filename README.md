@@ -28,7 +28,7 @@
 </p>
 
 <p align="center">
-  <img src="previews/plugin_demo.gif" width="1000" />
+  <img src="previews/plugin_demo_v2.gif" width="1000" />
 </p>
 
 > **Note for first run**: On first open, `spring-tools.nvim` performs a one-time project discovery scan across your workspace — parsing Java files and building caches. You may notice a brief pause while this happens. All results are persisted to disk, so subsequent sessions load instantly.
@@ -354,10 +354,10 @@ use {
 | `d`       | Remove project from cache                            |
 | `D`       | Open Config Diff viewer                              |
 | `t`       | Test endpoint (send curl request)                    |
-| `c`       | Collapse nearest open parent fold                   |
-| `O`       | Expand nearest closed child fold                    |
-| `C`       | Collapse all folds in current view                  |
-| `E`       | Expand all folds in current view                    |
+| `c`       | Collapse nearest open parent fold                    |
+| `O`       | Expand nearest closed child fold                     |
+| `C`       | Collapse all folds in current view                   |
+| `E`       | Expand all folds in current view                     |
 | `<` / `>` | Jump to prev/next foldable header                    |
 | `R`       | Refresh current view                                 |
 | `q`       | Close sidebar                                        |
@@ -598,7 +598,7 @@ All highlights derive from your active colorscheme via `nvim_get_hl` at startup:
 | `SpringToolsHeader`             | `Title`                       | Sidebar / popup titles                               |
 | `SpringToolsSelected`           | `Visual`                      | Selected line                                        |
 | `SpringToolsAccent`             | `Special`                     | ? help window section headers                        |
-| `SpringToolsStopped`            | Inherits `SpringToolsDim`     | Sidebar ⏸ icon when stopped                         |
+| `SpringToolsStopped`            | Inherits `SpringToolsDim`     | Sidebar ⏸ icon when stopped                          |
 | `SpringToolsBorder`             | Inherits `SpringToolsDim`     | Floating window borders                              |
 | `SpringToolsSectionHeader`      | `Title`                       | Collapsible section headers (Controllers, GET, etc.) |
 | `SpringToolsMethodHeader`       | Inherits `SpringToolsAccent`  | Endpoint method section headers (GET, POST)          |
@@ -624,7 +624,7 @@ All highlights derive from your active colorscheme via `nvim_get_hl` at startup:
 | `SpringToolsDashboardProject`   | Inherits `Normal` (bold)      | Project name in dashboard                            |
 | `SpringToolsDashboardStatus`    | Inherits `SpringToolsDim`     | Status text (stopped/running/failed)                 |
 | `SpringToolsDashboardBuildType` | Inherits `SpringToolsDim`     | Build type (maven/gradle)                            |
-| `SpringToolsParentHeader`       | Inherits `SpringToolsHeader`  | Collapsible workspace / microservice parent header    |
+| `SpringToolsParentHeader`       | Inherits `SpringToolsHeader`  | Collapsible workspace / microservice parent header   |
 | `SpringToolsLogError`           | `ErrorMsg`                    | Log ERROR, FATAL, SEVERE levels                      |
 | `SpringToolsLogWarn`            | `Special`                     | Log WARN, WARNING levels                             |
 | `SpringToolsLogInfo`            | `DiagnosticOk`                | Log INFO level                                       |
