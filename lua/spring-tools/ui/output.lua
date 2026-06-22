@@ -73,6 +73,9 @@ M.ns = vim.api.nvim_create_namespace("spring_tools_output")
 M.title = "Output"
 M._stored_logs = {}
 M._suppress_open = false
+M._locked_source = nil
+M._view_services = {}
+M._user_closed = false
 
 M.filter = {
   error = true,
@@ -105,20 +108,27 @@ M._service_filters = {}
 M._detected_services = {}
 M._fullscreen = false
 
-local function detect_services()
+local function detect_services_from(lines)
   local seen = {}
-  M._detected_services = {}
-  for _, line in ipairs(M._stored_logs) do
+  local services = {}
+  for _, line in ipairs(lines) do
     local svc = line:match("^%s-([a-zA-Z][%w_-]+)%-%d+%s+|") or line:match("^%s-([a-zA-Z][%w_-]+)%s+|")
     if svc and not seen[svc] then
       seen[svc] = true
-      M._detected_services[#M._detected_services + 1] = svc
-      if M._service_filters[svc] == nil then
-        M._service_filters[svc] = true
-      end
+      services[#services + 1] = svc
     end
   end
-  table.sort(M._detected_services)
+  table.sort(services)
+  return services
+end
+
+local function detect_services()
+  M._detected_services = detect_services_from(M._stored_logs)
+  for _, svc in ipairs(M._detected_services) do
+    if M._service_filters[svc] == nil then
+      M._service_filters[svc] = true
+    end
+  end
 end
 
 local function line_service(line)
@@ -210,6 +220,7 @@ function M.open()
       end
     end,
   })
+  M._user_closed = false
   if #M._stored_logs > 0 then
     M._render_from_logs()
   else
@@ -230,6 +241,9 @@ function M.close()
   end
   M.win = nil
   M.buf = nil
+  M._locked_source = nil
+  M._view_services = {}
+  M._user_closed = true
 end
 
 function M.toggle()
@@ -278,6 +292,10 @@ function M.show(lines, title, opts)
   if not buf_is_valid() then return end
 
   M.title = title or "Output"
+  M._locked_source = title or "Output"
+  M._view_services = detect_services_from(lines)
+  M._detected_services = M._view_services
+  M._user_closed = false
   vim.bo[M.buf].modifiable = true
   vim.api.nvim_buf_clear_namespace(M.buf, M.ns, 0, -1)
 
@@ -320,10 +338,21 @@ end
 function M.update_from_logs(all_logs, title)
   M._stored_logs = vim.tbl_map(strip_ansi, all_logs)
   M._pending_title = title or M._pending_title
+  -- If user explicitly closed the window, don't re-open it
+  if M._user_closed then
+    return
+  end
+  -- Only render if the source matches what's currently locked
+  local source = title or "Output"
+  if M._locked_source ~= nil and source ~= M._locked_source then
+    return
+  end
   if not M._render_scheduled then
     M._render_scheduled = true
     vim.defer_fn(function()
       M._render_scheduled = false
+      M._view_services = detect_services_from(all_logs)
+      M._detected_services = M._view_services
       M._render_from_logs(M._pending_title)
       M._pending_title = nil
     end, 30)
@@ -338,7 +367,12 @@ function M._render_from_logs(title)
   if not buf_is_valid() then return end
 
   M.title = title or M.title or "Output"
-  detect_services()
+  -- Use _view_services (set by caller) instead of re-detecting from _stored_logs
+  if #M._view_services == 0 then
+    M._view_services = detect_services_from(M._stored_logs)
+  end
+  -- Keep _detected_services in sync for get_log_patterns() highlighting
+  M._detected_services = M._view_services
   M.setup_keymaps()
   local filtered = {}
   for _, l in ipairs(M._stored_logs) do
@@ -403,9 +437,9 @@ function M._footer_text()
   local km = config.options.output.keymaps
   local fullscreen_key = km and km.toggle_fullscreen or "f"
   local result = "Filter: [" .. table.concat(parts, " ") .. "]  (" .. keys .. " · c copy · " .. fullscreen_key .. " fullscreen)"
-  if #M._detected_services > 0 then
+  if #M._view_services > 0 then
     local svc_parts = {}
-    for i, svc in ipairs(M._detected_services) do
+    for i, svc in ipairs(M._view_services) do
       if M._service_filters[svc] ~= false then
         table.insert(svc_parts, i .. ":" .. svc)
       else
@@ -433,7 +467,7 @@ function M.refresh()
 end
 
 function M.toggle_service(index)
-  local svc = M._detected_services[index]
+  local svc = M._view_services[index]
   if svc then
     M._service_filters[svc] = not (M._service_filters[svc] ~= false)
     if #M._stored_logs > 0 then
@@ -496,8 +530,8 @@ function M.setup_keymaps()
     components.set_keymap(M.buf, M._custom_key, function() M.toggle_level(M._custom_key) end, { desc = desc })
   end
   -- Number keys toggle service filters
-  for i = 1, #M._detected_services do
-    local svc = M._detected_services[i]
+  for i = 1, #M._view_services do
+    local svc = M._view_services[i]
     components.set_keymap(M.buf, tostring(i), function() M.toggle_service(i) end, { desc = "Toggle " .. svc .. " logs" })
   end
 end

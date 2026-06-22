@@ -373,7 +373,7 @@ function M:on_activate(idx)
       if #cause > 0 then table.insert(final, '═' .. '═' .. '═' .. " Full output " .. '═' .. '═' .. '═') end
       for _, l in ipairs(out) do table.insert(final, l) end
       if output.win and vim.api.nvim_win_is_valid(output.win) then
-        output.show(final, proj.name .. (exit_code == 0 and "" or " (exit " .. exit_code .. ")"), { footer = true })
+        output.show(final, proj.name, { footer = true })
       end
       if exit_code ~= 0 and exit_code ~= 143 then
         utils.notify(proj.name .. " " .. ok_msg:lower() .. " (exit " .. exit_code .. ")", vim.log.levels.ERROR)
