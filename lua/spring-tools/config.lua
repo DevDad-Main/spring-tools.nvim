@@ -27,6 +27,7 @@ M.defaults = {
       switch_endpoints = "3",
       switch_tests = "4",
       switch_config = "5",
+      switch_init = "6",
       tab_next = "l",
       tab_prev = "h",
       show_help = "?",
@@ -48,6 +49,7 @@ M.defaults = {
     endpoints = "<leader>se",
     tests = "<leader>st",
     config = "<leader>sc",
+    init = "<leader>si",
     search = "<leader>ss",
   },
   telescope = {

@@ -31,6 +31,10 @@ function M.setup()
     M.open_sidebar("dashboard")
   end, { desc = "Open Spring Tools" })
 
+  vim.api.nvim_create_user_command("SpringInit", function()
+    M.open_sidebar("initializer")
+  end, { desc = "Spring Initializr — generate a new Spring Boot project" })
+
   vim.api.nvim_create_user_command("SpringRefresh", function()
     require("spring-tools.utils").invalidate_cache()
     local build = require("spring-tools.build_completion")
@@ -144,6 +148,9 @@ function M.setup_keymaps()
   end
   if km.config and km.config ~= "" then
     vim.keymap.set("n", km.config, function() M.open_sidebar("config") end, { desc = "Spring Config Explorer" })
+  end
+  if km.init and km.init ~= "" then
+    vim.keymap.set("n", km.init, function() M.open_sidebar("initializer") end, { desc = "Spring Initializr" })
   end
   if km.search and km.search ~= "" then
     vim.keymap.set("n", km.search, function() require("spring-tools.search").open() end, { desc = "Spring Search" })

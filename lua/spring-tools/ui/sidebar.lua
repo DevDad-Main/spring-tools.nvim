@@ -11,13 +11,14 @@ M.selected = 1
 M.views = {}
 M.ns = vim.api.nvim_create_namespace("spring_tools_sidebar")
 
-M.tab_order = { "dashboard", "beans", "endpoints", "tests", "config" }
+M.tab_order = { "dashboard", "beans", "endpoints", "tests", "config", "initializer" }
 M.tab_labels = {
   dashboard = "Dash",
   beans = "Beans",
   endpoints = "Endp",
   tests = "Tests",
   config = "Config",
+  initializer = "Init",
 }
 
 local function buf_is_valid()
@@ -230,6 +231,7 @@ function M.setup_keymaps()
   bmap(km.switch_endpoints, [[:lua require('spring-tools.ui.sidebar').switch_view('endpoints')<CR>]])
   bmap(km.switch_tests, [[:lua require('spring-tools.ui.sidebar').switch_view('tests')<CR>]])
   bmap(km.switch_config, [[:lua require('spring-tools.ui.sidebar').switch_view('config')<CR>]])
+  bmap(km.switch_init, [[:lua require('spring-tools.ui.sidebar').switch_view('initializer')<CR>]])
   if km.tab_next then
     bmap(km.tab_next, [[:lua require('spring-tools.ui.sidebar').tab_next()<CR>]])
   end
