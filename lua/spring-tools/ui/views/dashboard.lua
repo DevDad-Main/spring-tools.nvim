@@ -382,12 +382,12 @@ function M:on_activate(idx)
     end)
   end
 
-  local function run_cmd(cmd)
+  local function run_cmd(cmd, track)
     output.show({ "Starting " .. proj.name .. " with: " .. table.concat(cmd, " ") }, proj.name)
     local ok = require("spring-tools.core.backend").ProcessManager:start(proj, cmd, proj.root, {
       on_stdout = function(line) log_stdout(line) end,
       on_exit = function(exit_code) log_exit(exit_code, "Process exited cleanly") end,
-    })
+    }, track)
     if not ok then
       utils.notify("Failed to start " .. proj.name, vim.log.levels.ERROR)
     else
@@ -405,7 +405,11 @@ function M:on_activate(idx)
       utils.mark_dirty()
       utils.save_cache()
     end
-    run_cmd(vim.split(input, "%s+"))
+    local cmd = vim.split(input, "%s+")
+    -- Only track the default run command (spring-boot:run / bootRun) as a service.
+    -- One-off commands like "mvn clean compile" should not mark the project as running.
+    local track = (input == default_str)
+    run_cmd(cmd, track)
   end
 
   local function do_restart()
