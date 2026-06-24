@@ -132,17 +132,17 @@ function ProcessManager.start(_, project, cmd, cwd, callbacks, track)
   })
 
   if job_id and job_id > 0 then
+    ProcessManager.processes[key] = {
+      job_id = job_id,
+      status = track and "running" or "stopped",
+      cmd = cmd,
+      cwd = cwd,
+      start_time = start_time,
+      logs = logs,
+      port = nil,
+      profile = nil,
+    }
     if track then
-      ProcessManager.processes[key] = {
-        job_id = job_id,
-        status = "running",
-        cmd = cmd,
-        cwd = cwd,
-        start_time = start_time,
-        logs = logs,
-        port = nil,
-        profile = nil,
-      }
       state.emit("process_started", project)
     end
     return job_id, ProcessManager.get(nil, project)
