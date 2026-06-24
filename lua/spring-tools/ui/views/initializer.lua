@@ -253,16 +253,19 @@ local function run_wizard(metadata)
                       }, function(jv)
                         params.javaVersion = (jv and jv.id) or default("javaVersion") or "17"
 
-                        -- Step 11: Dependencies (from main metadata hierarchical structure)
-                        local dep_groups = metadata.dependencies and metadata.dependencies.values or {}
-                        if #dep_groups > 0 then
-                          pick_dependencies(dep_groups, function(ids)
-                            params.dependencies = ids or {}
-                            M._finish_wizard(params)
+                        -- Step 11: Configuration file format
+                        local config_formats = metadata.configurationFileFormat and metadata.configurationFileFormat.values or {}
+                        if #config_formats > 0 then
+                          vim.ui.select(config_formats, {
+                            prompt = "Configuration format",
+                            format_item = function(item) return item.name or item.id end,
+                          }, function(cf)
+                            params.configurationFileFormat = (cf and cf.id) or default("configurationFileFormat") or "properties"
+                            M._pick_deps_and_finish(params, metadata)
                           end)
                         else
-                          params.dependencies = {}
-                          M._finish_wizard(params)
+                          params.configurationFileFormat = "properties"
+                          M._pick_deps_and_finish(params, metadata)
                         end
                       end)
                     end)
@@ -275,6 +278,20 @@ local function run_wizard(metadata)
       end)
     end)
   end)
+end
+
+function M._pick_deps_and_finish(params, metadata)
+  -- Step 12: Dependencies (from main metadata hierarchical structure)
+  local dep_groups = metadata.dependencies and metadata.dependencies.values or {}
+  if #dep_groups > 0 then
+    pick_dependencies(dep_groups, function(ids)
+      params.dependencies = ids or {}
+      M._finish_wizard(params)
+    end)
+  else
+    params.dependencies = {}
+    M._finish_wizard(params)
+  end
 end
 
 function M._finish_wizard(params)
@@ -295,6 +312,7 @@ function M._finish_wizard(params)
         "  Package:    " .. (params.packageName or ""),
         "  Packaging:  " .. (params.packaging or ""),
         "  Java:       " .. (params.javaVersion or ""),
+        "  Config:     " .. (params.configurationFileFormat or "properties"),
         "  Deps:       " .. table.concat(params.dependencies or {}, ", "),
         "  Directory:  " .. dir,
       }
