@@ -11,3 +11,4 @@ tests/TestApp-Gradle/.project
 tests/TestApp-Gradle/.settings/
 tests/TestApp-Gradle/bin/
 .opencode/
+.claude/
