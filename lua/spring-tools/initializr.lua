@@ -209,15 +209,11 @@ function M.generate_project(params, target_dir, on_done)
                 vim.fn.delete(target_dir, "rf")
               end
               vim.fn.mkdir(target_dir, "p")
-              -- Move all extracted items into target_dir
+              -- Copy all extracted items into target_dir
               local items = vim.fn.readdir(src_dir) or {}
               for _, item in ipairs(items) do
                 local src = src_dir .. "/" .. item
-                if vim.fn.isdirectory(src) == 1 then
-                  vim.fn.system({ "cp", "-a", "-f", src .. "/.", target_dir .. "/" })
-                else
-                  vim.fn.system({ "cp", "-a", "-f", src, target_dir .. "/" })
-                end
+                vim.fn.system({ "cp", "-a", "-f", src, target_dir .. "/" })
               end
               vim.fn.delete(extract_dir, "rf")
               on_done(nil)
