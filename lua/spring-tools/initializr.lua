@@ -157,9 +157,6 @@ function M.generate_project(params, target_dir, on_done)
 
   utils.notify("Downloading project from start.spring.io ...")
 
-  -- Ensure target dir exists
-  vim.fn.mkdir(target_dir, "p")
-
   local job_id = utils.job_start(
     { "curl", "-s", "-L", "-A", "spring-tools.nvim/1.0", "-o", tmp_zip, url },
     {
@@ -182,8 +179,8 @@ function M.generate_project(params, target_dir, on_done)
           return
         end
         utils.notify("Extracting project (" .. size .. " bytes) ...")
-        -- Extract to a temp dir first, then copy into target_dir.
-        -- This avoids conflicts if target_dir already has files (e.g. from a previous attempt).
+        -- Extract to a temp dir, then move to target_dir.
+        -- Using a temp dir ensures a clean result even if target_dir already has files.
         local extract_dir = vim.fn.tempname() .. "_extract"
         vim.fn.mkdir(extract_dir, "p")
         utils.job_start(
@@ -207,7 +204,12 @@ function M.generate_project(params, target_dir, on_done)
               if #scan == 1 and vim.fn.isdirectory(extract_dir .. "/" .. scan[1]) == 1 then
                 src_dir = extract_dir .. "/" .. scan[1]
               end
-              -- Copy all extracted items into target_dir
+              -- Remove existing target_dir if present, then move extracted content in place
+              if vim.fn.isdirectory(target_dir) == 1 then
+                vim.fn.delete(target_dir, "rf")
+              end
+              vim.fn.mkdir(target_dir, "p")
+              -- Move all extracted items into target_dir
               local items = vim.fn.readdir(src_dir) or {}
               for _, item in ipairs(items) do
                 local src = src_dir .. "/" .. item
