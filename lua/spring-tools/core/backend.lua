@@ -61,6 +61,10 @@ function ProcessManager.start(_, project, cmd, cwd, callbacks)
   local partial_out = ""
   local partial_err = ""
 
+  local key = vim.fn.resolve(project.root)
+  local existing = ProcessManager.processes[key]
+  local is_service = existing and existing.status == "running"
+
   local job_id = vim.fn.jobstart(cmd, {
     cwd = cwd,
     on_stdout = function(_, data, _)
@@ -126,17 +130,22 @@ function ProcessManager.start(_, project, cmd, cwd, callbacks)
   })
 
   if job_id and job_id > 0 then
-    ProcessManager.processes[vim.fn.resolve(project.root)] = {
-      job_id = job_id,
-      status = "running",
-      cmd = cmd,
-      cwd = cwd,
-      start_time = start_time,
-      logs = logs,
-      port = nil,
-      profile = nil,
-    }
-    state.emit("process_started", project)
+    -- Only overwrite the tracked process record if no service is currently running.
+    -- This prevents one-off commands (like "mvn clean compile") from clobbering the
+    -- tracking of a long-running service (like "spring-boot:run").
+    if not is_service then
+      ProcessManager.processes[key] = {
+        job_id = job_id,
+        status = "running",
+        cmd = cmd,
+        cwd = cwd,
+        start_time = start_time,
+        logs = logs,
+        port = nil,
+        profile = nil,
+      }
+      state.emit("process_started", project)
+    end
     return job_id, ProcessManager.get(nil, project)
   end
 
