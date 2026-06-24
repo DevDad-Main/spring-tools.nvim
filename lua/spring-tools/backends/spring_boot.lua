@@ -87,10 +87,10 @@ function SpringBootBackend:get_status(proj)
     end
     return proc.status
   end
-  -- No tracked process — check if port is listening (Docker/external)
-  local port = self:get_port(proj) or self:_read_config_port(proj)
-  if port and self:_port_listening(port) then return "running" end
-  -- Check if Docker container is running (covers services without host port mappings)
+  -- No tracked process — only consider running if a Docker container is active.
+  -- A listening port alone is not a reliable indicator for Maven/Gradle projects
+  -- because another service (or a stale process from a different project) may
+  -- occupy the same port.
   if self:_docker_running(proj.name) then return "running" end
   -- For docker-compose parent projects, check if any sibling has a listening port
   if self:_is_docker_compose(proj) then
