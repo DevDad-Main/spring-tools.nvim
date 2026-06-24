@@ -118,10 +118,10 @@ function M.fetch_dependencies(boot_version, on_done)
   end)
 end
 
--- URL-encode a single value (encodes special chars but not URL structure)
+-- URL-encode a single value (encodes special chars but not URL structure or commas)
 local function url_encode(str)
   if not str then return "" end
-  return (str:gsub("([^%w%._%-%~])", function(c)
+  return (str:gsub("([^%w%._%-%~%,])", function(c)
     return string.format("%%%02X", string.byte(c))
   end))
 end
@@ -144,6 +144,7 @@ function M.generate_url(params)
   append("javaVersion", params.javaVersion)
   append("language", params.language)
   append("bootVersion", params.bootVersion)
+  append("configurationFileFormat", params.configurationFileFormat)
   if params.dependencies and #params.dependencies > 0 then
     append("dependencies", table.concat(params.dependencies, ","))
   end
